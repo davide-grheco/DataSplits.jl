@@ -1,2 +1,19 @@
+name = "DataSplits"
+uuid = "c4daa60e-60e8-4e0a-bcf3-f80a6d479af9"
+authors = ["Davide Crucitti <davide.crucitti@grheco.com>"]
+version = "0.1.0"
+
 [deps]
 Distances = "b4f34e82-e78d-54a5-968a-f98e89d6e8f7"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
+
+[compat]
+StatsBase = "0.34.5"
+
+[extras]
+OffsetArrays = "6fe1bfb0-de20-5000-8ca7-80f57d26f881"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test", "OffsetArrays"]
