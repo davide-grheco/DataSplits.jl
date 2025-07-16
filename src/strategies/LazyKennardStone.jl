@@ -11,7 +11,7 @@ end
 LazyKennardStoneSplit(frac::Real) = LazyKennardStoneSplit(ValidFraction(frac), Euclidean())
 LazyKennardStoneSplit(frac::Real, metric) =
   LazyKennardStoneSplit(ValidFraction(frac), metric)
-const CADEXSplit = LazyKennardStoneSplit  # Alias
+const LazyCADEXSplit = LazyKennardStoneSplit
 
 
 """
