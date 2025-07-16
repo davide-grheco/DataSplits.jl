@@ -1,16 +1,16 @@
 using Distances
 
-export KennardStoneSplit, CADEXSplit
+export LazyKennardStoneSplit, CADEXSplit
 
-struct KennardStoneSplit{T} <: SplitStrategy
+struct LazyKennardStoneSplit{T} <: SplitStrategy
   frac::ValidFraction{T}
   metric::Distances.SemiMetric
 end
 
 # Constructor overloads
-KennardStoneSplit(frac::Real) = KennardStoneSplit(ValidFraction(frac), Euclidean())
-KennardStoneSplit(frac::Real, metric) = KennardStoneSplit(ValidFraction(frac), metric)
-const CADEXSplit = KennardStoneSplit  # Alias
+LazyKennardStoneSplit(frac::Real) = LazyKennardStoneSplit(ValidFraction(frac), Euclidean())
+LazyKennardStoneSplit(frac::Real, metric) = LazyKennardStoneSplit(ValidFraction(frac), metric)
+const CADEXSplit = LazyKennardStoneSplit  # Alias
 
 
 """
@@ -21,7 +21,7 @@ Memory-optimized implementation with O(N) storage.
 Useful when working with large datasets where the NxN distance matrix does not fit memory.
 When working with small datasets, use the traditional implementation.
 """
-function _split(data, s::KennardStoneSplit; rng=Random.GLOBAL_RNG)
+function _split(data, s::LazyKennardStoneSplit; rng=Random.GLOBAL_RNG)
   idx_range = axes(data, 1)
   N = length(idx_range)
   n_test = round(Int, (1 - s.frac) * N)
