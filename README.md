@@ -11,4 +11,3 @@
 ## How to Cite
 
 If you use DataSplits.jl in your work, please cite using the reference given in [CITATION.cff](https://github.com/davide-grheco/DataSplits.jl/blob/main/CITATION.cff).
-
