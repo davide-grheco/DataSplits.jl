@@ -14,12 +14,12 @@ AddGitHubTemplates: false
 AddLintCI: false
 AddLychee: true
 AddMacToCI: false
-AddPrecommit: false
-AddTagBotCI: true
+AddPrecommit: true
+AddTagBotCI: false
 AddTestCI: true
 AddWinToCI: false
 Authors: Davide Crucitti <davide.crucitti@grheco.com>
-AutoIncludeTests: false
+AutoIncludeTests: true
 CheckExplicitImports: false
 ConfigIndentation: 2
 JuliaIndentation: 4
