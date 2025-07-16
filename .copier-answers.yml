@@ -1,0 +1,39 @@
+# Changes here will be overwritten by Copier
+AddAllcontributors: false
+AddCitationCFF: true
+AddCodeOfConduct: false
+AddCompatHelperCI: true
+AddContributionDocs: false
+AddCopierCI: false
+AddDependabot: false
+AddDocs: true
+AddDocsCI: true
+AddFormatterAndLinterConfigFiles: true
+AddGitHubPRTemplate: true
+AddGitHubTemplates: false
+AddLintCI: false
+AddLychee: true
+AddMacToCI: false
+AddPrecommit: false
+AddTagBotCI: true
+AddTestCI: true
+AddWinToCI: false
+Authors: Davide Crucitti <davide.crucitti@grheco.com>
+AutoIncludeTests: false
+CheckExplicitImports: false
+ConfigIndentation: 2
+JuliaIndentation: 4
+JuliaMinCIVersion: lts
+JuliaMinVersion: '1.10'
+License: MIT
+LicenseCopyrightHolders: Davide Crucitti
+MarkdownIndentation: 2
+PackageName: DataSplits
+PackageOwner: davide-grheco
+PackageUUID: c4daa60e-60e8-4e0a-bcf3-f80a6d479af9
+RunJuliaNightlyOnCI: false
+StrategyConfirmIncluded: true
+StrategyLevel: 1
+StrategyReviewExcluded: true
+UseCirrusCI: false
+_src_path: /home/davide/.julia/packages/BestieTemplate/jdG8v
