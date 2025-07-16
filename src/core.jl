@@ -9,7 +9,7 @@ abstract type SplitStrategy end
 
 Split `data` into train/test sets according to `strategy`.
 """
-function split(data, strategy::SplitStrategy; rng=Random.default_rng())
+function split(data, strategy::SplitStrategy; rng = Random.default_rng())
   isempty(data) && throw(ArgumentError("Data must not be empty"))
   length(axes(data, 1)) == 1 && throw(ArgumentError("Can not split a single data point"))
 

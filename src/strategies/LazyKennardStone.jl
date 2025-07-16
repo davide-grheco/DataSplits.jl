@@ -9,7 +9,8 @@ end
 
 # Constructor overloads
 LazyKennardStoneSplit(frac::Real) = LazyKennardStoneSplit(ValidFraction(frac), Euclidean())
-LazyKennardStoneSplit(frac::Real, metric) = LazyKennardStoneSplit(ValidFraction(frac), metric)
+LazyKennardStoneSplit(frac::Real, metric) =
+  LazyKennardStoneSplit(ValidFraction(frac), metric)
 const CADEXSplit = LazyKennardStoneSplit  # Alias
 
 
@@ -21,7 +22,7 @@ Memory-optimized implementation with O(N) storage.
 Useful when working with large datasets where the NxN distance matrix does not fit memory.
 When working with small datasets, use the traditional implementation.
 """
-function _split(data, s::LazyKennardStoneSplit; rng=Random.GLOBAL_RNG)
+function _split(data, s::LazyKennardStoneSplit; rng = Random.GLOBAL_RNG)
   idx_range = axes(data, 1)
   N = length(idx_range)
   n_test = round(Int, (1 - s.frac) * N)
@@ -30,11 +31,13 @@ function _split(data, s::LazyKennardStoneSplit; rng=Random.GLOBAL_RNG)
   i₁, i₂ = find_most_distant_pair(data, idx_range; s.metric)
 
   if n_test < 2 || n_train < 2
-    throw(ArgumentError(
-      "Invalid split sizes: n_test=$n_test, n_train=$n_train. " *
-      "Kennard-Stone requires at least 2 samples in the smallest split." *
-      "Try changing your split fraction or check you are actually introducing enough data. "
-    ))
+    throw(
+      ArgumentError(
+        "Invalid split sizes: n_test=$n_test, n_train=$n_train. " *
+        "Kennard-Stone requires at least 2 samples in the smallest split." *
+        "Try changing your split fraction or check you are actually introducing enough data. ",
+      ),
+    )
   end
 
 
@@ -86,7 +89,7 @@ end
 
 function find_most_distant_pair(data, idx_vec; metric)
   max_d, i₁, i₂ = -Inf, 0, 0
-  for i in 1:length(idx_vec)-1, j in i+1:length(idx_vec)
+  for i = 1:length(idx_vec)-1, j = i+1:length(idx_vec)
     x, y = data[idx_vec[i]], data[idx_vec[j]]
     d = evaluate(metric, x, y)
     if d > max_d
@@ -99,4 +102,3 @@ end
 function nn_distance(A, B; metric)
   [minimum(evaluate.(Ref(metric), b, A)) for b in B]
 end
-

@@ -54,7 +54,7 @@ rng = MersenneTwister(42)
 
     # Different RNG → different split
     rng2 = MersenneTwister(223)
-    train3, test3 = split(data_std, strategy; rng=rng2)
+    train3, test3 = split(data_std, strategy; rng = rng2)
     @test train1 != train3
   end
 end
