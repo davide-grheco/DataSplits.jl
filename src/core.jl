@@ -9,11 +9,34 @@ abstract type SplitStrategy end
 
 Split `data` into train/test sets according to `strategy`.
 """
-function split(data, strategy::SplitStrategy; rng = Random.default_rng())
-  isempty(data) && throw(ArgumentError("Data must not be empty"))
-  length(axes(data, 1)) == 1 && throw(ArgumentError("Can not split a single data point"))
+function split(X, strategy::SplitStrategy; rng = Random.default_rng())
+  isempty(X) && throw(ArgumentError("Data must not be empty"))
+  length(axes(X, 1)) == 1 && throw(ArgumentError("Can not split a single data point"))
 
-  _split(data, strategy; rng)
+  _split(X, strategy; rng)
+end
+
+function split(
+  data::Tuple{AbstractArray,AbstractVector},
+  strategy::SplitStrategy;
+  rng = Random.default_rng(),
+)
+  X, y = data
+  isempty(X) && throw(ArgumentError("Data must not be empty"))
+  size(X, 1) == 1 && throw(ArgumentError("Cannot split a single data point"))
+  size(X, 1) == length(y) ||
+    throw(ArgumentError("X and y must have the same number of samples."))
+
+  _split((X, y), strategy; rng)
+end
+
+function split(X, y, strategy::SplitStrategy; rng = Random.default_rng())
+  isempty(X) && throw(ArgumentError("Data must not be empty"))
+  length(axes(X, 1)) == 1 && throw(ArgumentError("Can not split a single data point"))
+  size(X, 1) == length(y) ||
+    throw(ArgumentError("X and y must have the same number of samples."))
+
+  _split(X, y, strategy; rng)
 end
 
 struct ValidFraction{T<:Real}
