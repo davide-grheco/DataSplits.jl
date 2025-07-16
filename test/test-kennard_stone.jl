@@ -1,4 +1,4 @@
-@testitem "LazyKennardStone (CADEX)" begin
+@testset "LazyKennardStone (CADEX)" begin
   using Random
   using Distances
   using DataSplits
