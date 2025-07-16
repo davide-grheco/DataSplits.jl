@@ -18,4 +18,4 @@ makedocs(;
   pages = ["index.md"; numbered_pages],
 )
 
-deploydocs(; repo = "https://github.com/davide-grheco/DataSplits.jl.git")
+deploydocs(; repo = "github.com/davide-grheco/DataSplits.jl")
