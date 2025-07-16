@@ -27,8 +27,6 @@ function _split(data, s::LazyKennardStoneSplit; rng = Random.GLOBAL_RNG)
   N = length(idx_range)
   n_test = round(Int, (1 - s.frac) * N)
   n_train = N - n_test
-  idx_range = axes(data, 1)
-  i₁, i₂ = find_most_distant_pair(data, idx_range; s.metric)
 
   if n_test < 2 || n_train < 2
     throw(
@@ -40,60 +38,60 @@ function _split(data, s::LazyKennardStoneSplit; rng = Random.GLOBAL_RNG)
     )
   end
 
-
-  if n_test <= n_train
-    target_size = n_test
-    select_test = true
-  else
-    target_size = n_train
-    select_test = false
-  end
-
+  i₁, i₂ = find_most_distant_pair(data, idx_range; s.metric)
 
   selected = falses(N)
-  selected[i₁] = selected[i₂] = true
-  selected_idx = [i₁, i₂]
-  min_dists = Vector{float(eltype(first(data)))}(undef, N)
-  fill!(min_dists, Inf)
-  min_dists[i₁] = min_dists[i₂] = -Inf
+  pos = Dict(idx_range .=> 1:N)
+  selected[pos[i₁]] = selected[pos[i₂]] = true
 
-  while length(selected_idx) != target_size
-    # Update distances to last added point
-    new_point = _get_sample(data, selected_idx[end])
-    for i in eachindex(idx_range)
-      if !selected[i]
-        d = evaluate(s.metric, new_point, _get_sample(data, i))
-        min_dists[i] = min(min_dists[i], d)
+  selected_order = Vector{eltype(idx_range)}(undef, N)
+  selected_order[1:2] = [i₁, i₂]
+
+  min_dists = fill(Inf, N)
+  row_of(i) = _get_sample(data, i)
+  for ax in idx_range
+    p = pos[ax]
+    if !selected[p]
+      x = row_of(ax)
+      d1 = evaluate(s.metric, x, row_of(i₁))
+      d2 = evaluate(s.metric, x, row_of(i₂))
+      min_dists[p] = min(d1, d2)
+    end
+  end
+  min_dists[pos[i₁]] = min_dists[pos[i₂]] = -Inf
+
+  for k = 3:N
+    next_pos = argmax(min_dists)
+    next_ax = idx_range[next_pos]
+
+    selected_order[k] = next_ax
+    selected[next_pos] = true
+    min_dists[next_pos] = -Inf
+
+    ref_vec = row_of(next_ax)
+    @inbounds for p = 1:N
+      if !selected[p]
+        cand_ax = idx_range[p]
+        d = evaluate(s.metric, ref_vec, row_of(cand_ax))
+        min_dists[p] = min(min_dists[p], d)
       end
     end
-
-    # Select next point
-    k = argmax(min_dists)
-    push!(selected_idx, k)
-    selected[k] = true
-    min_dists[k] = -Inf
   end
 
-  if select_test
-    selected_idx = selected_idx
-    train_idx = findall(!, selected)
-  else
-    train_idx = selected_idx
-    selected_idx = findall(!, selected)
-  end
+  train_idx = selected_order[1:n_train]
+  test_idx = selected_order[n_train+1:end]
 
-  return _sort_indices!(idx_range, train_idx), _sort_indices!(idx_range, selected_idx)
-
+  return sort(train_idx), sort(test_idx)
 end
 
 
 function find_most_distant_pair(data, idx_vec; metric)
   max_d, i₁, i₂ = -Inf, 0, 0
   for i = 1:length(idx_vec)-1, j = i+1:length(idx_vec)
-    x, y = data[idx_vec[i]], data[idx_vec[j]]
+    x, y = _get_sample(data, idx_vec[i]), _get_sample(data, idx_vec[j])
     d = evaluate(metric, x, y)
     if d > max_d
-      max_d, i₁, i₂ = d, i, j
+      max_d, i₁, i₂ = d, idx_vec[i], idx_vec[j]
     end
   end
   return i₁, i₂
