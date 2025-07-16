@@ -35,39 +35,12 @@ function _split(data, s::KennardStoneSplit; rng = Random.GLOBAL_RNG)
   end
 
   D = pairwise(s.metric, data, data, dims = 1)
+  train_pos, test_pos = kennard_stone_from_distance_matrix(D, n_train)
 
-  selected = falses(N)
+  train_idx = sort(idx_range[train_pos])
+  test_idx = sort(idx_range[test_pos])
 
-  i₁, i₂ = find_most_distant_pair(D)
-  selected[i₁] = selected[i₂] = true
-  selected_count = 2
-  selected_order = Vector{Int}(undef, N)
-  selected_order[1:2] = [i₁, i₂]
-
-  min_dists = fill(Inf, N)
-  for i in (i₁, i₂)
-    min_dists .= min.(min_dists, view(D, :, i))
-  end
-  min_dists[i₁] = -Inf
-  min_dists[i₂] = -Inf
-
-
-  # TODO: This unnecessarily goes through all samples
-  # It would be enough to go through n_train samples
-  while selected_count < N
-    k_idx = argmax(min_dists)
-    selected_count += 1
-    selected[k_idx] = true
-    selected_order[selected_count] = k_idx
-    min_dists .= min.(min_dists, view(D, :, k_idx))
-    min_dists[k_idx] = -Inf
-  end
-
-
-  train_idx = selected_order[1:n_train]
-  test_idx = selected_order[n_train+1:end]
-
-  return _sort_indices!(idx_range, train_idx), _sort_indices!(idx_range, test_idx)
+  return train_idx, test_idx
 end
 
 function _split(
@@ -99,4 +72,36 @@ function find_most_distant_pair(D::AbstractMatrix)
   end
 
   return i₁, i₂
+end
+
+function kennard_stone_from_distance_matrix(D::AbstractMatrix, n_train::Integer)
+  N = size(D, 1)
+  selected = falses(N)
+
+  i₁, i₂ = find_most_distant_pair(D)
+  selected[i₁] = selected[i₂] = true
+  selected_count = 2
+  selected_order = Vector{Int}(undef, N)
+  selected_order[1:2] = [i₁, i₂]
+
+  min_dists = min.(view(D, :, i₁), view(D, :, i₂))
+  min_dists[i₁] = min_dists[i₂] = -Inf
+
+
+  # TODO: This unnecessarily goes through all samples
+  # It would be enough to go through n_train samples
+  while selected_count < N
+    k_idx = argmax(min_dists)
+    selected_count += 1
+    selected[k_idx] = true
+    selected_order[selected_count] = k_idx
+    min_dists .= min.(min_dists, view(D, :, k_idx))
+    min_dists[k_idx] = -Inf
+  end
+
+
+  train_idx = selected_order[1:n_train]
+  test_idx = selected_order[n_train+1:end]
+
+  return train_idx, test_idx
 end
