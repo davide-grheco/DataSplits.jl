@@ -37,8 +37,8 @@ Optimized in-memory Kennard-Stone algorithm using precomputed distance matrix.
 Best for small-to-medium datasets where O(N²) memory is acceptable.
 """
 function _split(data, s::KennardStoneSplit; rng = Random.GLOBAL_RNG)
-  idx_range = axes(data, 1)
-  N = length(idx_range)
+
+  N = length(sample_indices(data))
 
   n_test = round(Int, (1 - s.frac) * N)
   n_train = N - n_test
@@ -55,8 +55,9 @@ function _split(data, s::KennardStoneSplit; rng = Random.GLOBAL_RNG)
   D = pairwise(s.metric, data, data, dims = 1)
   train_pos, test_pos = kennard_stone_from_distance_matrix(D, n_train)
 
-  train_idx = sort(idx_range[train_pos])
-  test_idx = sort(idx_range[test_pos])
+  indices = sample_indices(data)
+  train_idx = sort(indices[train_pos])
+  test_idx = sort(indices[test_pos])
 
   return train_idx, test_idx
 end

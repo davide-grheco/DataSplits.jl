@@ -23,8 +23,7 @@ Useful when working with large datasets where the NxN distance matrix does not f
 When working with small datasets, use the traditional implementation.
 """
 function _split(data, s::LazyKennardStoneSplit; rng = Random.GLOBAL_RNG)
-  idx_range = axes(data, 1)
-  N = length(idx_range)
+  N = length(sample_indices(data))
   n_test = round(Int, (1 - s.frac) * N)
   n_train = N - n_test
 
@@ -38,63 +37,64 @@ function _split(data, s::LazyKennardStoneSplit; rng = Random.GLOBAL_RNG)
     )
   end
 
-  i₁, i₂ = find_most_distant_pair(data, idx_range; s.metric)
+  i₁, i₂ = find_most_distant_pair(data, s.metric)
 
   selected = falses(N)
-  pos = Dict(idx_range .=> 1:N)
-  selected[pos[i₁]] = selected[pos[i₂]] = true
+  selected[i₁] = selected[i₂] = true
 
-  selected_order = Vector{eltype(idx_range)}(undef, N)
-  selected_order[1:2] = [i₁, i₂]
+  order = Vector{Int}(undef, N)
+  order[1:2] = [i₁, i₂]
 
   min_dists = fill(Inf, N)
-  row_of(i) = _get_sample(data, i)
-  for ax in idx_range
-    p = pos[ax]
-    if !selected[p]
-      x = row_of(ax)
-      d1 = evaluate(s.metric, x, row_of(i₁))
-      d2 = evaluate(s.metric, x, row_of(i₂))
-      min_dists[p] = min(d1, d2)
+  for i = 1:N
+    if !selected[i]
+      x = get_sample(data, i)
+      d1 = evaluate(s.metric, x, get_sample(data, i₁))
+      d2 = evaluate(s.metric, x, get_sample(data, i₂))
+      min_dists[i] = min(d1, d2)
     end
   end
-  min_dists[pos[i₁]] = min_dists[pos[i₂]] = -Inf
+  min_dists[i₁] = min_dists[i₂] = -Inf
 
   for k = 3:N
-    next_pos = argmax(min_dists)
-    next_ax = idx_range[next_pos]
+    next_i = argmax(min_dists)
+    order[k] = next_i
 
-    selected_order[k] = next_ax
-    selected[next_pos] = true
-    min_dists[next_pos] = -Inf
+    selected[next_i] = true
+    min_dists[next_i] = -Inf
 
-    ref_vec = row_of(next_ax)
-    @inbounds for p = 1:N
-      if !selected[p]
-        cand_ax = idx_range[p]
-        d = evaluate(s.metric, ref_vec, row_of(cand_ax))
-        min_dists[p] = min(min_dists[p], d)
+    ref = get_sample(data, next_i)
+    @inbounds for i = 1:N
+      if !selected[i]
+        d = evaluate(s.metric, ref, get_sample(data, i))
+        min_dists[i] = min(min_dists[i], d)
       end
     end
   end
 
-  train_idx = selected_order[1:n_train]
-  test_idx = selected_order[n_train+1:end]
-
-  return sort(train_idx), sort(test_idx)
+  indices = collect(sample_indices(data))
+  train_idx = sort(indices[order[1:n_train]])
+  test_idx = sort(indices[order[n_train+1:end]])
+  return train_idx, test_idx
 end
 
 
-function find_most_distant_pair(data, idx_vec; metric)
-  max_d, i₁, i₂ = -Inf, 0, 0
-  for i = 1:length(idx_vec)-1, j = i+1:length(idx_vec)
-    x, y = _get_sample(data, idx_vec[i]), _get_sample(data, idx_vec[j])
-    d = evaluate(metric, x, y)
-    if d > max_d
-      max_d, i₁, i₂ = d, idx_vec[i], idx_vec[j]
+function find_most_distant_pair(data, metric::Distances.SemiMetric)
+  max_d, best_i, best_j = -Inf, nothing, nothing
+  n = length(sample_indices(data))
+
+  for i = 1:n-1
+    x = get_sample(data, i)
+    for j = i+1:n
+      y = get_sample(data, j)
+      d = evaluate(metric, x, y)
+      if d > max_d
+        max_d, best_i, best_j = d, i, j
+      end
     end
   end
-  return i₁, i₂
+
+  return best_i, best_j
 end
 
 function nn_distance(A, B; metric)
