@@ -10,6 +10,7 @@ abstract type SplitStrategy end
 Split `data` into train/test sets according to `strategy`.
 """
 function split(X, strategy::SplitStrategy; rng = Random.default_rng())
+  !is_sample_array(typeof(X)) && "Your data type must support sample_indices and get_sample"
   isempty(X) && throw(ArgumentError("Data must not be empty"))
   length(axes(X, 1)) == 1 && throw(ArgumentError("Can not split a single data point"))
 
@@ -22,6 +23,7 @@ function split(
   rng = Random.default_rng(),
 )
   X, y = data
+  !is_sample_array(typeof(X)) && "Your data type must support sample_indices and get_sample"
   isempty(X) && throw(ArgumentError("Data must not be empty"))
   size(X, 1) == 1 && throw(ArgumentError("Cannot split a single data point"))
   size(X, 1) == length(y) ||
@@ -31,6 +33,7 @@ function split(
 end
 
 function split(X, y, strategy::SplitStrategy; rng = Random.default_rng())
+  !is_sample_array(typeof(X)) && "Your data type must support sample_indices and get_sample"
   isempty(X) && throw(ArgumentError("Data must not be empty"))
   length(axes(X, 1)) == 1 && throw(ArgumentError("Can not split a single data point"))
   size(X, 1) == length(y) ||
@@ -56,27 +59,55 @@ Base.:-(x::Number, vf::ValidFraction) = x - vf.frac
 Base.float(vf::ValidFraction) = vf.frac
 Base.convert(::Type{T}, vf::ValidFraction) where {T<:Number} = convert(T, vf.frac)
 
-"""
-    _get_sample(A::AbstractArray, i)
 
-Get the i-th sample from an array along the first dimension, returning a view when possible.
-For matrices this returns a row, for 3D arrays a matrix slice, etc.
+
 """
-@inline function _get_sample(A::AbstractArray, i)
-  idxs = ntuple(d -> d == 1 ? i : (:), ndims(A))
-  A[idxs...]
+    is_sample_array(::Type{T}) -> Bool
+
+Trait method that tells whether type `T` behaves like a sample‑indexed array
+that supports `sample_indices`, `_get_sample`, etc.
+
+You may extend this for custom containers to ensure compatibility
+with OptiSim or other sampling methods.
+
+Defaults to `false` unless specialized.
+"""
+is_sample_array(::Type) = false
+is_sample_array(::Type{<:AbstractArray}) = true
+
+"""
+    get_sample(A::AbstractArray, idx)
+
+Public API for getting samples that handles any valid index type.
+Dispatches to _internal_get_sample after index conversion.
+"""
+function get_sample(A::AbstractArray, idx)
+  A[sample_indices(A)[idx], :]
+end
+
+function get_sample(A::AbstractVector, idx)
+  A[sample_indices(A)[idx]]
 end
 
 """
-    _sort_indices(range, indices) -> Vector{eltype(range)}
+    sample_indices(A::AbstractArray) -> AbstractVector
 
-Returns sorted indices while preserving the original index type (Int, Offset, etc.).
-Memory-efficient for contiguous ranges.
+Return the list of sample-level indices used to address elements in `A`.
+
+This method defines the "sample axis" (typically axis 1) and determines how your
+splitting/sampling algorithms enumerate data points.
+
+## Default
+For standard arrays, returns `axes(A, 1)`.
+
+## Extension
+To support non-standard arrays (e.g., views, custom wrappers),
+you may extend this method to expose logical sample indices:
+
+```julia
+Base.sample_indices(a::MyFancyArray) = 1:length(a.ids)
+```
 """
-@inline function _sort_indices!(range::AbstractRange, indices)
-  sort!(collect(indices))
-end
-
-@inline function _sort_indices!(range, indices)
-  sort!([range[i] for i in indices])
+@inline function sample_indices(A::AbstractArray)
+  axes(A, 1)
 end
