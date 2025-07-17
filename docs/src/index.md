@@ -11,8 +11,9 @@ A tiny Julia library for rational train/test splitting algorithms:
 | Strategy | Purpose | Complexity |
 |----------|---------|------------|
 | `KennardStoneSplit` | Maximin split on *X* | `O(N²)` time, `O(N²)` memory |
-| `LazyKennardStoneSplit` | Same, streamed | `O(N²)` time, **`O(N)` mem** |
+| `LazyKennardStoneSplit` | Same, streamed | `O(N²)` time, `O(N)` mem |
 | `SPXYSplit` | Joint *X–y* maximin (SPXY) | `O(N²)` time, `O(N²)` mem |
+| `OptiSimSplit`         | Optimisable dissimilarity-based splitting       | `O(N²)` time, `O(N²)` memory |
 
 ```julia
 julia> using DataSplits, Distances
