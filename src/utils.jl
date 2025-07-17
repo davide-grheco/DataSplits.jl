@@ -1,3 +1,4 @@
+using Distances
 """
     find_maximin_element(distances::AbstractMatrix{T},
                         source_set::AbstractVector{Int},
@@ -38,4 +39,34 @@ function find_maximin_element(
   end
 
   return best_index
+end
+
+"""
+    distance_matrix(X, metric::PreMetric)
+
+Compute the full symmetric pairwise distance matrix `D` for the dataset `X`
+using the given `metric`. This function uses `get_sample` to access samples,
+ensuring compatibility with any custom array type that implements
+`get_sample` and `sample_indices`.
+
+Returns a matrix `D` such that `D[i, j] = metric(xᵢ, xⱼ)` and `D[i, j] == D[j, i]`.
+"""
+function distance_matrix(X, metric::PreMetric)
+  idx = sample_indices(X)
+  N = length(idx)
+  D = zeros(Float64, N, N)
+
+  for i = 1:N-1
+    xi = get_sample(X, i)
+    for j = i+1:N
+      d = evaluate(metric, xi, get_sample(X, j))
+      D[i, j] = D[j, i] = d
+    end
+  end
+
+  return D
+end
+
+function distance_matrix(X::AbstractMatrix, metric::PreMetric)
+  return pairwise(metric, X, X; dims = 1)
 end
