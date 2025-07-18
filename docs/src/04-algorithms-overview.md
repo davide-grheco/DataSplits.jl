@@ -1,0 +1,106 @@
+```@meta
+CurrentModule = DataSplits
+```
+
+# 04. Algorithms Overview
+
+Each splitter returns two sets of indices `(train, test)`, partitioning samples according to the chosen strategy. Choose based on dataset size, desired diversity, or grouping needs.
+
+## Kennard–Stone Split
+
+Description: Iteratively selects samples by choosing the point farthest from all previously chosen points in the feature space. This approach ensures the training set uniformly covers the distribution of predictors.
+
+Use Cases: Ideal for small to medium datasets where uniform feature coverage improves model generalization.
+
+Pros:
+
+- Deterministic selection ensures reproducible splits.
+- Provides diverse representation of feature space.
+
+Cons:
+
+- Requires storing and computing full distance matrix, which can be memory-intensive.
+
+## Lazy Kennard–Stone Split
+
+Description: A streaming variant of Kennard–Stone that computes distances on the fly, avoiding the full matrix. Suitable when memory is constrained.
+
+Use Cases: Large datasets where memory is a bottleneck.
+
+Pros:
+
+- Reduced memory overhead.
+
+Cons:
+
+- May incur extra computational overhead due to repeated distance computations.
+
+## SPXY Split
+
+Description: Extends Kennard–Stone to both features (X) and target variable (y), selecting samples that maximize combined spread. Ensures training set represents both predictors and response.
+
+Use Cases: Regression tasks where preserving target distribution is critical.
+
+Pros:
+
+- Balances feature and response diversity.
+
+Cons:
+
+- Still requires pairwise distance computations; may overweight target variation.
+
+## OptiSim Split
+
+Description: Applies iterative swapping of samples between train and test sets to minimize within-set dissimilarity, guided by a dissimilarity measure.
+
+Use Cases: When split quality is paramount and computational resources allow.
+
+Pros:
+
+- Can yield high-quality, low-dissimilarity splits.
+
+Cons:
+
+- Computationally intensive; sensitive to initial split.
+
+## Minimum/Maximum Dissimilarity Split
+
+Description: Greedy cluster-based strategy that adds clusters to the training set based on minimal or maximal dissimilarity criteria until the desired fraction is reached.
+
+Use Cases: When a fast, cluster-aware splitting heuristic is sufficient.
+
+Pros:
+
+- Simpler and faster than full optimization.
+
+Cons:
+
+- Greedy nature may miss globally optimal arrangement; cluster sizes may vary.
+
+## Sphere Exclusion Split
+
+Description: Forms clusters by selecting a sample and excluding all neighbors within a specified radius. Entire clusters are then assigned to train or test to meet the split fraction.
+
+Use Cases: Spatial or similarity-based data where locality grouping matters.
+
+Pros:
+
+- Intuitive radius control over cluster sizes.
+
+Cons:
+
+- Sensitive to radius choice; can produce imbalanced clusters.
+
+## Cluster Shuffle Split
+
+Description: Shuffles cluster labels and sequentially collects whole clusters into the training set until reaching the specified fraction, preserving inherent group structure.
+
+Use Cases: Grouped or clustered data where splitting within groups is undesirable.
+
+Pros:
+
+- Maintains group integrity; introduces randomness.
+
+Cons:
+
+- May overshoot or undershoot desired fraction if cluster sizes vary.
