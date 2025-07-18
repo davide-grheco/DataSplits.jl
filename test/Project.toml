@@ -1,8 +1,11 @@
 [deps]
+Clustering = "aaaa29a8-35af-508c-8bc3-b662a17a0fe5"
+ClusteringBenchmarks = "15c254c6-2ddb-4b2d-9a51-4031ba19e45b"
 DataSplits = "c4daa60e-60e8-4e0a-bcf3-f80a6d479af9"
 Distances = "b4f34e82-e78d-54a5-968a-f98e89d6e8f7"
 NPZ = "15e1cf62-19b3-5cfa-8e77-841668bca605"
 OffsetArrays = "6fe1bfb0-de20-5000-8ca7-80f57d26f881"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 TestItemRunner = "f8b46487-2199-4994-9208-9a1283c18c0a"
