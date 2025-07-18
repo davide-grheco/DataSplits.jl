@@ -16,6 +16,7 @@ A tiny Julia library for rational train/test splitting algorithms:
 | `OptiSimSplit`         | Optimisable dissimilarity-based splitting       | `O(N²)` time, `O(N²)` memory |
 | `MinimumDissimilaritySplit`|  Greedy dissimilarity with one candidate | O(N²) time, O(N²) memory |
 | `MaximumDissimilaritySplit`|  Greedy dissimilarity with full pool | O(N²) time, O(N²) memory |
+| `ClusterShuffleSplit`|  Cluster-based shuffle split | O(N²) time, O(N²) memory |
 
 ```julia
 julia> using DataSplits, Distances
