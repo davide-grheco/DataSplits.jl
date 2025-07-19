@@ -13,4 +13,5 @@ StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 [compat]
 ArrayInterface = "7.19.0"
 Clustering = "0.15.8"
+Distances = "0.10"
 StatsBase = "0.34.5"
