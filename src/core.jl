@@ -1,6 +1,5 @@
 using Random
-
-export SplitStrategy, split
+using ArrayInterface
 
 abstract type SplitStrategy end
 
@@ -92,7 +91,7 @@ end
 """
     sample_indices(A::AbstractArray) -> AbstractVector
 
-Return the list of sample-level indices used to address elements in `A`.
+Return a vector of valid sample indices for `A``, supporting all AbstractArray types.
 
 This method defines the "sample axis" (typically axis 1) and determines how your
 splitting/sampling algorithms enumerate data points.
@@ -109,5 +108,5 @@ Base.sample_indices(a::MyFancyArray) = 1:length(a.ids)
 ```
 """
 @inline function sample_indices(A::AbstractArray)
-  axes(A, 1)
+  collect(ArrayInterface.axes(A, 1))
 end

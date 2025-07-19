@@ -38,17 +38,14 @@ function OptiSimSplit(
 end
 
 function _split(X, strategy::OptiSimSplit; rng = Random.GLOBAL_RNG)
-  N = length(sample_indices(X))
+  indices = sample_indices(X)
+  N = length(indices)
   n_train = round(Int, strategy.frac * N)
   D = distance_matrix(X, strategy.metric)
-
-  selected_indices =
+  selected_positions =
     optisim(D, n_train, strategy.max_subsample_size, strategy.distance_cutoff; rng = rng)
-
-  logical = sample_indices(X)
-  train_idx = logical[collect(selected_indices)] |> sort
-  test_idx = setdiff(logical, train_idx) |> sort
-
+  train_idx = sort(indices[collect(selected_positions)])
+  test_idx = sort(setdiff(indices, train_idx))
   return train_idx, test_idx
 end
 

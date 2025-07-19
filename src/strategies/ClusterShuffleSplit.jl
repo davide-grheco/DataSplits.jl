@@ -33,8 +33,8 @@ ClusterShuffleSplit(res::ClusteringResult, frac::Real) =
 ClusterShuffleSplit(f::Function, frac::Real, data) = ClusterShuffleSplit(f(data), frac)
 
 function _split(data, s::ClusterShuffleSplit; rng = Random.default_rng())
-  idxs = collect(sample_indices(data))
-  N = length(idxs)
+  indices = sample_indices(data)
+  N = length(indices)
   assigns = assignments(s.clusters)
   cl_ids = unique(assigns)
   shuffle!(rng, cl_ids)
@@ -47,7 +47,7 @@ function _split(data, s::ClusterShuffleSplit; rng = Random.default_rng())
     end
   end
   train_pos = unique(train_pos)
-  train_idx = sort(idxs[train_pos])
-  test_idx = sort(setdiff(idxs, train_idx))
+  train_idx = sort(indices[train_pos])
+  test_idx = sort(setdiff(indices, train_idx))
   return train_idx, test_idx
 end

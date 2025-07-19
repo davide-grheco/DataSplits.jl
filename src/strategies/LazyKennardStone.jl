@@ -23,10 +23,10 @@ Useful when working with large datasets where the NxN distance matrix does not f
 When working with small datasets, use the traditional implementation.
 """
 function _split(data, s::LazyKennardStoneSplit; rng = Random.GLOBAL_RNG)
-  N = length(sample_indices(data))
+  indices = sample_indices(data)
+  N = length(indices)
   n_test = round(Int, (1 - s.frac) * N)
   n_train = N - n_test
-
   if n_test < 2 || n_train < 2
     throw(
       ArgumentError(
@@ -36,15 +36,11 @@ function _split(data, s::LazyKennardStoneSplit; rng = Random.GLOBAL_RNG)
       ),
     )
   end
-
   i₁, i₂ = find_most_distant_pair(data, s.metric)
-
   selected = falses(N)
   selected[i₁] = selected[i₂] = true
-
   order = Vector{Int}(undef, N)
   order[1:2] = [i₁, i₂]
-
   min_dists = fill(Inf, N)
   for i = 1:N
     if !selected[i]
@@ -55,14 +51,11 @@ function _split(data, s::LazyKennardStoneSplit; rng = Random.GLOBAL_RNG)
     end
   end
   min_dists[i₁] = min_dists[i₂] = -Inf
-
   for k = 3:N
     next_i = argmax(min_dists)
     order[k] = next_i
-
     selected[next_i] = true
     min_dists[next_i] = -Inf
-
     ref = get_sample(data, next_i)
     @inbounds for i = 1:N
       if !selected[i]
@@ -71,8 +64,6 @@ function _split(data, s::LazyKennardStoneSplit; rng = Random.GLOBAL_RNG)
       end
     end
   end
-
-  indices = collect(sample_indices(data))
   train_idx = sort(indices[order[1:n_train]])
   test_idx = sort(indices[order[n_train+1:end]])
   return train_idx, test_idx

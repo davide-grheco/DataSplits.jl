@@ -35,9 +35,9 @@ Cluster samples in `data` by sphere exclusion:
    - Mark them assigned and increment cluster ID.
 """
 function sphere_exclusion(data; radius::Real, metric::Distances.SemiMetric = Euclidean())
-  idxs = collect(sample_indices(data))
-  n = length(idxs)
-  if n == 0
+  indices = sample_indices(data)
+  N = length(indices)
+  if N == 0
     return SphereExclusionResult(Int[], float(radius), metric)
   end
   D = distance_matrix(data, metric)
@@ -48,8 +48,8 @@ function sphere_exclusion(data; radius::Real, metric::Distances.SemiMetric = Euc
   else
     fill!(D, zero(eltype(D)))
   end
-  un = Set(1:n)
-  assign = zeros(Int, n)
+  un = Set(1:N)
+  assign = zeros(Int, N)
   cid = 1
   rad = float(radius)
   while !isempty(un)

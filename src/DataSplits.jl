@@ -11,6 +11,7 @@ include("strategies/ClusterShuffleSplit.jl")
 include("clustering/SphereExclusion.jl")
 
 export split
+export SplitStrategy
 export LazyCADEXSplit, LazyKennardStoneSplit, KennardStoneSplit
 export SPXYSplit
 export OptiSimSplit
