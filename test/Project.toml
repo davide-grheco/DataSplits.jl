@@ -1,4 +1,5 @@
 [deps]
+ArrayInterface = "4fba245c-0d91-5ea0-9b3e-6abc04ee57a9"
 Clustering = "aaaa29a8-35af-508c-8bc3-b662a17a0fe5"
 ClusteringBenchmarks = "15c254c6-2ddb-4b2d-9a51-4031ba19e45b"
 DataSplits = "c4daa60e-60e8-4e0a-bcf3-f80a6d479af9"
