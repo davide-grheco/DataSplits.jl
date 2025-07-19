@@ -20,13 +20,16 @@ Suppose you want to create a splitter that always assigns the first 80% of sampl
 
 ```julia
 struct First80Split <: SplitStrategy end
+
+function first80(N, s, rng, data)
+    cut = floor(Int, 0.8 * N)
+    train_pos = 1:cut
+    test_pos = (cut+1):N
+    return train_pos, test_pos
+end
+
 function _split(data, ::First80Split; rng=nothing)
-  N = length(sample_indices(data))
-  cut = floor(Int, 0.8 * N)
-  idxs = collect(sample_indices(data))
-  train = idxs[1:cut]
-  test = idxs[cut+1:end]
-  return train, test
+    split_with_positions(data, nothing, first80; rng=rng)
 end
 ```
 

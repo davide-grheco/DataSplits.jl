@@ -14,6 +14,10 @@ CurrentModule = DataSplits
 
 - Accepts matrices, tables, or custom types implementing `sample_indices`.
 
+## Robust Index Handling
+
+All splitting strategies in DataSplits are robust to arrays with arbitrary axes (e.g., OffsetArrays, SubArrays, etc.). The library automatically handles mapping between user-facing indices and internal positions, so you can use any AbstractArray as input.
+
 ## Randomness Control
 
 Pass `rng` keyword to strategies supporting it, e.g. `split(X, RandomSplit(0.7); rng=123)`.
