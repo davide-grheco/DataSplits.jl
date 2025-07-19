@@ -18,6 +18,8 @@ A tiny Julia library for rational train/test splitting algorithms:
 | `MaximumDissimilaritySplit`|  Greedy dissimilarity with full pool | O(N²) time, O(N²) memory |
 | `ClusterShuffleSplit`|  Cluster-based shuffle split | O(N²) time, O(N²) memory |
 
+All splitting strategies in DataSplits are designed to work with any AbstractArray, including those with non-standard axes. This is achieved by mapping user indices to internal positions, ensuring correctness and extensibility for all data types.
+
 ```julia
 julia> using DataSplits, Distances
 
