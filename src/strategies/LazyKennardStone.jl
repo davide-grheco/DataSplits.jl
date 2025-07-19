@@ -22,9 +22,7 @@ Memory-optimized implementation with O(N) storage.
 Useful when working with large datasets where the NxN distance matrix does not fit memory.
 When working with small datasets, use the traditional implementation.
 """
-function _split(data, s::LazyKennardStoneSplit; rng = Random.GLOBAL_RNG)
-  indices = sample_indices(data)
-  N = length(indices)
+function lazy_kennard_stone(N, s, rng, data)
   n_test = round(Int, (1 - s.frac) * N)
   n_train = N - n_test
   if n_test < 2 || n_train < 2
@@ -64,9 +62,13 @@ function _split(data, s::LazyKennardStoneSplit; rng = Random.GLOBAL_RNG)
       end
     end
   end
-  train_idx = sort(indices[order[1:n_train]])
-  test_idx = sort(indices[order[n_train+1:end]])
-  return train_idx, test_idx
+  train_pos = order[1:n_train]
+  test_pos = order[n_train+1:end]
+  return train_pos, test_pos
+end
+
+function _split(data, s::LazyKennardStoneSplit; rng = Random.GLOBAL_RNG)
+  split_with_positions(data, s, lazy_kennard_stone; rng = rng)
 end
 
 
