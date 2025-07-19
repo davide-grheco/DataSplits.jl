@@ -4,16 +4,19 @@
 df = DataFrame(rand(100, 5), :auto)
 y = rand(100)
 train, test = split((Matrix(df), y), SPXYSplit(0.75))</code></pre><h2 id="Example:-Custom-Splitter-Implementation"><a class="docs-heading-anchor" href="#Example:-Custom-Splitter-Implementation">Example: Custom Splitter Implementation</a><a id="Example:-Custom-Splitter-Implementation-1"></a><a class="docs-heading-anchor-permalink" href="#Example:-Custom-Splitter-Implementation" title="Permalink"></a></h2><p>Suppose you want to create a splitter that always assigns the first 80% of samples to train:</p><pre><code class="language-julia hljs">struct First80Split &lt;: SplitStrategy end
+
+function first80(N, s, rng, data)
+    cut = floor(Int, 0.8 * N)
+    train_pos = 1:cut
+    test_pos = (cut+1):N
+    return train_pos, test_pos
+end
+
 function _split(data, ::First80Split; rng=nothing)
-  N = length(sample_indices(data))
-  cut = floor(Int, 0.8 * N)
-  idxs = collect(sample_indices(data))
-  train = idxs[1:cut]
-  test = idxs[cut+1:end]
-  return train, test
+    split_with_positions(data, nothing, first80; rng=rng)
 end</code></pre><h2 id="Example:-Group-aware-Splitting"><a class="docs-heading-anchor" href="#Example:-Group-aware-Splitting">Example: Group-aware Splitting</a><a id="Example:-Group-aware-Splitting-1"></a><a class="docs-heading-anchor-permalink" href="#Example:-Group-aware-Splitting" title="Permalink"></a></h2><pre><code class="language-julia hljs">using DataSplits
 # Suppose you have cluster assignments for your data
 clusters = [rand(1:5) for _ in 1:100]
 using Clustering
 res = Clustering.ClusteringResult(clusters)
-train, test = split(X, ClusterShuffleSplit(res, 0.7))</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../05-extending-data-splits/">« 05. Extending DataSplits</a><a class="docs-footer-nextpage" href="../07-kennard-stone/">07. Kennard–Stone Split »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.14.1 on <span class="colophon-date" title="Friday 18 July 2025 15:21">Friday 18 July 2025</span>. Using Julia version 1.11.6.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+train, test = split(X, ClusterShuffleSplit(res, 0.7))</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../05-extending-data-splits/">« 05. Extending DataSplits</a><a class="docs-footer-nextpage" href="../07-kennard-stone/">07. Kennard–Stone Split »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.14.1 on <span class="colophon-date" title="Saturday 19 July 2025 13:07">Saturday 19 July 2025</span>. Using Julia version 1.11.6.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
