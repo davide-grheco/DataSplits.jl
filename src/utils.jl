@@ -1,4 +1,5 @@
 using Distances
+
 """
     find_maximin_element(distances::AbstractMatrix{T},
                         source_set::AbstractVector{Int},
@@ -69,4 +70,22 @@ end
 
 function distance_matrix(X::AbstractMatrix, metric::PreMetric)
   return pairwise(metric, X, X; dims = 1)
+end
+
+"""
+    split_with_positions(data, s, core_algorithm; rng=Random.default_rng(), args...)
+
+Generic wrapper for split strategies. Handles mapping between user indices and 1:N positions.
+- `data`: The user’s data array.
+- `s`: The split strategy object.
+- `core_algorithm`: Function (N, s, rng, data, args...) -> (train_pos, test_pos)
+Returns: (train_idx, test_idx) as indices valid for `data`.
+"""
+function split_with_positions(data, s, core_algorithm; rng = Random.default_rng(), args...)
+  indices = sample_indices(data)
+  N = length(indices)
+  train_pos, test_pos = core_algorithm(N, s, rng, data, args...)
+  train_idx = sort(indices[train_pos])
+  test_idx = sort(indices[test_pos])
+  return train_idx, test_idx
 end

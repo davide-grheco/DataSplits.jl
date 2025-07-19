@@ -36,9 +36,7 @@ const CADEXSplit = KennardStoneSplit  # Alias
 Optimized in-memory Kennard-Stone algorithm using precomputed distance matrix.
 Best for small-to-medium datasets where O(N²) memory is acceptable.
 """
-function _split(data, s::KennardStoneSplit; rng = Random.GLOBAL_RNG)
-  indices = sample_indices(data)      # e.g., [-2, -1, 0, 1, 2]
-  N = length(indices)
+function kennardstone(N, s, rng, data)
   n_test = round(Int, (1 - s.frac) * N)
   n_train = N - n_test
   if n_test < 2 || n_train < 2
@@ -51,10 +49,13 @@ function _split(data, s::KennardStoneSplit; rng = Random.GLOBAL_RNG)
   end
   D = pairwise(s.metric, data, data, dims = 1)
   train_pos, test_pos = kennard_stone_from_distance_matrix(D, n_train)
-  train_idx = sort(indices[train_pos])
-  test_idx = sort(indices[test_pos])
-  return train_idx, test_idx
+  return train_pos, test_pos
 end
+
+function _split(data, s::KennardStoneSplit; rng = Random.GLOBAL_RNG)
+  split_with_positions(data, s, kennardstone; rng = rng)
+end
+
 
 function _split(
   data::AbstractVector{<:AbstractVector},

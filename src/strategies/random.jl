@@ -7,16 +7,14 @@ struct RandomSplit{T} <: SplitStrategy
 end
 RandomSplit(frac::Real) = RandomSplit(ValidFraction(frac))
 
-function _split(data, s::RandomSplit; rng)
-  idx_range = axes(data, 1)
-  first_idx = first(idx_range)
-  N = length(idx_range)
-
+function random(N, s, rng, data)
   perm = randperm(rng, N)
   cut = floor(Int, s.frac * N)
+  train_pos = perm[1:cut]
+  test_pos = perm[cut+1:end]
+  return train_pos, test_pos
+end
 
-  train = (first_idx - 1) .+ perm[1:cut]
-  test = (first_idx - 1) .+ perm[cut+1:end]
-
-  return train, test
+function _split(data, s::RandomSplit; rng)
+  split_with_positions(data, s, random; rng = rng)
 end
