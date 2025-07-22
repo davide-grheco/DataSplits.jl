@@ -120,3 +120,18 @@ Pros:
 Cons:
 
 - Not diversity-based; may not represent the full data distribution
+
+## TimeSplit
+
+Description: Splits a 1D array of dates/times into train/test sets, grouping by unique date/time values. No group (samples with the same date) is split between train and test. The actual fraction may be slightly above the requested one, but never below.
+
+Use Cases: Useful for time series or temporal data where you want to avoid splitting samples with the same timestamp.
+
+Pros:
+
+- Respects temporal order
+- Never splits samples with the same date/time
+
+Cons:
+
+- Fraction may not be exact due to grouping
