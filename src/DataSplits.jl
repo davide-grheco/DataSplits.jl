@@ -9,6 +9,7 @@ include("strategies/SPXY.jl")
 include("strategies/OptiSim.jl")
 include("strategies/ClusterShuffleSplit.jl")
 include("clustering/SphereExclusion.jl")
+include("strategies/TargetProperty.jl")
 
 export split
 export SplitStrategy
@@ -18,5 +19,7 @@ export OptiSimSplit
 export RandomSplit
 export ClusterShuffleSplit
 export sphere_exclusion
+export TargetPropertySplit
+export TargetPropertyHigh, TargetPropertyLow
 
 end

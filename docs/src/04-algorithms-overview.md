@@ -104,3 +104,19 @@ Pros:
 Cons:
 
 - May overshoot or undershoot desired fraction if cluster sizes vary.
+
+## TargetPropertySplit
+
+Description: Partitions data into train/test sets by sorting samples according to a user-specified property (e.g., a column, a function of the sample, or a target value). The order argument (or alias) controls whether the largest/smallest property values are placed in the training set.
+
+Use Cases: Useful for extrapolation or interpolation splits, e.g., when you want to train on the lowest (or highest) values of a property and test on the rest.
+
+Pros:
+
+- Simple and interpretable
+- Works with any property (target, feature, etc.)
+- Flexible via property function and order aliases
+
+Cons:
+
+- Not diversity-based; may not represent the full data distribution
