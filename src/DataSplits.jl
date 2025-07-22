@@ -10,6 +10,7 @@ include("strategies/OptiSim.jl")
 include("strategies/ClusterShuffleSplit.jl")
 include("clustering/SphereExclusion.jl")
 include("strategies/TargetProperty.jl")
+include("strategies/TimeSplit.jl")
 
 export split
 export SplitStrategy
@@ -21,5 +22,6 @@ export ClusterShuffleSplit
 export sphere_exclusion
 export TargetPropertySplit
 export TargetPropertyHigh, TargetPropertyLow
+export TimeSplit, TimeSplitOldest, TimeSplitNewest
 
 end
