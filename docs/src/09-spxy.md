@@ -2,50 +2,49 @@
 CurrentModule = DataSplits
 ```
 
-# 09. SPXY Split
+# SPXY Split
 
-**Constructor:**
+The SPXY algorithm extends Kennard–Stone by considering both the feature matrix (`X`) and the target vector (`y`) when splitting data. It constructs a joint distance matrix as the sum of normalized pairwise distances in `X` and `y`, then applies the maximin selection. This ensures the training set is diverse in both predictors and response, which is especially important for regression tasks where the target distribution matters.
 
-```julia
-SPXYSplit(frac::Real; metric::SemiMetric=Euclidean())
-```
+`MDKSSplit(frac)`: Alias for `SPXYSplit(frac; metric=Mahalanobis())` (SPXY algorithm using Mahalanobis distance).
 
-**Description:**
-The SPXY algorithm extends Kennard–Stone by considering both the feature matrix (X) and the target vector (y) when splitting data. It constructs a joint distance matrix as the sum of normalized pairwise distances in X and y, then applies the maximin selection. This ensures the training set is diverse in both predictors and response, which is especially important for regression tasks where the target distribution matters.
+## How it works
 
-`MDKSSplit(frac)`: Alias for `SPXYSplit(frac; metric=Mahalanobis())` SPXY algorithm using Mahalanobis distance. Refer to
-Saptoro A, Tadé MO, Vuthaluru H. A Modified Kennard-Stone Algorithm for Optimal Division of Data for Developing Artificial Neural Network Models. Chemical Product and Process Modeling [Internet]. 2012 July 31;7(1). Available from: <https://www.degruyter.com/document/doi/10.1515/1934-2659.1645/html>
+1. Compute the normalized pairwise distance matrix for `X` (features).
+2. Compute the normalized pairwise distance matrix for `y` (target).
+3. Add the two matrices to form a joint distance matrix.
+4. Apply the Kennard–Stone maximin selection on the joint distance matrix to select a representative training set.
 
-**When to use:**
-
-- For regression problems where you want the training set to represent both features and target.
-- When target stratification is important.
-
-**When not to use:**
-
-- For classification tasks (unless you encode the target appropriately).
-- For very large datasets (O(N²) memory).
-
-**Arguments:**
-
-- `frac`: training fraction.
-- `metric`: distance metric for both X and y.
-
-**Usage:**
+## Usage
 
 ```julia
 using DataSplits, Distances
-train, test = split((X, y), SPXYSplit(0.7; metric=Cityblock()))
+train, test = split(X, y, SPXYSplit(0.7; metric=Cityblock()))
 ```
 
-**Pros:**
+- `X`: Feature matrix (samples × features)
+- `y`: Target vector (length matches number of samples)
+- `0.7`: Fraction of samples to use for training
+- `metric`: Distance metric for both `X` and `y` (default: Euclidean)
 
-- Balances representation of predictors and response.
-- Useful for regression and continuous targets.
+## Options
 
-**Cons:**
+- `SPXYSplit(frac; metric=Euclidean())`: `frac` is the fraction of samples to use for training (between 0 and 1). `metric` is the distance metric (default: Euclidean).
+- `MDKSSplit(frac)`: Alias for SPXY with Mahalanobis distance.
 
-- May overweight target variation if y is noisy.
-- Still requires O(N²) memory and computation.
+## Notes
 
-**Note:** `split(X, strategy)` without y will error.
+- This algorithm is most appropriate for regression and continuous targets.
+- For classification, you may need to encode the target appropriately.
+- You must call `split((X, y), strategy)` or `split(X, y, strategy)`; calling `split(X, strategy)` will error.
+
+## See also
+
+- [Kennard–Stone Split](07-kennard-stone.md)
+
+---
+
+## Reference
+
+Galvao, R.; Araujo, M.; Jose, G.; Pontes, M.; Silva, E.; Saldanha, T. A Method for Calibration and Validation Subset Partitioning. Talanta 2005, 67 (4), 736–740. <https://doi.org/10.1016/j.talanta.2005.03.025>.
+Saptoro, A.; Tadé, M. O.; Vuthaluru, H. A Modified Kennard-Stone Algorithm for Optimal Division of Data for Developing Artificial Neural Network Models. Chemical Product and Process Modeling 2012, 7 (1). <https://doi.org/10.1515/1934-2659.1645>.

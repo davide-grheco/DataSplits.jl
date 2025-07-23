@@ -4,9 +4,7 @@ CurrentModule = DataSplits
 
 # DataSplits
 
-Documentation for [DataSplits](https://github.com/davide-grheco/DataSplits.jl).
-
-A tiny Julia library for rational train/test splitting algorithms:
+DataSplits is a Julia library for rational train/test splitting algorithms. It provides a variety of strategies for splitting datasets. In several applications random selection is not an appropriate choice and may lead to overestimating model performance.
 
 | Strategy | Purpose | Complexity |
 |----------|---------|------------|
