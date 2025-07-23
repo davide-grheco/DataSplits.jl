@@ -15,7 +15,7 @@ include("strategies/TimeSplit.jl")
 export split
 export SplitStrategy
 export LazyCADEXSplit, LazyKennardStoneSplit, KennardStoneSplit
-export SPXYSplit
+export SPXYSplit, MDKSSplit
 export OptiSimSplit
 export RandomSplit
 export ClusterShuffleSplit
