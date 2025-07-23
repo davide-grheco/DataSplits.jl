@@ -40,6 +40,9 @@ subset.
 """
 SPXYSplit(frac::Real; metric = Euclidean()) = SPXYSplit(ValidFraction(frac), metric)
 
+const MDKSSplit = SPXYSplit
+MDKSSplit(frac::Real) = SPXYSplit(frac; metric = Mahalanobis())
+
 @inline function _norm_pairwise(mat::AbstractMatrix, metric)
   D = pairwise(metric, mat, mat; dims = 1)
   return D ./ maximum(D)
