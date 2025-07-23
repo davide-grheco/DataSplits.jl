@@ -17,6 +17,7 @@ A tiny Julia library for rational train/test splitting algorithms:
 | `MinimumDissimilaritySplit`|  Greedy dissimilarity with one candidate | O(N²) time, O(N²) memory |
 | `MaximumDissimilaritySplit`|  Greedy dissimilarity with full pool | O(N²) time, O(N²) memory |
 | `ClusterShuffleSplit`|  Cluster-based shuffle split | O(N²) time, O(N²) memory |
+| `ClusterStratifiedSplit`|  Cluster-based stratified split (equal, proportional, Neyman). Selects a quota per cluster, then splits into train/test according to user fraction. | O(N²) time, O(N²) memory |
 
 All splitting strategies in DataSplits are designed to work with any AbstractArray, including those with non-standard axes. This is achieved by mapping user indices to internal positions, ensuring correctness and extensibility for all data types.
 
@@ -25,4 +26,5 @@ julia> using DataSplits, Distances
 
 julia> train, test = split(X, KennardStoneSplit(0.8))
 julia> train, test = split((X, y), SPXYSplit(0.7; metric = Cityblock()))
+julia> train, test = split(X, ClusterStratifiedSplit(clusters, :equal; n=4, frac=0.7))
 ```
