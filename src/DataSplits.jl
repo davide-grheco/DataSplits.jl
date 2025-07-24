@@ -14,6 +14,7 @@ include("strategies/TargetProperty.jl")
 include("strategies/TimeSplit.jl")
 
 export split
+export SplitResult, splitdata
 export SplitStrategy
 export LazyCADEXSplit, LazyKennardStoneSplit, KennardStoneSplit
 export SPXYSplit, MDKSSplit

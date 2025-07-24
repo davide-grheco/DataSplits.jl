@@ -134,7 +134,7 @@ function cluster_stratified(N, s, rng, data)
     append!(train_pos, train_idxs)
     append!(test_pos, test_idxs)
   end
-  return train_pos, test_pos
+  return TrainTestSplit(train_pos, test_pos)
 end
 
 function _split(data, s::ClusterStratifiedSplit; rng = Random.default_rng())

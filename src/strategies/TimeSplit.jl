@@ -44,7 +44,7 @@ function timesplit(N, s, rng, data::AbstractVector)
       append!(test_idx, inds)
     end
   end
-  return train_idx, test_idx
+  return TrainTestSplit(train_idx, test_idx)
 end
 
 function _split(data, s::TimeSplit; rng = Random.GLOBAL_RNG)

@@ -14,7 +14,8 @@ using Clustering
 
   # Equal allocation: 4 per cluster, 50% train
   s_eq = ClusterStratifiedSplit(clusters, :equal; n = 4, frac = 0.5)
-  train, test = split(X, s_eq)
+  result = split(X, s_eq)
+  train, test = result.train, result.test
   @test length(train) == 6
   @test length(test) == 6
   @test all(count(==(cid), assigns[train]) == 2 for cid = 1:3)
@@ -22,7 +23,8 @@ using Clustering
 
   # Proportional allocation: 50% train
   s_prop = ClusterStratifiedSplit(clusters, :proportional; frac = 0.5)
-  train, test = split(X, s_prop)
+  result = split(X, s_prop)
+  train, test = result.train, result.test
   @test length(train) == 9
   @test length(test) == 6
   @test all(
@@ -31,7 +33,8 @@ using Clustering
 
   # Neyman allocation: 4 per cluster, 50% train
   s_neyman = ClusterStratifiedSplit(clusters, :neyman; n = 4, frac = 0.5)
-  train, test = split(X, s_neyman)
+  result = split(X, s_neyman)
+  train, test = result.train, result.test
   @test length(train) == 6
   @test length(test) == 6
   @test all(

@@ -8,7 +8,8 @@ rng = MersenneTwister(42)
 @testset "split() with RandomSplit" begin
   data_std = rand(10, 2)
   strategy = RandomSplit(0.6)
-  train_idx, test_idx = split(data_std, strategy; rng)
+  result = split(data_std, strategy; rng)
+  train_idx, test_idx = result.train, result.test
 
   @testset "Standard Array" begin
     @test length(train_idx) == 6
@@ -20,7 +21,8 @@ rng = MersenneTwister(42)
 
   # ---- 2. Offset Arrays (custom indexing) ----
   data_offset = OffsetArray(rand(10, 2), -5:4, 1:2)
-  train_idx, test_idx = split(data_offset, strategy; rng)
+  result = split(data_offset, strategy; rng)
+  train_idx, test_idx = result.train, result.test
 
   @testset "Offset Array" begin
     @test length(train_idx) == 6
@@ -47,14 +49,17 @@ rng = MersenneTwister(42)
   @testset "Randomness" begin
     # Same RNG → same split
     rng = MersenneTwister(123)
-    train1, test1 = split(data_std, strategy; rng)
+    result = split(data_std, strategy; rng)
+    train1, test1 = result.train, result.test
     rng = MersenneTwister(123)
-    train2, test2 = split(data_std, strategy; rng)
+    result = split(data_std, strategy; rng)
+    train2, test2 = result.train, result.test
     @test train1 == train2 && test1 == test2
 
     # Different RNG → different split
     rng2 = MersenneTwister(223)
-    train3, test3 = split(data_std, strategy; rng = rng2)
+    result = split(data_std, strategy; rng = rng2)
+    train3, test3 = result.train, result.test
     @test train1 != train3
   end
 end

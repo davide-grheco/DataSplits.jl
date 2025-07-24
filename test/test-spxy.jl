@@ -22,7 +22,8 @@ rowset(M) = Set(eachrow(M))
 
   @test_throws MethodError split(X, SPXYSplit(0.7))
 
-  train_idx, test_idx = split((X, y), SPXYSplit(0.7; metric = Euclidean()))
+  result = split((X, y), SPXYSplit(0.7; metric = Euclidean()))
+  train_idx, test_idx = result.train, result.test
 
   expected_train = Set([2, 3, 5, 6])
   expected_test = Set([1, 4])

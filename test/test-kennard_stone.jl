@@ -4,7 +4,8 @@ using DataSplits
 using Test
 using NPZ
 
-function check_split(train, test, N; n_test_expected = nothing)
+function check_split(result, N; n_test_expected = nothing)
+  train, test = result.train, result.test
   @test sort(vcat(train, test)) == 1:N
   @test isempty(intersect(train, test))
   if n_test_expected !== nothing
@@ -17,18 +18,20 @@ function standard_kennard_tests(split_fn, X, Xv)
   Random.seed!(42)
 
   # Test 1: small numeric dataset (matrix)
-  tr, te = split_fn(X, 0.8, Euclidean())
-  check_split(tr, te, 50; n_test_expected = 10)
+  result = split_fn(X, 0.8, Euclidean())
+  check_split(result, 50; n_test_expected = 10)
 
   # Test 2: vector-of-vectors input
-  tr2, te2 = split_fn(Xv, 0.3, CosineDist())
-  check_split(tr2, te2, 50; n_test_expected = 35)
+  result2 = split_fn(Xv, 0.3, CosineDist())
+  check_split(result2, 50; n_test_expected = 35)
 
   # Test 3: deterministic behavior
   rng1 = MersenneTwister(123)
-  tr1, te1 = split_fn(X, 0.25, Euclidean(); rng = rng1)
+  result1 = split_fn(X, 0.25, Euclidean(); rng = rng1)
+  tr1, te1 = result1.train, result1.test
   rng2 = MersenneTwister(123)
-  tr2b, te2b = split_fn(X, 0.25, Euclidean(); rng = rng2)
+  result2b = split_fn(X, 0.25, Euclidean(); rng = rng2)
+  tr2b, te2b = result2b.train, result2b.test
   @test tr1 == tr2b && te1 == te2b
 
   # Test 4: boundary handling
@@ -41,7 +44,8 @@ function standard_kennard_tests(split_fn, X, Xv)
 
   # Test 6: max-min property
   X2 = vcat(randn(5, 2) .+ 5, randn(5, 2) .- 5)
-  tr_small, te_small = split_fn(X2, 0.2, Euclidean())
+  result_small = split_fn(X2, 0.2, Euclidean())
+  tr_small, te_small = result_small.train, result_small.test
   labels = [x[1] > 0 ? 1 : -1 for x in eachrow(X2)]
   test_labels = labels[te_small]
   @test in(1, test_labels) && in(-1, test_labels)
@@ -52,7 +56,8 @@ function standard_kennard_tests(split_fn, X, Xv)
   train_idx_py = npzread(joinpath(data_dir, "kennard-stone-train-id.npy")) .+ 1
 
   # Test against astartes KS implementation
-  train, test = split_fn(X, 0.75, Euclidean())
+  result_py = split_fn(X, 0.75, Euclidean())
+  train, test = result_py.train, result_py.test
   @test length(train) == length(train_idx_py)
   @test train == train_idx_py
 end
@@ -89,13 +94,13 @@ end
       strat1 = KennardStoneSplit(frac, metric)
       strat2 = LazyKennardStoneSplit(frac, metric)
 
-      tr1, te1 = DataSplits.split(X, strat1)
-      tr2, te2 = DataSplits.split(X, strat2)
+      result1 = DataSplits.split(X, strat1)
+      result2 = DataSplits.split(X, strat2)
 
-      @test Set(tr1) == Set(tr2)
-      @test Set(te1) == Set(te2)
+      @test Set(result1.train) == Set(result2.train)
+      @test Set(result1.test) == Set(result2.test)
 
-      @test length(te1) == length(te2)
+      @test length(result1.test) == length(result2.test)
     end
   end
 end

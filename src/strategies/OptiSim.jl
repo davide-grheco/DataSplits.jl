@@ -44,7 +44,7 @@ function optisim_split(N, s, rng, X)
     optisim(D, n_train, s.max_subsample_size, s.distance_cutoff; rng = rng)
   train_pos = collect(selected_positions)
   test_pos = setdiff(1:N, train_pos)
-  return train_pos, test_pos
+  return TrainTestSplit(train_pos, test_pos)
 end
 
 function _split(X, s::OptiSimSplit; rng = Random.GLOBAL_RNG)

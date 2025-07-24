@@ -12,7 +12,7 @@ function random(N, s, rng, data)
   cut = floor(Int, s.frac * N)
   train_pos = perm[1:cut]
   test_pos = perm[cut+1:end]
-  return train_pos, test_pos
+  return TrainTestSplit(train_pos, test_pos)
 end
 
 function _split(data, s::RandomSplit; rng)

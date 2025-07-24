@@ -49,7 +49,7 @@ function kennardstone(N, s, rng, data)
   end
   D = pairwise(s.metric, data, data, dims = 1)
   train_pos, test_pos = kennard_stone_from_distance_matrix(D, n_train)
-  return train_pos, test_pos
+  return TrainTestSplit(train_pos, test_pos)
 end
 
 function _split(data, s::KennardStoneSplit; rng = Random.GLOBAL_RNG)

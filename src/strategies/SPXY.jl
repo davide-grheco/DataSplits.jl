@@ -98,7 +98,7 @@ function _split(
 
   train_idx, test_idx = kennard_stone_from_distance_matrix(D, n_train)
 
-  return train_idx, test_idx
+  return TrainTestSplit(train_idx, test_idx)
 end
 
 # convenience method when the caller passes a tuple

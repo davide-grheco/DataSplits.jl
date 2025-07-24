@@ -5,17 +5,20 @@ using Test
   y = [10, 20, 30, 40, 50]
 
   s_high = TargetPropertyHigh(0.6)
-  train, test = split(y, s_high)
+  result = split(y, s_high)
+  train, test = result.train, result.test
   @test length(train) == 3
   @test all(y[i] >= y[j] for i in train, j in test)
 
   s_low = TargetPropertyLow(0.6)
-  train, test = split(y, s_low)
+  result = split(y, s_low)
+  train, test = result.train, result.test
   @test length(train) == 3
   @test all(y[i] <= y[j] for i in train, j in test)
 
   s_col = TargetPropertySplit(0.4, :desc)
-  train, test = split(y, s_col)
+  result = split(y, s_col)
+  train, test = result.train, result.test
   @test length(train) == 2
   @test all(y[i] >= y[j] for i in train, j in test)
 

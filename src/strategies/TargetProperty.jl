@@ -36,7 +36,7 @@ function targetpropertysplit(N, s, rng, data::AbstractVector)
   n_train = floor(Int, s.frac * N)
   train_pos = [p[2] for p in sorted_pairs[1:n_train]]
   test_pos = [p[2] for p in sorted_pairs[n_train+1:end]]
-  return train_pos, test_pos
+  return TrainTestSplit(train_pos, test_pos)
 end
 
 function _split(data, s::TargetPropertySplit; rng = Random.GLOBAL_RNG)

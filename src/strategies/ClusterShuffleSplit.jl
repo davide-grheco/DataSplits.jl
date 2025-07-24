@@ -46,7 +46,7 @@ function cluster_shuffle(N, s, rng, data)
   end
   train_pos = unique(train_pos)
   test_pos = setdiff(1:N, train_pos)
-  return train_pos, test_pos
+  return TrainTestSplit(train_pos, test_pos)
 end
 
 function _split(data, s::ClusterShuffleSplit; rng = Random.default_rng())

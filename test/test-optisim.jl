@@ -3,7 +3,8 @@ using DataSplits
 using Random
 using Distances
 
-function sane_split_check(train, test, N; ntrain_expected = nothing)
+function sane_split_check(result, N; ntrain_expected = nothing)
+  train, test = result.train, result.test
   @test isempty(intersect(train, test))
   @test length(train) + length(test) == N
   ntrain_expected === nothing || @test length(train) == ntrain_expected
@@ -40,7 +41,7 @@ end
   ]
   y = [1, 2, 3, 4, 5]
 
-  train_idx, test_idx = DataSplits.split(
+  result = DataSplits.split(
     X,
     OptiSimSplit(
       0.75;
@@ -50,6 +51,7 @@ end
     ),
     rng = Random.seed!(42),
   )
+  train_idx, test_idx = result.train, result.test
 
   @test Set(train_idx) == Set([1, 3, 4, 5])
   @test Set(test_idx) == Set([2])
@@ -59,38 +61,45 @@ end
 
   X = randn(50, 10)
   rng1 = MersenneTwister(123)
-  t1a, te1a = DataSplits.split(
+  result1a = DataSplits.split(
     X,
     OptiSimSplit(0.6; max_subsample_size = 3, distance_cutoff = 0.35, metric = Euclidean()),
     rng = rng1,
   )
+  t1a, te1a = result1a.train, result1a.test
   rng2 = MersenneTwister(123)
-  t1b, te1b = make_split(X; frac = 0.6, distance_cutoff = 0.35, rng = rng2)
+  result1b = make_split(X; frac = 0.6, distance_cutoff = 0.35, rng = rng2)
+  t1b, te1b = result1b.train, result1b.test
   @test t1a == t1b && te1a == te1b
-  sane_split_check(t1a, te1a, 50; ntrain_expected = 30)
+  sane_split_check(result1a, 50; ntrain_expected = 30)
 
   rng3 = MersenneTwister(124)
-  t2, te2 = make_split(X; frac = 0.6, rng = rng3)
+  result2 = make_split(X; frac = 0.6, rng = rng3)
+  t2, te2 = result2.train, result2.test
   @test t2 != t1a || te2 != te1a
-  sane_split_check(t2, te2, 50)
+  sane_split_check(result2, 50)
 
   Xsmall = randn(8, 3)
-  tr, te = make_split(Xsmall; frac = 0.5, distance_cutoff = 0.35, max_subsample_size = 20)
-  sane_split_check(tr, te, 8; ntrain_expected = 4)
+  result_small =
+    make_split(Xsmall; frac = 0.5, distance_cutoff = 0.35, max_subsample_size = 20)
+  tr, te = result_small.train, result_small.test
+  sane_split_check(result_small, 8; ntrain_expected = 4)
 
-  trA, teA = make_split(X; frac = 0.7, distance_cutoff = 0.35, max_subsample_size = 0)
-  trB, teB = make_split(X; frac = 0.7, distance_cutoff = 0.35, max_subsample_size = 999)
-  sane_split_check(trA, teA, 50)
-  sane_split_check(trB, teB, 50)
+  result = make_split(X; frac = 0.7, distance_cutoff = 0.35, max_subsample_size = 0)
+  sane_split_check(result, 50)
+
+  result = make_split(X; frac = 0.7, distance_cutoff = 0.35, max_subsample_size = 999)
+  sane_split_check(result, 50)
+
 
   Xvv = [randn(10) for _ = 1:60]
-  trvv, tevv = make_split(Xvv; frac = 0.25, distance_cutoff = 0.10, metric = CosineDist())
-  sane_split_check(trvv, tevv, 60; ntrain_expected = 15)
+  result = make_split(Xvv; frac = 0.25, distance_cutoff = 0.10, metric = CosineDist())
+  sane_split_check(result, 60; ntrain_expected = 15)
 
-  trtight, tetight = make_split(X; frac = 0.8, distance_cutoff = 0)
-  sane_split_check(trtight, tetight, 50; ntrain_expected = 40)
+  result = make_split(X; frac = 0.8, distance_cutoff = 0)
+  sane_split_check(result, 50; ntrain_expected = 40)
 
-  trtight, tetight = make_split(X; frac = 0.8, distance_cutoff = 2000)
-  sane_split_check(trtight, tetight, 50; ntrain_expected = 1)
+  result = make_split(X; frac = 0.8, distance_cutoff = 2000)
+  sane_split_check(result, 50; ntrain_expected = 1)
 
 end

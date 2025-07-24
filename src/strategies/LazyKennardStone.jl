@@ -64,7 +64,7 @@ function lazy_kennard_stone(N, s, rng, data)
   end
   train_pos = order[1:n_train]
   test_pos = order[n_train+1:end]
-  return train_pos, test_pos
+  return TrainTestSplit(train_pos, test_pos)
 end
 
 function _split(data, s::LazyKennardStoneSplit; rng = Random.GLOBAL_RNG)

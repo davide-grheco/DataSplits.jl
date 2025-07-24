@@ -84,8 +84,8 @@ Returns: (train_idx, test_idx) as indices valid for `data`.
 function split_with_positions(data, s, core_algorithm; rng = Random.default_rng(), args...)
   indices = sample_indices(data)
   N = length(indices)
-  train_pos, test_pos = core_algorithm(N, s, rng, data, args...)
-  train_idx = sort(indices[train_pos])
-  test_idx = sort(indices[test_pos])
-  return train_idx, test_idx
+  result = core_algorithm(N, s, rng, data, args...)
+  train_idx = sort(indices[result.train])
+  test_idx = sort(indices[result.test])
+  return TrainTestSplit(train_idx, test_idx)
 end
