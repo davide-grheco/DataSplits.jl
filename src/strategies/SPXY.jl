@@ -33,6 +33,21 @@ X_train, X_test = splitdata(result, X)
 """
 SPXYSplit(frac::Real; metric = Euclidean()) = SPXYSplit(ValidFraction(frac), metric)
 
+"""
+    MDKSSplit(frac::Real)
+
+Alias for `SPXYSplit(frac; metric = Mahalanobis())`. Uses the Mahalanobis distance for both X and y.
+
+# Arguments
+- `frac`: Fraction of samples to use for training (0 < frac < 1)
+
+# Examples
+```julia
+splitter = MDKSSplit(0.7)
+result = split((X, y), splitter)
+X_train, X_test = splitdata(result, X)
+```
+"""
 MDKSSplit(frac::Real) = SPXYSplit(frac; metric = Mahalanobis())
 
 @inline function _norm_pairwise(X, metric)

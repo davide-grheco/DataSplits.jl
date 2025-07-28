@@ -13,7 +13,9 @@ using DataSplits, Distances
 # Suppose `df` is a DataFrame with features and target
 df = DataFrame(rand(100, 5), :auto)
 y = rand(100)
-train, test = split((Matrix(df), y), SPXYSplit(0.75))
+splitter = SPXYSplit(0.75)
+result = split((Matrix(df), y), splitter)
+X_train, X_test = splitdata(result, Matrix(df))
 ```
 
 ## Example: Custom Splitter Implementation
@@ -35,10 +37,9 @@ end
 ## Example: Group-aware Splitting
 
 ```julia
-using DataSplits
-# Suppose you have cluster assignments for your data
-clusters = [rand(1:5) for _ in 1:100]
-using Clustering
-res = Clustering.ClusteringResult(clusters)
-train, test = split(X, ClusterShuffleSplit(res, 0.7))
+using DataSplits, Clustering
+clusters = sphere_exclusion(X; radius=0.3)
+splitter = ClusterShuffleSplit(clusters, 0.7)
+result = split(X, splitter)
+X_train, X_test = splitdata(result, X)
 ```

@@ -4,32 +4,20 @@ CurrentModule = DataSplits
 
 # 05. Extending DataSplits
 
-## Custom Clustering
-
-To add a new clustering algorithm:
-
-1. Subtype `ClusteringResult`.
-2. Implement `assignments`, `nclusters`, `counts`, `wcounts` for your result type.
-3. Register a clustering function returning your result.
-
-**Example:**
-
-```julia
-struct MyClusteringResult <: ClusteringResult
-  assignments::Vector{Int}
-end
-assignments(r::MyClusteringResult) = r.assignments
-nclusters(r::MyClusteringResult) = maximum(r.assignments)
-# ...
-```
-
-## Custom Splitter
-
-To add a new splitting strategy:
+## Checklist for Adding a New Splitter
 
 1. Subtype `SplitStrategy`.
-2. Implement `_split(data, s; rng)` to call.
+2. Implement `_split(data, s; rng)`.
 3. Use `ValidFraction` for fraction validation.
+4. Add a docstring and example usage.
+5. Add a test in `test/`.
+
+**Best Practices:**
+
+- Always validate input shapes and types.
+- Use `getobs` and `numobs` for compatibility with custom data types.
+- Return a `TrainTestSplit` or other `SplitResult` subtype.
+- Document edge cases and limitations.
 
 **Example:**
 
