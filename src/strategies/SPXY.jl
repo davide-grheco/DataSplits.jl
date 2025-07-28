@@ -44,7 +44,7 @@ const MDKSSplit = SPXYSplit
 MDKSSplit(frac::Real) = SPXYSplit(frac; metric = Mahalanobis())
 
 @inline function _norm_pairwise(mat::AbstractMatrix, metric)
-  D = pairwise(metric, mat, mat; dims = 1)
+  D = distance_matrix(mat, metric)
   return D ./ maximum(D)
 end
 

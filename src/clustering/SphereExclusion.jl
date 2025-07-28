@@ -1,6 +1,6 @@
 using Distances
 import Clustering: ClusteringResult, assignments, counts, nclusters, wcounts
-import DataSplits: sample_indices, distance_matrix
+import DataSplits: distance_matrix
 using StatsBase: minmax
 
 """
@@ -35,8 +35,7 @@ Cluster samples in `data` by sphere exclusion:
    - Mark them assigned and increment cluster ID.
 """
 function sphere_exclusion(data; radius::Real, metric::Distances.SemiMetric = Euclidean())
-  indices = sample_indices(data)
-  N = length(indices)
+  N = numobs(data)
   if N == 0
     return SphereExclusionResult(Int[], float(radius), metric)
   end

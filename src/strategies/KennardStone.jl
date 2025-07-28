@@ -1,4 +1,4 @@
-using Distances
+using Distances, MLUtils
 
 export KennardStoneSplit, CADEXSplit
 
@@ -47,7 +47,7 @@ function kennardstone(N, s, rng, data)
       ),
     )
   end
-  D = pairwise(s.metric, data, data, dims = 1)
+  D = distance_matrix(data, s.metric)
   train_pos, test_pos = kennard_stone_from_distance_matrix(D, n_train)
   return TrainTestSplit(train_pos, test_pos)
 end
@@ -62,7 +62,7 @@ function _split(
   s::KennardStoneSplit;
   rng = Random.GLOBAL_RNG,
 )
-  data = hcat(data...)'
+  data = stack(data)
   _split(data, s; rng)
 end
 

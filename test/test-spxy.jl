@@ -15,7 +15,7 @@ rowset(M) = Set(eachrow(M))
     6 8 2 2 6 10
     2 1 4 3 6 10
     2 10 6 4 1 9
-  ]
+  ]'
   y = [4, 1, 7, 5, 2, 5]
   labels = ["one", "two", "three", "four", "five", "six"]
 

@@ -31,7 +31,7 @@ function MaximumDissimilaritySplit(frac::Real; distance_cutoff = 0.35, metric = 
 end
 
 function _split(X, s::MaximumDissimilaritySplit; rng = Random.GLOBAL_RNG)
-  N = length(sample_indices(X))
+  N = numobs(X)
   opti = OptiSimSplit(
     s.frac;
     selected_samples = s.selected_samples,

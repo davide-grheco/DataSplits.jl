@@ -35,24 +35,24 @@ function standard_kennard_tests(split_fn, X, Xv)
   @test tr1 == tr2b && te1 == te2b
 
   # Test 4: boundary handling
-  @test_throws ArgumentError split_fn(rand(10, 2), 0.02, Euclidean())
-  @test_throws ArgumentError split_fn(rand(10, 2), 0.98, Euclidean())
+  @test_throws ArgumentError split_fn(rand(2, 10), 0.02, Euclidean())
+  @test_throws ArgumentError split_fn(rand(2, 10), 0.98, Euclidean())
 
   # Test 5: edge cases
   @test_throws ArgumentError split_fn(rand(5, 5), 0.0, Euclidean())
   @test_throws ArgumentError split_fn(rand(5, 5), 1.0, Euclidean())
 
   # Test 6: max-min property
-  X2 = vcat(randn(5, 2) .+ 5, randn(5, 2) .- 5)
+  X2 = vcat(randn(5, 2) .+ 5, randn(5, 2) .- 5)'
+  labels = [x[1] > 0 ? 1 : -1 for x in getobs(X2)]
   result_small = split_fn(X2, 0.2, Euclidean())
-  tr_small, te_small = result_small.train, result_small.test
-  labels = [x[1] > 0 ? 1 : -1 for x in eachrow(X2)]
-  test_labels = labels[te_small]
-  @test in(1, test_labels) && in(-1, test_labels)
+  test_labels = getobs(labels, result_small.test)
+  @test 1 in test_labels
+  @test -1 in test_labels
 
   data_dir = joinpath(@__DIR__, "data")
 
-  X = npzread(joinpath(data_dir, "kennard-stone-data.npy"))
+  X = npzread(joinpath(data_dir, "kennard-stone-data.npy"))'
   train_idx_py = npzread(joinpath(data_dir, "kennard-stone-train-id.npy")) .+ 1
 
   # Test against astartes KS implementation
@@ -65,8 +65,8 @@ end
 
 @testset "LazyKennardStone (CADEX)" begin
   Random.seed!(42)
-  X = rand(50, 3)
-  Xv = [X[i, :] for i = 1:size(X, 1)]
+  X = rand(3, 50)
+  Xv = [X[:, i] for i = 1:size(X, 2)]
 
   split_fn(X, frac, metric; rng = Random.GLOBAL_RNG) =
     DataSplits.split(X, LazyKennardStoneSplit(frac, metric); rng = rng)
@@ -76,8 +76,8 @@ end
 
 @testset "In Memory Kennard Stone" begin
   Random.seed!(42)
-  X = rand(50, 3)
-  Xv = [X[i, :] for i = 1:size(X, 1)]
+  X = rand(3, 50)
+  Xv = [X[:, i] for i = 1:size(X, 2)]
 
   split_fn(X, frac, metric; rng = Random.GLOBAL_RNG) =
     DataSplits.split(X, KennardStoneSplit(frac, metric); rng = rng)
@@ -87,7 +87,7 @@ end
 
 @testset "Kennard Stone Consistency" begin
   Random.seed!(42)
-  X = rand(100, 4)
+  X = rand(4, 100)
 
   for frac in [0.2, 0.5, 0.8]
     for metric in [Euclidean(), CosineDist()]

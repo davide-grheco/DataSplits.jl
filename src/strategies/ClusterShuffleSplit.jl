@@ -37,15 +37,39 @@ function cluster_shuffle(N, s, rng, data)
   cl_ids = unique(assigns)
   shuffle!(rng, cl_ids)
   train_pos = Int[]
+  train_pos = Int[]
+  test_pos = Int[]
   for cid in cl_ids
     if length(train_pos) / N < float(s.frac)
-      append!(train_pos, findall(==(cid), assigns))
+      cluster_indices = findall(==(cid), assigns)
+      if (length(train_pos) + length(cluster_indices)) / N <= float(s.frac)
+        append!(train_pos, cluster_indices)
+      else
+        # Split this cluster to hit the fraction as closely as possible
+        n_needed = round(Int, float(s.frac) * N) - length(train_pos)
+        if n_needed > 0
+          append!(train_pos, cluster_indices[1:n_needed])
+          append!(test_pos, cluster_indices[n_needed+1:end])
+        else
+          append!(test_pos, cluster_indices)
+        end
+        break
+      end
     else
       break
     end
   end
+  # Add any remaining clusters to test
+  for cid in cl_ids
+    cluster_indices = findall(==(cid), assigns)
+    for idx in cluster_indices
+      if !(idx in train_pos) && !(idx in test_pos)
+        push!(test_pos, idx)
+      end
+    end
+  end
   train_pos = unique(train_pos)
-  test_pos = setdiff(1:N, train_pos)
+  test_pos = unique(test_pos)
   return TrainTestSplit(train_pos, test_pos)
 end
 

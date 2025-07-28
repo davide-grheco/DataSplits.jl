@@ -42,9 +42,9 @@ function lazy_kennard_stone(N, s, rng, data)
   min_dists = fill(Inf, N)
   for i = 1:N
     if !selected[i]
-      x = get_sample(data, i)
-      d1 = evaluate(s.metric, x, get_sample(data, i₁))
-      d2 = evaluate(s.metric, x, get_sample(data, i₂))
+      x = getobs(data, i)
+      d1 = evaluate(s.metric, x, getobs(data, i₁))
+      d2 = evaluate(s.metric, x, getobs(data, i₂))
       min_dists[i] = min(d1, d2)
     end
   end
@@ -54,10 +54,10 @@ function lazy_kennard_stone(N, s, rng, data)
     order[k] = next_i
     selected[next_i] = true
     min_dists[next_i] = -Inf
-    ref = get_sample(data, next_i)
+    ref = getobs(data, next_i)
     @inbounds for i = 1:N
       if !selected[i]
-        d = evaluate(s.metric, ref, get_sample(data, i))
+        d = evaluate(s.metric, ref, getobs(data, i))
         min_dists[i] = min(min_dists[i], d)
       end
     end
@@ -74,12 +74,12 @@ end
 
 function find_most_distant_pair(data, metric::Distances.SemiMetric)
   max_d, best_i, best_j = -Inf, nothing, nothing
-  n = length(sample_indices(data))
+  n = numobs(data)
 
   for i = 1:n-1
-    x = get_sample(data, i)
+    x = getobs(data, i)
     for j = i+1:n
-      y = get_sample(data, j)
+      y = getobs(data, j)
       d = evaluate(metric, x, y)
       if d > max_d
         max_d, best_i, best_j = d, i, j

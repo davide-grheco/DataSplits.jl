@@ -38,7 +38,7 @@ end
     1 1 0 0 0
     1 1 1 0 0
     1 1 1 1 0
-  ]
+  ]'
   y = [1, 2, 3, 4, 5]
 
   result = DataSplits.split(
@@ -57,21 +57,22 @@ end
   @test Set(test_idx) == Set([2])
 
   @test isempty(intersect(train_idx, test_idx))
-  @test length(train_idx) + length(test_idx) == size(X, 1)
+  @test length(train_idx) + length(test_idx) == 5
 
-  X = randn(50, 10)
+  X = randn(10, 50)
   rng1 = MersenneTwister(123)
-  result1a = DataSplits.split(
+  result = DataSplits.split(
     X,
     OptiSimSplit(0.6; max_subsample_size = 3, distance_cutoff = 0.35, metric = Euclidean()),
     rng = rng1,
   )
-  t1a, te1a = result1a.train, result1a.test
+  t1a, te1a = result.train, result.test
+
   rng2 = MersenneTwister(123)
   result1b = make_split(X; frac = 0.6, distance_cutoff = 0.35, rng = rng2)
   t1b, te1b = result1b.train, result1b.test
   @test t1a == t1b && te1a == te1b
-  sane_split_check(result1a, 50; ntrain_expected = 30)
+  sane_split_check(result, 50; ntrain_expected = 30)
 
   rng3 = MersenneTwister(124)
   result2 = make_split(X; frac = 0.6, rng = rng3)
@@ -79,7 +80,7 @@ end
   @test t2 != t1a || te2 != te1a
   sane_split_check(result2, 50)
 
-  Xsmall = randn(8, 3)
+  Xsmall = randn(3, 8)
   result_small =
     make_split(Xsmall; frac = 0.5, distance_cutoff = 0.35, max_subsample_size = 20)
   tr, te = result_small.train, result_small.test

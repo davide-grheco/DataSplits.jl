@@ -1,4 +1,5 @@
 using Distances
+using MLUtils: numobs, getobs
 
 """
     find_maximin_element(distances::AbstractMatrix{T},
@@ -53,14 +54,13 @@ ensuring compatibility with any custom array type that implements
 Returns a matrix `D` such that `D[i, j] = metric(xᵢ, xⱼ)` and `D[i, j] == D[j, i]`.
 """
 function distance_matrix(X, metric::PreMetric)
-  idx = sample_indices(X)
-  N = length(idx)
+  N = numobs(X)
   D = zeros(Float64, N, N)
 
   for i = 1:N-1
-    xi = get_sample(X, i)
+    xi = getobs(X, i)
     for j = i+1:N
-      d = evaluate(metric, xi, get_sample(X, j))
+      d = evaluate(metric, xi, getobs(X, j))
       D[i, j] = D[j, i] = d
     end
   end
@@ -69,7 +69,7 @@ function distance_matrix(X, metric::PreMetric)
 end
 
 function distance_matrix(X::AbstractMatrix, metric::PreMetric)
-  return pairwise(metric, X, X; dims = 1)
+  return pairwise(metric, X, X; dims = 2)
 end
 
 """
@@ -82,10 +82,9 @@ Generic wrapper for split strategies. Handles mapping between user indices and 1
 Returns: (train_idx, test_idx) as indices valid for `data`.
 """
 function split_with_positions(data, s, core_algorithm; rng = Random.default_rng(), args...)
-  indices = sample_indices(data)
-  N = length(indices)
+  N = numobs(data)
   result = core_algorithm(N, s, rng, data, args...)
-  train_idx = sort(indices[result.train])
-  test_idx = sort(indices[result.test])
+  train_idx = sort(result.train)
+  test_idx = sort(result.test)
   return TrainTestSplit(train_idx, test_idx)
 end

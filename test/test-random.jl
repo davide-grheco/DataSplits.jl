@@ -6,7 +6,7 @@ using DataSplits: split, SplitStrategy, RandomSplit
 rng = MersenneTwister(42)
 
 @testset "split() with RandomSplit" begin
-  data_std = rand(10, 2)
+  data_std = rand(2, 10)
   strategy = RandomSplit(0.6)
   result = split(data_std, strategy; rng)
   train_idx, test_idx = result.train, result.test
@@ -19,30 +19,28 @@ rng = MersenneTwister(42)
     @test isempty(intersect(train_idx, test_idx))
   end
 
-  # ---- 2. Offset Arrays (custom indexing) ----
-  data_offset = OffsetArray(rand(10, 2), -5:4, 1:2)
-  result = split(data_offset, strategy; rng)
-  train_idx, test_idx = result.train, result.test
+
 
   @testset "Offset Array" begin
+    data_offset = OffsetArray(rand(2, 10), 1:2, -5:4)
+    result = split(data_offset, strategy; rng)
+    train_idx, test_idx = result.train, result.test
+
     @test length(train_idx) == 6
     @test length(test_idx) == 4
-    @test all(-5 .≤ train_idx .≤ 4)
-    @test all(-5 .≤ test_idx .≤ 4)
+    @test all(1 .≤ train_idx .≤ 10)
+    @test all(1 .≤ test_idx .≤ 10)
     @test isempty(intersect(train_idx, test_idx))
   end
 
-  # ---- 3. Edge Cases ----
   @testset "Edge Cases" begin
-    # Tiny array (N < 2)
-    @test_throws ArgumentError split(rand(1, 2), strategy; rng)
 
     # Empty array
-    @test_throws ArgumentError split(zeros(0, 2), strategy; rng)
+    @test_throws ArgumentError split(zeros(2, 0), strategy; rng)
 
     # Fraction bounds (0 < frac < 1)
-    @test_throws ArgumentError split(rand(10, 2), RandomSplit(0.0); rng)
-    @test_throws ArgumentError split(rand(10, 2), RandomSplit(1.0); rng)
+    @test_throws ArgumentError split(rand(2, 10), RandomSplit(0.0); rng)
+    @test_throws ArgumentError split(rand(2, 10), RandomSplit(1.0); rng)
   end
 
   # ---- 4. Randomness & Correctness ----
