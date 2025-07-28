@@ -1,8 +1,3 @@
-#############################################################
-#  SPXY (Sample set Partitioning based on joint X–Y distance)
-#  – in‑memory version (O(N²))
-#############################################################
-
 using Distances
 
 struct SPXYSplit{T,M<:Distances.SemiMetric} <: SplitStrategy
@@ -13,6 +8,7 @@ end
 """
     SPXYSplit(frac; metric = Euclidean())
 
+Sample set Partitioning based on joint X–Y distance (SPXY)
 Create an **SPXY splitter** – the variant of Kennard–Stone in which
 the distance matrix is the *element‑wise sum* of
 
@@ -40,19 +36,13 @@ subset.
 """
 SPXYSplit(frac::Real; metric = Euclidean()) = SPXYSplit(ValidFraction(frac), metric)
 
-const MDKSSplit = SPXYSplit
 MDKSSplit(frac::Real) = SPXYSplit(frac; metric = Mahalanobis())
 
-@inline function _norm_pairwise(mat::AbstractMatrix, metric)
-  D = distance_matrix(mat, metric)
+@inline function _norm_pairwise(X, metric)
+  D = distance_matrix(X, metric)
   return D ./ maximum(D)
 end
 
-@inline function _norm_pairwise(y::AbstractVector, metric)
-  Y = reshape(y, :, 1)
-  D = pairwise(metric, Y, Y; dims = 1)
-  return D ./ maximum(D)
-end
 
 """
     _split(X, y, strategy::SPXYSplit; rng = Random.GLOBAL_RNG) → (train_idx, test_idx)
