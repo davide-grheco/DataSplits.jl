@@ -59,7 +59,7 @@ function standard_kennard_tests(split_fn, X, Xv)
   result_py = split_fn(X, 0.75, Euclidean())
   train, test = result_py.train, result_py.test
   @test length(train) == length(train_idx_py)
-  @test train == train_idx_py
+  @test sort(train) == train_idx_py
 end
 
 

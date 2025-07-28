@@ -110,7 +110,8 @@ end
 Main splitting function. For each cluster, selects indices according to the allocation method,
 then splits those indices into train/test according to `frac`.
 """
-function cluster_stratified(N, s, rng, data)
+function _split(data, s::ClusterStratifiedSplit; rng = Random.default_rng())
+  N = numobs(data)
   assigns = assignments(s.clusters)
   cl_ids = unique(assigns)
   idxs_by_cluster = Dict(cid => findall(==(cid), assigns) for cid in cl_ids)
@@ -135,8 +136,4 @@ function cluster_stratified(N, s, rng, data)
     append!(test_pos, test_idxs)
   end
   return TrainTestSplit(train_pos, test_pos)
-end
-
-function _split(data, s::ClusterStratifiedSplit; rng = Random.default_rng())
-  split_with_positions(data, s, cluster_stratified; rng = rng)
 end

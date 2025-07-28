@@ -15,14 +15,15 @@ const LazyCADEXSplit = LazyKennardStoneSplit
 
 
 """
-    _split(data, s::KennardStoneSplit; rng=Random.GLOBAL_RNG) → (train_idx, test_idx)
+    _split(data, s::LazyKennardStoneSplit; rng=Random.GLOBAL_RNG) → (train_idx, test_idx)
 
 Kennard-Stone (CADEX) algorithm for optimal train/test splitting using maximin strategy.
 Memory-optimized implementation with O(N) storage.
 Useful when working with large datasets where the NxN distance matrix does not fit memory.
 When working with small datasets, use the traditional implementation.
 """
-function lazy_kennard_stone(N, s, rng, data)
+function _split(data, s::LazyKennardStoneSplit; rng = Random.GLOBAL_RNG)
+  N = numobs(data)
   n_test = round(Int, (1 - s.frac) * N)
   n_train = N - n_test
   if n_test < 2 || n_train < 2
@@ -66,11 +67,6 @@ function lazy_kennard_stone(N, s, rng, data)
   test_pos = order[n_train+1:end]
   return TrainTestSplit(train_pos, test_pos)
 end
-
-function _split(data, s::LazyKennardStoneSplit; rng = Random.GLOBAL_RNG)
-  split_with_positions(data, s, lazy_kennard_stone; rng = rng)
-end
-
 
 function find_most_distant_pair(data, metric::Distances.SemiMetric)
   max_d, best_i, best_j = -Inf, nothing, nothing

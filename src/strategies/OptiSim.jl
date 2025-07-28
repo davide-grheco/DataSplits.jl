@@ -37,7 +37,8 @@ function OptiSimSplit(
   OptiSimSplit(ValidFraction(frac), max_subsample_size, distance_cutoff, metric)
 end
 
-function optisim_split(N, s, rng, X)
+function _split(X, s::OptiSimSplit; rng = Random.GLOBAL_RNG)
+  N = numobs(X)
   n_train = round(Int, s.frac * N)
   D = distance_matrix(X, s.metric)
   selected_positions =
@@ -46,11 +47,6 @@ function optisim_split(N, s, rng, X)
   test_pos = setdiff(1:N, train_pos)
   return TrainTestSplit(train_pos, test_pos)
 end
-
-function _split(X, s::OptiSimSplit; rng = Random.GLOBAL_RNG)
-  split_with_positions(X, s, optisim_split; rng = rng)
-end
-
 
 function optisim(
   distance_matrix::AbstractMatrix,

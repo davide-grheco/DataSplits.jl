@@ -32,7 +32,8 @@ ClusterShuffleSplit(res::ClusteringResult, frac::Real) =
 # On-the-fly clustering
 ClusterShuffleSplit(f::Function, frac::Real, data) = ClusterShuffleSplit(f(data), frac)
 
-function cluster_shuffle(N, s, rng, data)
+function _split(data, s::ClusterShuffleSplit; rng = Random.default_rng())
+  N = numobs(data)
   assigns = assignments(s.clusters)
   cl_ids = unique(assigns)
   shuffle!(rng, cl_ids)
@@ -71,8 +72,4 @@ function cluster_shuffle(N, s, rng, data)
   train_pos = unique(train_pos)
   test_pos = unique(test_pos)
   return TrainTestSplit(train_pos, test_pos)
-end
-
-function _split(data, s::ClusterShuffleSplit; rng = Random.default_rng())
-  split_with_positions(data, s, cluster_shuffle; rng = rng)
 end

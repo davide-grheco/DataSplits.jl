@@ -22,7 +22,8 @@ TimeSplit(frac::Real, order::Symbol = :asc) = TimeSplit(ValidFraction(frac), ord
 TimeSplitOldest(frac::Real) = TimeSplit(frac, :asc)
 TimeSplitNewest(frac::Real) = TimeSplit(frac, :desc)
 
-function timesplit(N, s, rng, data::AbstractVector)
+function _split(data, s::TimeSplit; rng = Random.GLOBAL_RNG)
+  N = numobs(data)
   date_to_indices = Dict{eltype(data),Vector{Int}}()
   for (i, d) in enumerate(data)
     push!(get!(date_to_indices, d, Int[]), i)
@@ -45,8 +46,4 @@ function timesplit(N, s, rng, data::AbstractVector)
     end
   end
   return TrainTestSplit(train_idx, test_idx)
-end
-
-function _split(data, s::TimeSplit; rng = Random.GLOBAL_RNG)
-  split_with_positions(data, s, timesplit; rng = rng)
 end
