@@ -58,6 +58,10 @@ end
     splitdata(result::SplitResult, X)
 
 Given a SplitResult and data X, return the corresponding splits as a tuple.
+
+# Notes
+- X is expected to have **columns as samples** (features × samples).
+- For custom data types, implement `Base.length` (number of samples) and `Base.getindex(data, i)` (returning the i-th sample) as described in the MLUtils documentation.
 """
 function splitdata(result::SplitResult, X)
   throw(
@@ -68,11 +72,11 @@ function splitdata(result::SplitResult, X)
 end
 
 function splitdata(result::TrainTestSplit, X)
-  (X[result.train, :], X[result.test, :])
+  (getobs(X, result.train), getobs(X, result.test))
 end
 
 function splitdata(result::TrainValTestSplit, X)
-  (X[result.train, :], X[result.val, :], X[result.test, :])
+  (getobs(X, result.train), getobs(X, result.val), getobs(X, result.test))
 end
 
 function splitdata(result::CrossValidationSplit, X)

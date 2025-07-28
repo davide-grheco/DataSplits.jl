@@ -28,9 +28,8 @@ nclusters(r::MyClusteringResult) = maximum(r.assignments)
 To add a new splitting strategy:
 
 1. Subtype `SplitStrategy`.
-2. Implement a core function (e.g., `mysplit(N, s, rng, data)`) that returns `(train_pos, test_pos)` for positions 1:N.
-3. Implement `_split(data, s; rng)` to call `split_with_positions(data, s, mysplit; rng=rng)`.
-4. Use `ValidFraction` for fraction validation.
+2. Implement `_split(data, s; rng)` to call.
+3. Use `ValidFraction` for fraction validation.
 
 **Example:**
 
@@ -45,6 +44,8 @@ function mysplit(N, s, rng, data)
 end
 
 function _split(data, s::MySplit; rng=Random.default_rng())
-    split_with_positions(data, s, mysplit; rng=rng)
+    N = numobs(data)
+    train_pos, test_pos = mysplit(N, s, rng, data)
+    return TrainTestSplit(train_pos, test_pos)
 end
 ```

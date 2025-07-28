@@ -47,9 +47,7 @@ end
     distance_matrix(X, metric::PreMetric)
 
 Compute the full symmetric pairwise distance matrix `D` for the dataset `X`
-using the given `metric`. This function uses `get_sample` to access samples,
-ensuring compatibility with any custom array type that implements
-`get_sample` and `sample_indices`.
+using the given `metric`.
 
 Returns a matrix `D` such that `D[i, j] = metric(xᵢ, xⱼ)` and `D[i, j] == D[j, i]`.
 """

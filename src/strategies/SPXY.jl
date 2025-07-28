@@ -74,11 +74,8 @@ train/test subsets using the SPXY algorithm:
 | `rng`     | random‑number source | *unused* here but kept for API symmetry |
 
 ### Returns
-Two `Vector{Int}` with the **row indices** of `X` (and the corresponding
+Two `Vector{Int}` with the **sample indices** of `X` (and the corresponding
 entries of `y`) that belong to the training and test subsets.
-
-The indices are *axis‑correct* — if `X` is an `OffsetMatrix` whose first
-row is index `0`, the returned indices will also start at `0`.
 """
 function _split(
   X::AbstractArray,

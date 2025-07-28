@@ -4,7 +4,9 @@ CurrentModule = DataSplits
 
 # 04. Algorithms Overview
 
-Each splitter returns two sets of indices `(train, test)`, partitioning samples according to the chosen strategy. Choose based on dataset size, desired diversity, or grouping needs.
+Each splitter returns two sets of indices `(train, test)`, partitioning samples according to the chosen strategy. **DataSplits expects data matrices to be in the Julia ML convention: columns are samples, rows are features.** Choose based on dataset size, desired diversity, or grouping needs.
+
+For custom data types, implement `Base.length` (number of samples) and `Base.getindex(data, i)` (returning the i-th sample) as described in the [MLUtils documentation](https://juliaml.github.io/MLUtils.jl/stable/api/).
 
 ## Kennard–Stone Split
 

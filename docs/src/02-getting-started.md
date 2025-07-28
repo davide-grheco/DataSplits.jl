@@ -12,7 +12,9 @@ CurrentModule = DataSplits
 
 ## Data Formats
 
-- Accepts matrices, tables, or custom types implementing `sample_indices`.
+- Accepts matrices, arrays, tables, or custom types.
+- **Important:** DataSplits expects matrices to be in the Julia ML convention: columns are samples, rows are features. If your data uses rows as samples, transpose it before splitting (e.g., use `X'`).
+- For custom data types, implement `Base.length` (number of samples) and `Base.getindex(data, i)` (returning the i-th sample) as described in the [MLUtils documentation](https://juliaml.github.io/MLUtils.jl).
 
 ## Robust Index Handling
 

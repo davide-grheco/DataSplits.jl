@@ -23,7 +23,7 @@ splitter = KennardStoneSplit(0.8)
 train, test = split(X, splitter)
 ```
 
-- `X`: Data matrix (samples × features)
+- `X`: Data matrix (**features × samples**; i.e., columns are samples, rows are features)
 - `0.8`: Fraction of samples to use for training
 
 ## Options

@@ -21,7 +21,7 @@ using DataSplits
 train, test = split(X, OptiSimSplit(0.8; max_subsample_size=50))
 ```
 
-- `X`: Data matrix (samples × features)
+- `X`: Data matrix
 - `0.8`: Fraction of samples to use for training
 - `max_subsample_size`: Size of candidate pool at each step (default: 0, i.e., use all)
 - `distance_cutoff`: Threshold for similarity filtering (default: 0.35)

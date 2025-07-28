@@ -4,6 +4,8 @@ CurrentModule = DataSplits
 
 # 06. Examples & Tutorials
 
+**Note:** DataSplits expects data matrices to be in the Julia ML convention: columns are samples, rows are features. If your data uses rows as samples, transpose it before splitting (e.g., use `X'`).
+
 ## Example: SPXY Split on Custom Data
 
 ```julia
@@ -21,15 +23,12 @@ Suppose you want to create a splitter that always assigns the first 80% of sampl
 ```julia
 struct First80Split <: SplitStrategy end
 
-function first80(N, s, rng, data)
+function _split(data, ::First80Split; rng=nothing)
+    N = numobs(data)
     cut = floor(Int, 0.8 * N)
     train_pos = 1:cut
     test_pos = (cut+1):N
-    return train_pos, test_pos
-end
-
-function _split(data, ::First80Split; rng=nothing)
-    split_with_positions(data, nothing, first80; rng=rng)
+    return TrainTestSplit(train_pos, test_pos)
 end
 ```
 
