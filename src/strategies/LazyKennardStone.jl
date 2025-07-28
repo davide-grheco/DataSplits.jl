@@ -2,6 +2,24 @@ using Distances
 
 export LazyKennardStoneSplit, CADEXSplit
 
+"""
+    LazyKennardStoneSplit{T} <: SplitStrategy
+
+Memory-efficient Kennard-Stone (CADEX) splitting strategy for large datasets.
+
+Performs train/test splitting using the maximin strategy, but avoids storing the full NxN distance matrix in memory (O(N) storage).
+
+# Fields
+- `frac::ValidFraction{T}`: Fraction of data to use for training (0 < frac < 1)
+- `metric::Distances.SemiMetric`: Distance metric to use (default: Euclidean())
+
+# Examples
+```julia
+splitter = LazyKennardStoneSplit(0.8)
+result = split(X, splitter)
+X_train, X_test = splitdata(result, X)
+```
+"""
 struct LazyKennardStoneSplit{T} <: SplitStrategy
   frac::ValidFraction{T}
   metric::Distances.SemiMetric

@@ -8,30 +8,27 @@ end
 """
     SPXYSplit(frac; metric = Euclidean())
 
-Sample set Partitioning based on joint X–Y distance (SPXY)
-Create an **SPXY splitter** – the variant of Kennard–Stone in which
-the distance matrix is the *element‑wise sum* of
+Sample set Partitioning based on joint X–Y distance (SPXY).
 
-* the (normalised) pairwise distance matrix of the feature matrix `X`
-* **plus** the (normalised) pairwise distance matrix of the response
-  vector `y`.
+Creates an SPXY splitter, a variant of Kennard–Stone in which the distance matrix is the element-wise sum of:
+- the (normalized) pairwise distance matrix of the feature matrix `X`
+- plus the (normalized) pairwise distance matrix of the response vector `y`.
 
-`frac` is the fraction of samples that will end up in the **training**
-subset.
+# Fields
+- `frac::ValidFraction{T}`: Fraction of samples in the training subset (0 < frac < 1)
+- `metric::Distances.SemiMetric`: Distance metric used for both `X` and `y` (default: Euclidean())
 
-!!! note
-    `split` **must** be called with a 2‑tuple `(X, y)` or with
-    positional arguments `split(X, y, strategy)`;
-    calling `split(X, strategy)` will raise a `MethodError`, because `y`
-    is mandatory for SPXY.
+# Notes
+- `split` **must** be called with a 2-tuple `(X, y)` or with positional arguments `split(X, y, strategy)`; calling `split(X, strategy)` will raise a `MethodError`.
 
-### Arguments
-| name   | type                       | meaning                                    |
-|:------ |:-------------------------- |:------------------------------------------ |
-| `frac` | `Real` (0 < `frac` < 1)    | training‑set fraction                      |
-| `metric` | [`Distances.SemiMetric`] | distance metric used for both `X` and `y`  |
+# Examples
+```julia
+splitter = SPXYSplit(0.7)
+result = split(X, y, splitter)
+X_train, X_test = splitdata(result, X)
+```
 
-### See also
+# See also
 [`KennardStoneSplit`](@ref) — the classical variant that uses only `X`.
 """
 SPXYSplit(frac::Real; metric = Euclidean()) = SPXYSplit(ValidFraction(frac), metric)

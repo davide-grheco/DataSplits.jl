@@ -7,10 +7,14 @@ Splits a 1D array of dates/times into train/test sets, grouping by unique date/t
 - `frac::ValidFraction{T}`: Fraction of data to use for training (0 < frac < 1)
 - `order::Symbol`: Sorting order; use `:asc` (oldest in train, default), `:desc` (newest in train)
 
+# Returns
+- `TrainTestSplit`: Indices for train and test sets.
+
 # Examples
 ```julia
-split(dates, TimeSplitOldest(0.7))
-split(dates, TimeSplitNewest(0.3))
+splitter = TimeSplitOldest(0.7)
+result = split(dates, splitter)
+train_idx, test_idx = splitdata(result, dates)
 ```
 """
 struct TimeSplit{T} <: SplitStrategy

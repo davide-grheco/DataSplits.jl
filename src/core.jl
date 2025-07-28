@@ -14,11 +14,22 @@ abstract type SplitResult end
 """
     TrainTestSplit
 
-A struct representing a train/test split.
+A result type representing a train/test split.
 
 # Fields
-- `train`: indices of training samples
-- `test`: indices of test samples
+- `train::Vector{Int}`: Indices (1:N) of training samples.
+- `test::Vector{Int}`: Indices (1:N) of test samples.
+
+# Notes
+- Indices are always in the range 1:N, where N is the number of samples.
+- For custom data types, use `getobs(X, indices)` to access split data.
+- Data matrices are expected to have columns as samples (features × samples).
+
+# Examples
+```julia
+result = split(X, KennardStoneSplit(0.8))
+X_train, X_test = splitdata(result, X)
+```
 """
 struct TrainTestSplit{I} <: SplitResult
   train::I
@@ -28,12 +39,23 @@ end
 """
     TrainValTestSplit
 
-A struct representing a train/validation/test split.
+A result type representing a train/validation/test split.
 
 # Fields
-- `train`: indices of training samples
-- `val`: indices of validation samples
-- `test`: indices of test samples
+- `train::Vector{Int}`: Indices (1:N) of training samples.
+- `val::Vector{Int}`: Indices (1:N) of validation samples.
+- `test::Vector{Int}`: Indices (1:N) of test samples.
+
+# Notes
+- Indices are always in the range 1:N, where N is the number of samples.
+- For custom data types, use `getobs(X, indices)` to access split data.
+- Data matrices are expected to have columns as samples (features × samples).
+
+# Examples
+```julia
+result = split(X, SomeTrainValTestSplit(...))
+X_train, X_val, X_test = splitdata(result, X)
+```
 """
 struct TrainValTestSplit{I} <: SplitResult
   train::I
@@ -44,10 +66,23 @@ end
 """
     CrossValidationSplit
 
-A struct representing a k-fold cross-validation split.
+A result type representing a k-fold cross-validation split.
 
 # Fields
-- `folds`: a vector of TrainTestSplit or TrainValTestSplit
+- `folds::Vector{<:SplitResult}`: Vector of TrainTestSplit or TrainValTestSplit, one per fold.
+
+# Notes
+- Each fold contains indices in the range 1:N, where N is the number of samples.
+- For custom data types, use `getobs(X, indices)` to access split data.
+- Data matrices are expected to have columns as samples (features × samples).
+
+# Examples
+```julia
+result = split(X, SomeCVSplit(...))
+for (X_train, X_test) in splitdata(result, X)
+    # ...
+end
+```
 """
 struct CrossValidationSplit{T<:SplitResult} <: SplitResult
   folds::Vector{T}
@@ -57,11 +92,25 @@ end
 """
     splitdata(result::SplitResult, X)
 
-Given a SplitResult and data X, return the corresponding splits as a tuple.
+Return the train/test (and optionally validation) splits from a `SplitResult` for the given data.
+
+# Arguments
+- `result::SplitResult`: The result of a splitting strategy.
+- `X`: Data matrix or custom container. Columns are samples.
+
+# Returns
+- Tuple of data splits, e.g. `(X_train, X_test)`.
 
 # Notes
-- X is expected to have **columns as samples** (features × samples).
-- For custom data types, implement `Base.length` (number of samples) and `Base.getindex(data, i)` (returning the i-th sample) as described in the MLUtils documentation.
+- All indices in `result` are in the range 1:N, where N is the number of samples.
+- For custom data types, use `getobs(X, indices)` to access split data.
+- Data matrices are expected to have columns as samples (features × samples).
+
+# Examples
+```julia
+result = split(X, KennardStoneSplit(0.8))
+X_train, X_test = splitdata(result, X)
+```
 """
 function splitdata(result::SplitResult, X)
   throw(
@@ -87,7 +136,25 @@ end
 """
     split(data, strategy; rng=Random.default_rng()) -> SplitResult
 
-Split `data` into train/test sets according to `strategy`.
+Split data into train/test (or train/val/test, or cross-validation) sets according to the given strategy.
+
+# Arguments
+- `data`: Data matrix (columns are samples) or custom container.
+- `strategy::SplitStrategy`: The splitting strategy to use.
+- `rng`: Optional random number generator.
+
+# Returns
+- `SplitResult`: An object containing the split indices.
+
+# Notes
+- All returned indices are in the range 1:N, where N is the number of samples.
+- For custom data types, implement `Base.length` and `Base.getindex` as per MLUtils.
+
+# Examples
+```julia
+result = split(X, KennardStoneSplit(0.8))
+X_train, X_test = splitdata(result, X)
+```
 """
 function split(X, strategy::SplitStrategy; rng = Random.default_rng())
   isempty(X) && throw(ArgumentError("Data must not be empty"))

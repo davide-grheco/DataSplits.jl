@@ -1,16 +1,20 @@
 """
     TargetPropertySplit{T} <: SplitStrategy
 
-A splitting strategy that partitions a 1D property array into train/test sets by sorting the property values.
+Splits a 1D property array into train/test sets by sorting the property values.
 
 # Fields
 - `frac::ValidFraction{T}`: Fraction of data to use for training (0 < frac < 1)
 - `order::Symbol`: Sorting order; use `:asc`, `:desc`, `:high`, `:low`, `:largest`, `:smallest`, etc.
 
+# Returns
+- `TrainTestSplit`: Indices for train and test sets.
+
 # Examples
 ```julia
-split(y, TargetPropertyHigh(0.8))
-split(X[:, 3], TargetPropertyLow(0.5))
+splitter = TargetPropertyHigh(0.8)
+result = split(y, splitter)
+train_idx, test_idx = splitdata(result, y)
 ```
 """
 struct TargetPropertySplit{T} <: SplitStrategy

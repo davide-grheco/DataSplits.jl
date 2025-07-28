@@ -7,24 +7,28 @@ using Clustering
     ClusterStratifiedSplit(res::ClusteringResult, allocation::Symbol; n=nothing, frac)
     ClusterStratifiedSplit(f::Function, allocation::Symbol; n=nothing, frac, data)
 
-Cluster-stratified train/test splitter.
+Cluster-stratified train/test splitting strategy with flexible allocation methods.
 
-Splits each cluster into train/test using one of three allocation methods:
+# Fields
+- `clusters::ClusteringResult`: Clustering assignments for the data.
+- `allocation::Symbol`: Allocation method (`:equal`, `:proportional`, or `:neyman`).
+- `n::Union{Nothing,Int}`: Number of samples per cluster (for `:equal`/`:neyman`).
+- `frac::Real`: Fraction of selected samples to use for training (rest go to test).
 
-- `:equal`: Randomly selects `n` samples from each cluster, then splits them into train/test according to `frac`.
-- `:proportional`: Uses all samples in each cluster, splits them into train/test according to `frac`.
-- `:neyman`: Randomly selects a Neyman quota from each cluster (based on pooled std), then splits into train/test according to `frac`.
+# Examples
+```julia
+splitter = ClusterStratifiedSplit(clustering_result, :proportional; frac=0.8)
+result = split(X, splitter)
+X_train, X_test = splitdata(result, X)
 
-# Arguments
-- `res` or `f(...)`: ClusteringResult or clustering function.
-- `allocation`: `:equal`, `:proportional`, or `:neyman`.
-- `n`: Number of samples per cluster (equal/neyman allocation).
-- `frac`: Fraction of selected samples to use for train (rest go to test).
+# Reference
 
-# Notes
-- If `n` is greater than the cluster size, all samples in the cluster are used.
-- For `:proportional`, all samples are always used.
-- For `frac=1.0`, all selected samples go to train; for `frac=0.0`, all go to test.
+For a complete analysis of several methodologies refer to:
+
+May, R. J.; Maier, H. R.; Dandy, G. C. Data Splitting for Artificial Neural Networks Using SOM-Based Stratified Sampling. Neural Networks 2010, 23 (2), 283–294. https://doi.org/10.1016/j.neunet.2009.11.009.
+
+The implementation of equal is different than the one introduced in the paper and in previous references.
+```
 """
 struct ClusterStratifiedSplit <: SplitStrategy
   clusters::ClusteringResult

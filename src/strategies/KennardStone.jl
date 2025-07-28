@@ -5,7 +5,7 @@ export KennardStoneSplit, CADEXSplit
 """
     KennardStoneSplit{T} <: SplitStrategy
 
-A splitting strategy implementing the Kennard-Stone algorithm for train/test splitting.
+Splitting strategy implementing the Kennard-Stone algorithm for train/test splitting.
 
 # Fields
 - `frac::ValidFraction{T}`: Fraction of data to use for training (0 < frac < 1)
@@ -13,12 +13,14 @@ A splitting strategy implementing the Kennard-Stone algorithm for train/test spl
 
 # Examples
 ```julia
-# Create a splitter with 80% training data using Euclidean distance
 splitter = KennardStoneSplit(0.8)
+result = split(X, splitter)
+X_train, X_test = splitdata(result, X)
 
-# Create a splitter with custom metric
+# Custom metric
 using Distances
 splitter = KennardStoneSplit(0.7, Cityblock())
+```
 """
 struct KennardStoneSplit{T} <: SplitStrategy
   frac::ValidFraction{T}

@@ -8,10 +8,10 @@ using StatsBase: minmax
 
 Result of sphere exclusion clustering.
 
-Fields:
-- `assignments::Vector{Int}`: cluster index per point.
-- `radius::Float64`: exclusion radius.
-- `metric::Distances.SemiMetric`: distance metric.
+# Fields
+- `assignments::Vector{Int}`: Cluster index per point (1-based).
+- `radius::Float64`: Exclusion radius used for clustering.
+- `metric::Distances.SemiMetric`: Distance metric used.
 """
 struct SphereExclusionResult <: ClusteringResult
   assignments::Vector{Int}
@@ -27,12 +27,25 @@ wcounts(R::SphereExclusionResult) = Float64.(counts(R))
 """
     sphere_exclusion(data; radius::Real, metric::Distances.SemiMetric=Euclidean()) -> SphereExclusionResult
 
-Cluster samples in `data` by sphere exclusion:
-1. Compute full pairwise distance matrix and normalize values to [0,1].
-2. While unassigned samples remain:
-   - Pick first unassigned sample `i`.
-   - All unassigned samples `j` with normalized distance `D[i,j] <= radius` form a cluster.
-   - Mark them assigned and increment cluster ID.
+Clusters samples in `data` using the sphere exclusion algorithm.
+
+# Arguments
+- `data`: Data matrix or container. Columns are samples.
+- `radius::Real`: Exclusion radius (normalized to [0, 1]).
+- `metric::Distances.SemiMetric`: Distance metric (default: Euclidean()).
+
+# Returns
+- `SphereExclusionResult`: Clustering result with assignments, radius, and metric.
+
+# Notes
+- The distance matrix is normalized to [0, 1] before clustering.
+- Each cluster contains all points within `radius` of the cluster center.
+
+# Examples
+```julia
+result = sphere_exclusion(X; radius=0.2)
+assignments = result.assignments
+```
 """
 function sphere_exclusion(data; radius::Real, metric::Distances.SemiMetric = Euclidean())
   N = numobs(data)

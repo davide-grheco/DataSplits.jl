@@ -3,22 +3,25 @@ using Distances, Random
 
 
 """
-    OptiSimSplit(frac; n_clusters = 10, max_subsample_size, distance_cutoff = 0.10,
-                 metric = Euclidean(), random_state = 42)
+    OptiSimSplit(frac; max_subsample_size, distance_cutoff = 0.10, metric = Euclidean())
 
-Implementation of **OptiSim** (Clark 1998, _J. Chem. Inf. Comput. Sci._),
-an optimisable K‑dissimilarity selection.
+Implementation of the OptiSim (Clark 1997) optimizable K-dissimilarity selection strategy for train/test splitting.
 
-* `frac` – fraction of samples to return in the **training** subset
-* `n_clusters = M` – requested cluster/selection‑set size
-* `max_subsample_size = K` – size of the temporary sub‑sample
-  (default: `max(1, ceil(Int, 0.05N))`)
-* `distance_cutoff = c` – two points are “similar” if their distance < `c`
-* `metric` – any `Distances.jl` metric
-* `random_state` – seed for the RNG
+# Fields
+- `frac::ValidFraction{T}`: Fraction of samples to return in the training subset (0 < frac < 1)
+- `max_subsample_size::Integer`: Size of the temporary sub-sample (default: `max(1, ceil(Int, 0.05N))`)
+- `distance_cutoff::Real`: Two points are “similar” if their distance < `distance_cutoff` (default: 0.10)
+- `metric::Distances.SemiMetric`: Distance metric (default: Euclidean())
 
-The splitter requires **both** an `X` matrix and target vector `y`
-when calling `split`.
+# References
+- Clark, R. D. (1997). OptiSim: An Extended Dissimilarity Selection Method for Finding Diverse Representative Subsets. *J. Chem. Inf. Comput. Sci.*, 37(6), 1181–1188.
+
+# Examples
+```julia
+splitter = OptiSimSplit(0.7; max_subsample_size=10)
+result = split(X, y, splitter)
+X_train, X_test = splitdata(result, X)
+```
 """
 struct OptiSimSplit{T,M<:Distances.SemiMetric} <: SplitStrategy
   frac::ValidFraction{T}

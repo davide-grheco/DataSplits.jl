@@ -4,21 +4,24 @@ using Clustering
 
 """
     ClusterShuffleSplit(res::ClusteringResult, frac::Real)
-    ClusterShuffleSplit(f::Function, frac::Real, data; rng)
+    ClusterShuffleSplit(f::Function, frac::Real, data)
 
-Group-aware train/test splitter: accepts either:
+Group-aware train/test splitting strategy that accumulates whole clusters in the training set until the requested fraction is reached.
 
-1. A precomputed ClusteringResult.
-2. A clustering function f(data) that returns one.
+# Fields
+- `clusters::ClusteringResult`: Clustering assignments for the data.
+- `frac::ValidFraction{T}`: Fraction of samples in the training set (0 < frac < 1).
 
-At construction, clustering is executed so the strategy always holds a ClusteringResult.
+# Notes
 
-Arguments:
-- `res` or `f(...)
-- `frac`: fraction of samples in the training set (0 < frac < 1).
+The clusters are accorpated to the training set in a random fashion. As such it is possible to overshoot the requested fraction. This algorithm does not attempt to obtain the split most similar to the requested fraction possible.
 
-This splitter shuffles cluster IDs and accumulates whole clusters until
-`frac * N` samples are in the train set, then returns `(train_idx, test_idx)`.
+# Examples
+```julia
+splitter = ClusterShuffleSplit(clustering_result, 0.7)
+result = split(X, splitter)
+X_train, X_test = splitdata(result, X)
+```
 """
 struct ClusterShuffleSplit{T<:Real} <: SplitStrategy
   clusters::ClusteringResult
