@@ -2,7 +2,7 @@
 CurrentModule = DataSplits
 ```
 
-# 02. Getting Started
+# Getting Started
 
 ## Basic API
 

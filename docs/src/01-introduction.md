@@ -2,7 +2,7 @@
 CurrentModule = DataSplits
 ```
 
-# 01. Introduction
+# Introduction
 
 ## Motivation and Features
 

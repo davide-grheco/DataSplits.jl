@@ -2,7 +2,7 @@
 CurrentModule = DataSplits
 ```
 
-# 05. Extending DataSplits
+# Extending DataSplits
 
 ## Checklist for Adding a New Splitter
 

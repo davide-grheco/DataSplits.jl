@@ -2,7 +2,7 @@
 CurrentModule = DataSplits
 ```
 
-# 06. Examples & Tutorials
+# Examples & Tutorials
 
 **Note:** DataSplits expects data matrices to be in the Julia ML convention: columns are samples, rows are features. If your data uses rows as samples, transpose it before splitting (e.g., use `X'`).
 

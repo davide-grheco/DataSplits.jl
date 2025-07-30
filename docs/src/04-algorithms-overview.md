@@ -2,7 +2,7 @@
 CurrentModule = DataSplits
 ```
 
-# 04. Algorithms Overview
+# Algorithms
 
 Each splitter returns two sets of indices `(train, test)`, partitioning samples according to the chosen strategy. **DataSplits expects data matrices to be in the Julia ML convention: columns are samples, rows are features.** Choose based on dataset size, desired diversity, or grouping needs.
 

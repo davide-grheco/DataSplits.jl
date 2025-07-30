@@ -2,7 +2,7 @@
 CurrentModule = DataSplits
 ```
 
-# 03. Core API Reference
+# Core API Reference
 
 **Note:** DataSplits expects data matrices to follow the Julia ML convention: **columns are samples, rows are features**. All examples and API references below assume this convention. If you have data with samples as rows, transpose it before splitting (e.g., use `X'`).
 
