@@ -1,6 +1,5 @@
 using Random
 using Statistics: std, mean
-import Clustering: ClusteringResult, assignments
 using Clustering
 
 """

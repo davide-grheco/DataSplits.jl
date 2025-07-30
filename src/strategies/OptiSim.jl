@@ -42,7 +42,7 @@ end
 
 function _split(X, s::OptiSimSplit; rng = Random.GLOBAL_RNG)
   N = numobs(X)
-  n_train = round(Int, s.frac * N)
+  n_train, n_test = train_test_counts(N, s.frac)
   D = distance_matrix(X, s.metric)
   selected_positions =
     optisim(D, n_train, s.max_subsample_size, s.distance_cutoff; rng = rng)

@@ -38,7 +38,7 @@ function _split(data, s::TargetPropertySplit; rng = Random.GLOBAL_RNG)
   pairs = collect(zip(data, idx))
   descending = s.order in (:desc, :high, :largest, :max, :maximum)
   sorted_pairs = sort(pairs; by = first, rev = descending)
-  n_train = floor(Int, s.frac * N)
+  n_train, n_test = train_test_counts(N, s.frac)
   train_pos = [p[2] for p in sorted_pairs[1:n_train]]
   test_pos = [p[2] for p in sorted_pairs[n_train+1:end]]
   return TrainTestSplit(train_pos, test_pos)

@@ -88,9 +88,7 @@ function _split(
   idx_range = axes(X, 1)
   N = length(idx_range)
 
-  n_test = round(Int, (1 - strategy.frac) * N)
-  n_train = N - n_test
-
+  n_train, n_test = train_test_counts(N, strategy.frac)
   DX = _norm_pairwise(X, strategy.metric)
   DY = _norm_pairwise(y, strategy.metric)
   D = DX .+ DY

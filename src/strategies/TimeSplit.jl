@@ -37,7 +37,7 @@ function _split(data, s::TimeSplit; rng = Random.GLOBAL_RNG)
   sorted_dates = sort(dates; rev = descending)
 
   total = 0
-  n_train = floor(Int, s.frac * N)
+  n_train, n_test = train_test_counts(N, s.frac)
   train_idx = Int[]
   test_idx = Int[]
   for d in sorted_dates

@@ -5,7 +5,7 @@ using Clustering
 
 @testset "ClusterStratifiedSplit" begin
   # Simple synthetic data
-  X = reshape(1:15, 15, 1) # 3 clusters, 5 samples each, 1 feature
+  X = 1:15 # 3 clusters, 5 samples each, 1 feature
   assigns = vcat(fill(1, 5), fill(2, 5), fill(3, 5))
   struct DummyClusteringResult <: Clustering.ClusteringResult
     assignments::Vector{Int}

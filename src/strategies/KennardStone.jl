@@ -40,15 +40,8 @@ Best for small-to-medium datasets where O(N²) memory is acceptable.
 """
 function _split(data, s::KennardStoneSplit; rng = Random.GLOBAL_RNG)
   N = numobs(data)
-  n_test = round(Int, (1 - s.frac) * N)
-  n_train = N - n_test
-  if n_test < 2 || n_train < 2
-    throw(
-      SplitParameterError(
-        "Invalid split sizes: n_test=$n_test, n_train=$n_train. Kennard-Stone requires at least 2 samples in each set. Try changing your split fraction or check you are actually introducing enough data.",
-      ),
-    )
-  end
+  n_train, n_test = train_test_counts(N, s.frac)
+
   D = distance_matrix(data, s.metric)
   train_pos, test_pos = kennard_stone_from_distance_matrix(D, n_train)
   return TrainTestSplit(train_pos, test_pos)

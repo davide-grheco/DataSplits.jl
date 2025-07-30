@@ -104,3 +104,32 @@ Error thrown when a required split method or feature is not implemented.
 struct SplitNotImplementedError <: Exception
   msg::String
 end
+
+
+
+"""
+    train_test_counts(N, frac; min_train=2, min_test=2)
+
+Given total sample count `N` and train fraction `frac`, return `(n_train, n_test)`.
+Throws `SplitParameterError` if the split is not possible (e.g., too few samples, fraction out of bounds).
+"""
+function train_test_counts(N::Integer, frac; min_train::Integer = 1, min_test::Integer = 1)
+  if N < min_train + min_test
+    throw(
+      SplitParameterError(
+        "Not enough samples ($N) to split: need at least $(min_train + min_test).",
+      ),
+    )
+  end
+  n_train = round(Int, frac * N)
+  n_test = N - n_train
+
+  if n_train < min_train || n_test < min_test
+    throw(
+      SplitParameterError(
+        "Split would result in too few samples: n_train=$n_train, n_test=$n_test (min_train=$min_train, min_test=$min_test).",
+      ),
+    )
+  end
+  return n_train, n_test
+end

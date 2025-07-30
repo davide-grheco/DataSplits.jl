@@ -42,15 +42,8 @@ When working with small datasets, use the traditional implementation.
 """
 function _split(data, s::LazyKennardStoneSplit; rng = Random.GLOBAL_RNG)
   N = numobs(data)
-  n_test = round(Int, (1 - s.frac) * N)
-  n_train = N - n_test
-  if n_test < 2 || n_train < 2
-    throw(
-      SplitParameterError(
-        "Invalid split sizes: n_test=$n_test, n_train=$n_train. Kennard-Stone requires at least 2 samples in the smallest split. Try changing your split fraction or check you are actually introducing enough data.",
-      ),
-    )
-  end
+  n_train, n_test = train_test_counts(N, s.frac)
+
   i₁, i₂ = find_most_distant_pair(data, s.metric)
   selected = falses(N)
   selected[i₁] = selected[i₂] = true
