@@ -1,6 +1,7 @@
 using Test
 using Distances
 using DataSplits
+import DataSplits: SplitInputError, SplitParameterError, SplitNotImplementedError
 
 
 rowset(M) = Set(eachrow(M))

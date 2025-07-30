@@ -1,5 +1,6 @@
 using Test
 using DataSplits: split, ClusterStratifiedSplit
+using DataSplits: SplitInputError, SplitParameterError, SplitNotImplementedError
 using Clustering
 
 @testset "ClusterStratifiedSplit" begin

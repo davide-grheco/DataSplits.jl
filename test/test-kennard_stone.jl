@@ -35,12 +35,12 @@ function standard_kennard_tests(split_fn, X, Xv)
   @test tr1 == tr2b && te1 == te2b
 
   # Test 4: boundary handling
-  @test_throws ArgumentError split_fn(rand(2, 10), 0.02, Euclidean())
-  @test_throws ArgumentError split_fn(rand(2, 10), 0.98, Euclidean())
+  @test_throws SplitParameterError split_fn(rand(2, 10), 0.02, Euclidean())
+  @test_throws SplitParameterError split_fn(rand(2, 10), 0.98, Euclidean())
 
   # Test 5: edge cases
-  @test_throws ArgumentError split_fn(rand(5, 5), 0.0, Euclidean())
-  @test_throws ArgumentError split_fn(rand(5, 5), 1.0, Euclidean())
+  @test_throws SplitParameterError split_fn(rand(5, 5), 0.0, Euclidean())
+  @test_throws SplitParameterError split_fn(rand(5, 5), 1.0, Euclidean())
 
   # Test 6: max-min property
   X2 = vcat(randn(5, 2) .+ 5, randn(5, 2) .- 5)'

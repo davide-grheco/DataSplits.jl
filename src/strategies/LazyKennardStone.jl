@@ -46,10 +46,8 @@ function _split(data, s::LazyKennardStoneSplit; rng = Random.GLOBAL_RNG)
   n_train = N - n_test
   if n_test < 2 || n_train < 2
     throw(
-      ArgumentError(
-        "Invalid split sizes: n_test=$n_test, n_train=$n_train. " *
-        "Kennard-Stone requires at least 2 samples in the smallest split." *
-        "Try changing your split fraction or check you are actually introducing enough data. ",
+      SplitParameterError(
+        "Invalid split sizes: n_test=$n_test, n_train=$n_train. Kennard-Stone requires at least 2 samples in the smallest split. Try changing your split fraction or check you are actually introducing enough data.",
       ),
     )
   end

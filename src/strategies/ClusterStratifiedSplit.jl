@@ -50,7 +50,9 @@ Randomly select `n` samples from each cluster (or all if cluster is smaller).
 Returns a Dict mapping cluster id to selected indices.
 """
 function equal_allocation(cl_ids, idxs_by_cluster, n, rng)
-  @assert !isnothing(n) "n must be provided for equal allocation"
+  if isnothing(n)
+    throw(SplitParameterError("Parameter n must be provided for equal allocation."))
+  end
   selected = Dict{Int,Vector{Int}}()
   for cid in cl_ids
     idxs = idxs_by_cluster[cid]
@@ -86,7 +88,9 @@ Randomly select a Neyman quota from each cluster (proportional to cluster size a
 Returns a Dict mapping cluster id to selected indices.
 """
 function neyman_allocation(cl_ids, idxs_by_cluster, n, data, rng)
-  @assert !isnothing(n) "n must be provided for Neyman allocation"
+  if isnothing(n)
+    throw(SplitParameterError("Parameter n must be provided for Neyman allocation."))
+  end
   stds = Dict{Int,Float64}()
   for cid in cl_ids
     idxs = idxs_by_cluster[cid]
@@ -126,7 +130,11 @@ function _split(data, s::ClusterStratifiedSplit; rng = Random.default_rng())
   elseif s.allocation == :neyman
     neyman_allocation(cl_ids, idxs_by_cluster, s.n, data, rng)
   else
-    error("Unknown allocation method: $(s.allocation)")
+    throw(
+      SplitParameterError(
+        "Unknown allocation method: $(s.allocation). Please use one of :equal, :proportional, or :neyman.",
+      ),
+    )
   end
   train_pos = Int[]
   test_pos = Int[]

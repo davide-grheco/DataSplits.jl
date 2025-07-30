@@ -77,3 +77,30 @@ end
 function distance_matrix(X::AbstractMatrix, metric::PreMetric)
   return pairwise(metric, X, X; dims = 2)
 end
+
+"""
+    SplitInputError(msg)
+
+Error thrown when input data to a split is invalid (e.g., empty, wrong shape, mismatched X/y).
+"""
+struct SplitInputError <: Exception
+  msg::String
+end
+
+"""
+    SplitParameterError(msg)
+
+Error thrown when split parameters are invalid (e.g., unknown allocation, out-of-bounds fraction).
+"""
+struct SplitParameterError <: Exception
+  msg::String
+end
+
+"""
+    SplitNotImplementedError(msg)
+
+Error thrown when a required split method or feature is not implemented.
+"""
+struct SplitNotImplementedError <: Exception
+  msg::String
+end

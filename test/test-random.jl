@@ -1,6 +1,12 @@
 using Random
 using OffsetArrays
-using DataSplits: split, SplitStrategy, RandomSplit
+using DataSplits:
+  split,
+  SplitStrategy,
+  RandomSplit,
+  SplitInputError,
+  SplitParameterError,
+  SplitNotImplementedError
 
 
 rng = MersenneTwister(42)
@@ -36,11 +42,11 @@ rng = MersenneTwister(42)
   @testset "Edge Cases" begin
 
     # Empty array
-    @test_throws ArgumentError split(zeros(2, 0), strategy; rng)
+    @test_throws SplitInputError split(zeros(2, 0), strategy; rng)
 
     # Fraction bounds (0 < frac < 1)
-    @test_throws ArgumentError split(rand(2, 10), RandomSplit(0.0); rng)
-    @test_throws ArgumentError split(rand(2, 10), RandomSplit(1.0); rng)
+    @test_throws SplitParameterError split(rand(2, 10), RandomSplit(0.0); rng)
+    @test_throws SplitParameterError split(rand(2, 10), RandomSplit(1.0); rng)
   end
 
   # ---- 4. Randomness & Correctness ----

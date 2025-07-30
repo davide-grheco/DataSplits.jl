@@ -114,8 +114,8 @@ X_train, X_test = splitdata(result, X)
 """
 function splitdata(result::SplitResult, X)
   throw(
-    ErrorException(
-      "splitdata is not implemented for $(typeof(result)). Please implement splitdata(::$(typeof(result)), X).",
+    SplitNotImplementedError(
+      "splitdata is not implemented for $(typeof(result)). Please implement splitdata(::$(typeof(result)), X). If you are using a custom split result type, you need to provide a splitdata method for it.",
     ),
   )
 end
@@ -157,8 +157,14 @@ X_train, X_test = splitdata(result, X)
 ```
 """
 function split(X, strategy::SplitStrategy; rng = Random.default_rng())
-  isempty(X) && throw(ArgumentError("Data must not be empty"))
-  length(axes(X, 1)) == 1 && throw(ArgumentError("Can not split a single data point"))
+  isempty(X) && throw(
+    SplitInputError("Data must not be empty. Please provide a non-empty dataset to split."),
+  )
+  numobs(X) == 1 && throw(
+    SplitInputError(
+      "Cannot split a single data point. Please provide at least two samples.",
+    ),
+  )
 
   result = _split(X, strategy; rng)
   return result
@@ -170,21 +176,37 @@ function split(
   rng = Random.default_rng(),
 )
   X, y = data
-  isempty(X) && throw(ArgumentError("Data must not be empty"))
-  size(X, 1) == 1 && throw(ArgumentError("Cannot split a single data point"))
-  size(X, 1) == length(y) ||
-    throw(ArgumentError("X and y must have the same number of samples."))
-
+  isempty(X) && throw(
+    SplitInputError("Data must not be empty. Please provide a non-empty dataset to split."),
+  )
+  numobs(X) == 1 && throw(
+    SplitInputError(
+      "Cannot split a single data point. Please provide at least two samples.",
+    ),
+  )
+  numobs(X) == numobs(y) || throw(
+    SplitInputError(
+      "X and y must have the same number of samples. Please ensure your feature matrix and target vector are aligned.",
+    ),
+  )
   result = _split((X, y), strategy; rng)
   return result
 end
 
 function split(X, y, strategy::SplitStrategy; rng = Random.default_rng())
-  isempty(X) && throw(ArgumentError("Data must not be empty"))
-  length(axes(X, 1)) == 1 && throw(ArgumentError("Can not split a single data point"))
-  size(X, 1) == length(y) ||
-    throw(ArgumentError("X and y must have the same number of samples."))
-
+  isempty(X) && throw(
+    SplitInputError("Data must not be empty. Please provide a non-empty dataset to split."),
+  )
+  numobs(X) == 1 && throw(
+    SplitInputError(
+      "Cannot split a single data point. Please provide at least two samples.",
+    ),
+  )
+  numobs(X) == numobs(y) || throw(
+    SplitInputError(
+      "X and y must have the same number of samples. Please ensure your feature matrix and target vector are aligned.",
+    ),
+  )
   result = _split(X, y, strategy; rng)
   return result
 end
@@ -192,7 +214,11 @@ struct ValidFraction{T<:Real}
   frac::T
   function ValidFraction(frac::T) where {T<:Real}
     if !(0 < frac < 1)
-      throw(ArgumentError("Fraction must be between 0 and 1, got $frac"))
+      throw(
+        SplitParameterError(
+          "Fraction must be between 0 and 1 (exclusive). Got $frac. Please provide a valid fraction for splitting.",
+        ),
+      )
     end
     new{T}(frac)
   end

@@ -25,5 +25,6 @@ export sphere_exclusion
 export TargetPropertySplit
 export TargetPropertyHigh, TargetPropertyLow
 export TimeSplit, TimeSplitOldest, TimeSplitNewest
+export SplitInputError, SplitParameterError, SplitNotImplementedError
 
 end
