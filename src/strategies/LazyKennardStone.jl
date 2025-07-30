@@ -73,7 +73,7 @@ function _split(data, s::LazyKennardStoneSplit; rng = Random.GLOBAL_RNG)
     end
   end
   train_pos = order[1:n_train]
-  test_pos = order[n_train+1:end]
+  test_pos = order[(n_train+1):end]
   return TrainTestSplit(train_pos, test_pos)
 end
 
@@ -81,9 +81,9 @@ function find_most_distant_pair(data, metric::Distances.SemiMetric)
   max_d, best_i, best_j = -Inf, nothing, nothing
   n = numobs(data)
 
-  for i = 1:n-1
+  for i = 1:(n-1)
     x = getobs(data, i)
-    for j = i+1:n
+    for j = (i+1):n
       y = getobs(data, j)
       d = evaluate(metric, x, y)
       if d > max_d
@@ -93,8 +93,4 @@ function find_most_distant_pair(data, metric::Distances.SemiMetric)
   end
 
   return best_i, best_j
-end
-
-function nn_distance(A, B; metric)
-  [minimum(evaluate.(Ref(metric), b, A)) for b in B]
 end
