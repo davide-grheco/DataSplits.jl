@@ -2,6 +2,7 @@ module DataSplits
 
 include("core.jl")
 include("utils.jl")
+include("statistics.jl")
 include("strategies/random.jl")
 include("strategies/LazyKennardStone.jl")
 include("strategies/KennardStone.jl")
@@ -10,6 +11,7 @@ include("strategies/OptiSim.jl")
 include("strategies/ClusterShuffleSplit.jl")
 include("strategies/ClusterStratifiedSplit.jl")
 include("clustering/SphereExclusion.jl")
+include("metrics.jl")
 include("strategies/TargetProperty.jl")
 include("strategies/TimeSplit.jl")
 
@@ -26,5 +28,6 @@ export TargetPropertySplit
 export TargetPropertyHigh, TargetPropertyLow
 export TimeSplit, TimeSplitOldest, TimeSplitNewest
 export SplitInputError, SplitParameterError, SplitNotImplementedError
+export mahalanobis_split_distance
 
 end
