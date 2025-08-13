@@ -40,6 +40,7 @@ X_train, X_test = splitdata(result, X)
 | Time-based split | `TimeSplit` | `split(dates, TimeSplit(0.7))` |
 | Property-based split | `TargetPropertySplit` | `split(y, TargetPropertyHigh(0.8))` |
 | Random split | `RandomSplit` | `split(X, RandomSplit(0.7))` |
+| Randomized Kennard Stone | `MoraisLimaMartinSplit` | `split(X, MoraisLimaMartinSplit(0.8; swap_frac=0.1))` |
 
 ## Supported Strategies
 
@@ -48,6 +49,7 @@ X_train, X_test = splitdata(result, X)
 | `KennardStoneSplit` | Maximin split on *X* | `O(N²)` time, `O(N²)` memory |
 | `LazyKennardStoneSplit` | Same, streamed | `O(N²)` time, `O(N)` mem |
 | `SPXYSplit` | Joint *X–y* maximin (SPXY) | `O(N²)` time, `O(N²)` mem |
+| `MoraisLimaMartinSplit` | Kennard–Stone + random swap | `O(N²)` time, `O(N²)` memory |
 | `OptiSimSplit`         | Optimisable dissimilarity-based splitting       | `O(N²)` time, `O(N²)` memory |
 | `MinimumDissimilaritySplit`|  Greedy dissimilarity with one candidate | O(N²) time, O(N²) memory |
 | `MaximumDissimilaritySplit`|  Greedy dissimilarity with full pool | O(N²) time, O(N²) memory |
