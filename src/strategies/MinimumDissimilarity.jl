@@ -1,9 +1,3 @@
-struct MinimumDissimilaritySplit <: SplitStrategy
-  frac::ValidFraction{T}
-  distance_cutoff::Float64
-  metric::PreMetric
-end
-
 """
     MinimumDissimilaritySplit(frac; distance_cutoff=0.35, metric=Euclidean())
 
@@ -31,16 +25,5 @@ X_train, X_test = splitdata(result, X)
 ```
 """
 function MinimumDissimilaritySplit(frac::Real; distance_cutoff = 0.35, metric = Euclidean())
-  MinimumDissimilaritySplit(ValidFraction(frac), distance_cutoff, metric)
-end
-
-function _split(X, s::MinimumDissimilaritySplit; rng = Random.GLOBAL_RNG)
-  opti = OptiSimSplit(
-    s.frac;
-    selected_samples = s.selected_samples,
-    max_subsample_size = 1,
-    distance_cutoff = s.distance_cutoff,
-    metric = s.metric,
-  )
-  return _split(X, opti; rng)
+  OptiSimSplit(ValidFraction(frac), max_subsample_size = 1, distance_cutoff, metric)
 end

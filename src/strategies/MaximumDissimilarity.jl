@@ -40,7 +40,6 @@ function _split(X, s::MaximumDissimilaritySplit; rng = Random.GLOBAL_RNG)
   N = numobs(X)
   opti = OptiSimSplit(
     s.frac;
-    selected_samples = s.selected_samples,
     max_subsample_size = N,
     distance_cutoff = s.distance_cutoff,
     metric = s.metric,
