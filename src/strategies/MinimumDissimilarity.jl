@@ -25,5 +25,10 @@ X_train, X_test = splitdata(result, X)
 ```
 """
 function MinimumDissimilaritySplit(frac::Real; distance_cutoff = 0.35, metric = Euclidean())
-  OptiSimSplit(ValidFraction(frac), max_subsample_size = 1, distance_cutoff, metric)
+  OptiSimSplit(
+    frac,
+    max_subsample_size = 1,
+    distance_cutoff = distance_cutoff,
+    metric = metric,
+  )
 end

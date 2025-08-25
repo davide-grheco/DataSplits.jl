@@ -23,26 +23,34 @@ result = split(X, y, splitter)
 X_train, X_test = splitdata(result, X)
 ```
 """
-struct OptiSimSplit{T,M<:Distances.SemiMetric} <: SplitStrategy
-  frac::ValidFraction{T}
+struct OptiSimSplit <: SplitStrategy
+  frac::ValidFraction
   max_subsample_size::Integer
   distance_cutoff::Real
-  metric::M
+  metric::Distances.SemiMetric
 end
 
 function OptiSimSplit(
   frac::Real;
-  max_subsample_size = 0,
+  max_subsample_size = 10,
   distance_cutoff = 0.35,
   metric = Euclidean(),
 )
-
   OptiSimSplit(ValidFraction(frac), max_subsample_size, distance_cutoff, metric)
+end
+
+function OptiSimSplit(
+  frac::ValidFraction;
+  max_subsample_size = 10,
+  distance_cutoff = 0.35,
+  metric = Euclidean(),
+)
+  OptiSimSplit(frac, max_subsample_size, distance_cutoff, metric)
 end
 
 function _split(X, s::OptiSimSplit; rng = Random.GLOBAL_RNG)
   N = numobs(X)
-  n_train, n_test = train_test_counts(N, s.frac)
+  n_train, _ = train_test_counts(N, s.frac)
   D = distance_matrix(X, s.metric)
   selected_positions =
     optisim(D, n_train, s.max_subsample_size, s.distance_cutoff; rng = rng)
