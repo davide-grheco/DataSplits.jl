@@ -10,7 +10,7 @@ using Test
   result1 =
     split(X, MoraisLimaMartinSplit(0.8; swap_frac = 0.1, metric = Euclidean()); rng = rng)
   train, test = result1.train, result1.test
-  @test sort(vcat(train, test)) == 1:N
+  @test sort(vcat(train, test)) == 1:numobs(X)
   @test isempty(intersect(train, test))
 
   # Determinism
