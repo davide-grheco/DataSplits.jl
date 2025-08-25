@@ -8,7 +8,7 @@ CurrentModule = DataSplits
 
 The SPXY algorithm extends Kennard–Stone by considering both the feature matrix (`X`) and the target vector (`y`) when splitting data. It constructs a joint distance matrix as the sum of normalized pairwise distances in `X` and `y`, then applies the maximin selection. This ensures the training set is diverse in both predictors and response, which is especially important for regression tasks where the target distribution matters.
 
-`MDKSSplit(frac)`: Alias for `SPXYSplit(frac; metric=Mahalanobis())` (SPXY algorithm using Mahalanobis distance).
+`MDKSSplit(frac)`: Alias for `SPXYSplit(frac; metric_X=Mahalanobis(cov(X; dims=2)), metric_y=Euclidean())` (SPXY algorithm using Mahalanobis for X and Euclidean for y).
 
 ## How it works
 
@@ -20,9 +20,10 @@ The SPXY algorithm extends Kennard–Stone by considering both the feature matri
 ## Usage
 
 ```julia
-using DataSplits, Distances
-splitter = SPXYSplit(0.7; metric=Cityblock())
-result = split((X, y), splitter)
+using DataSplits, Distances, Statistics
+splitter = SPXYSplit(0.7)  # Euclidean for both X and y
+splitter2 = SPXYSplit(0.7; metric_X=Jaccard(), metric_y=Cityblock())
+result = split((X, y), splitter2)
 X_train, X_test = splitdata(result, X)
 ```
 

@@ -1,22 +1,27 @@
+using Statistics: cov
 using Distances
 
-struct SPXYSplit{T,M<:Distances.SemiMetric} <: SplitStrategy
-  frac::ValidFraction{T}
-  metric::M
+
+struct SPXYSplit <: SplitStrategy
+  frac::ValidFraction
+  metric_X::Distances.SemiMetric
+  metric_y::Distances.SemiMetric
 end
 
 """
+    SPXYSplit(frac; metric_X = Euclidean(), metric_y = Euclidean())
     SPXYSplit(frac; metric = Euclidean())
 
 Sample set Partitioning based on joint X–Y distance (SPXY).
 
 Creates an SPXY splitter, a variant of Kennard–Stone in which the distance matrix is the element-wise sum of:
-- the (normalized) pairwise distance matrix of the feature matrix `X`
-- plus the (normalized) pairwise distance matrix of the response vector `y`.
+- the (normalized) pairwise distance matrix of the feature matrix `X` (using `metric_X`)
+- plus the (normalized) pairwise distance matrix of the response vector `y` (using `metric_y`).
 
 # Fields
 - `frac::ValidFraction{T}`: Fraction of samples in the training subset (0 < frac < 1)
-- `metric::Distances.SemiMetric`: Distance metric used for both `X` and `y` (default: Euclidean())
+- `metric_X::Distances.SemiMetric`: Distance metric for `X` (default: Euclidean())
+- `metric_y::Distances.SemiMetric`: Distance metric for `y` (default: Euclidean())
 
 # Notes
 - `split` **must** be called with a 2-tuple `(X, y)` or with positional arguments `split(X, y, strategy)`; calling `split(X, strategy)` will raise a `MethodError`.
@@ -24,6 +29,7 @@ Creates an SPXY splitter, a variant of Kennard–Stone in which the distance mat
 # Examples
 ```julia
 splitter = SPXYSplit(0.7)
+splitter = SPXYSplit(0.7; metric_X=Mahalanobis(cov(X; dims=2)), metric_y=Euclidean())
 result = split(X, y, splitter)
 X_train, X_test = splitdata(result, X)
 ```
@@ -31,24 +37,49 @@ X_train, X_test = splitdata(result, X)
 # See also
 [`KennardStoneSplit`](@ref) — the classical variant that uses only `X`.
 """
-SPXYSplit(frac::Real; metric = Euclidean()) = SPXYSplit(ValidFraction(frac), metric)
+SPXYSplit(frac::Real; metric_X = Euclidean(), metric_y = Euclidean()) =
+  SPXYSplit(ValidFraction(frac), metric_X, metric_y)
+
+
+struct MDKSSplit <: SplitStrategy
+  frac::ValidFraction
+  metric::Union{Nothing,PreMetric}
+end
+
 
 """
-    MDKSSplit(frac::Real)
+    MDKSSplit(frac::Real; metric=nothing)
 
-Alias for `SPXYSplit(frac; metric = Mahalanobis())`. Uses the Mahalanobis distance for both X and y.
+Minimum Dissimilarity Kennard–Stone (MDKS) split using the Mahalanobis distance.
+
+If `metric` is not provided, the Mahalanobis distance is computed using the covariance matrix of `X`.
 
 # Arguments
 - `frac`: Fraction of samples to use for training (0 < frac < 1)
+- `metric`: Optional distance metric. If not provided, Mahalanobis is computed from the data.
 
 # Examples
 ```julia
-splitter = MDKSSplit(0.7)
+splitter = MDKSSplit(0.7)  # auto-computes Mahalanobis from X
+splitter = MDKSSplit(0.7; metric=Mahalanobis(cov(X; dims=2)))
 result = split((X, y), splitter)
 X_train, X_test = splitdata(result, X)
 ```
+
+# See also
+[`SPXYSplit`](@ref)
 """
-MDKSSplit(frac::Real) = SPXYSplit(frac; metric = Mahalanobis())
+
+MDKSSplit(frac::Real; metric = nothing) = MDKSSplit(ValidFraction(frac), metric)
+
+function _split(X, y, s::MDKSSplit; rng = Random.GLOBAL_RNG)
+  metric_X = s.metric === nothing ? Mahalanobis(cov(X; dims = 2)) : s.metric
+  metric_y = Euclidean()
+  spxy = SPXYSplit(s.frac, metric_X, metric_y)
+  return _split(X, y, spxy; rng)
+end
+
+_split((X, y), s::MDKSSplit; kwargs...) = _split(X, y, s; kwargs...)
 
 @inline function _norm_pairwise(X, metric)
   D = distance_matrix(X, metric)
@@ -89,8 +120,8 @@ function _split(
   N = length(idx_range)
 
   n_train, n_test = train_test_counts(N, strategy.frac)
-  DX = _norm_pairwise(X, strategy.metric)
-  DY = _norm_pairwise(y, strategy.metric)
+  DX = _norm_pairwise(X, strategy.metric_X)
+  DY = _norm_pairwise(y, strategy.metric_y)
   D = DX .+ DY
 
   train_idx, test_idx = kennard_stone_from_distance_matrix(D, n_train)
