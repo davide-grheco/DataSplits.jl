@@ -20,7 +20,7 @@ function make_split(
 )
   return DataSplits.split(
     X,
-    OptiSimSplit(
+    LazyOptiSimSplit(
       frac;
       max_subsample_size = max_subsample_size,
       distance_cutoff = distance_cutoff,
@@ -43,7 +43,7 @@ end
 
   result = DataSplits.split(
     X,
-    OptiSimSplit(
+    LazyOptiSimSplit(
       0.75;
       max_subsample_size = 3,
       distance_cutoff = 0.35,
@@ -63,10 +63,24 @@ end
   rng1 = MersenneTwister(123)
   result = DataSplits.split(
     X,
-    OptiSimSplit(0.6; max_subsample_size = 3, distance_cutoff = 0.35, metric = Euclidean()),
+    LazyOptiSimSplit(
+      0.6;
+      max_subsample_size = 3,
+      distance_cutoff = 0.35,
+      metric = Euclidean(),
+    ),
     rng = rng1,
   )
   t1a, te1a = result.train, result.test
+
+  rng2 = MersenneTwister(123)
+  result = DataSplits.split(
+    X,
+    OptiSimSplit(0.6; max_subsample_size = 3, distance_cutoff = 0.35, metric = Euclidean()),
+    rng = rng2,
+  )
+  @test t1a == result.train
+  @test te1a == result.test
 
   rng2 = MersenneTwister(123)
   result1b = make_split(X; frac = 0.6, distance_cutoff = 0.35, rng = rng2)
