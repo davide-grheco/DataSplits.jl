@@ -31,6 +31,15 @@ function LazyOptiSimSplit(
   LazyOptiSimSplit(ValidFraction(frac), max_subsample_size, distance_cutoff, metric)
 end
 
+function LazyOptiSimSplit(
+  frac::ValidFraction;
+  max_subsample_size = 10,
+  distance_cutoff = 0.35,
+  metric = Euclidean(),
+)
+  LazyOptiSimSplit(frac, max_subsample_size, distance_cutoff, metric)
+end
+
 function _split(X, s::LazyOptiSimSplit; rng = Random.GLOBAL_RNG)
   N = numobs(X)
   n_train, _ = train_test_counts(N, s.frac)

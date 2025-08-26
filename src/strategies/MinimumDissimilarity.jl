@@ -32,3 +32,32 @@ function MinimumDissimilaritySplit(frac::Real; distance_cutoff = 0.35, metric = 
     metric = metric,
   )
 end
+
+
+
+struct LazyMinimumDissimilaritySplit <: SplitStrategy
+  frac::ValidFraction
+  distance_cutoff::Float64
+  metric::Distances.SemiMetric
+end
+
+function LazyMinimumDissimilaritySplit(
+  frac::Real;
+  distance_cutoff = 0.35,
+  metric = Euclidean(),
+)
+  LazyMinimumDissimilaritySplit(ValidFraction(frac), distance_cutoff, metric)
+end
+
+function _split(X, s::LazyMinimumDissimilaritySplit; rng = Random.GLOBAL_RNG)
+  return _split(
+    X,
+    LazyOptiSimSplit(
+      s.frac;
+      max_subsample_size = 1,
+      distance_cutoff = s.distance_cutoff,
+      metric = s.metric,
+    );
+    rng = rng,
+  )
+end
