@@ -51,6 +51,30 @@ Cons:
 
 - Still requires pairwise distance computations; may overweight target variation.
 
+## LazyMDKSSplit
+
+Description: A memory-efficient, lazy implementation of the Minimum Dissimilarity Kennard–Stone (MDKS) algorithm. Uses Mahalanobis distance for X and Euclidean for y, normalized and summed as in SPXY. Suitable for large datasets where storing the full distance matrix is impractical.
+
+Use Cases: Large regression datasets where both feature and target diversity are important, and memory is a bottleneck.
+
+Pros:
+
+- Memory-efficient: avoids storing the full NxN distance matrix
+- Balances feature and response diversity
+- Deterministic and reproducible
+
+Cons:
+
+- Slightly higher computational cost due to repeated distance calculations
+
+Example:
+
+```julia
+splitter = LazyMDKSSplit(0.7)
+result = split((X, y), splitter)
+X_train, X_test = splitdata(result, X)
+```
+
 ## OptiSim Split
 
 Description: Applies iterative swapping of samples between train and test sets to minimize within-set dissimilarity, guided by a dissimilarity measure.

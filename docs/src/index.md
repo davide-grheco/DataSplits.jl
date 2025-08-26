@@ -50,6 +50,7 @@ X_train, X_test = splitdata(result, X)
 | `LazyKennardStoneSplit` | Same, streamed | `O(N²)` time, `O(N)` mem |
 | `SPXYSplit` | Joint *X–y* maximin (SPXY) | `O(N²)` time, `O(N²)` mem |
 | `LazySPXYSplit` | Joint *X–y* maximin (SPXY), streamed | `O(N²)` time, `O(N)` mem |
+| `LazyMDKSSplit` | Minimum Dissimilarity Kennard–Stone (MDKS), lazy | `O(N²)` time, `O(N)` mem |
 | `MoraisLimaMartinSplit` | Kennard–Stone + random swap | `O(N²)` time, `O(N²)` memory |
 | `OptiSimSplit`         | Optimisable dissimilarity-based splitting       | `O(N²)` time, `O(N²)` memory |
 | `MinimumDissimilaritySplit`|  Greedy dissimilarity with one candidate | O(N²) time, O(N²) memory |
