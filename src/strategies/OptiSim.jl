@@ -70,17 +70,16 @@ function optisim(
   M = min(selected_samples, N)
   K = max_subsample_size
 
-  rchoose(set) = rand(rng, collect(set))
   getdist(i, j) = i < j ? D[j, i] : D[i, j]
 
   candidates = Set(1:N)
   selected = Set{Int}()
 
-  push!(selected, rchoose(candidates))
+  push!(selected, rand(rng, candidates))
   delete!(candidates, selected)
 
   while length(selected) < M
-    subsamples = _build_optisim_subsample(
+    subsamples = _build_optisim_subsample!(
       distance_matrix,
       selected,
       candidates,
@@ -101,7 +100,7 @@ function optisim(
   return selected
 end
 
-function _build_optisim_subsample(
+function _build_optisim_subsample!(
   distance_matrix::Matrix{Float64},
   selected::Set{Int},
   candidates::Set{Int},
@@ -119,9 +118,11 @@ function _build_optisim_subsample(
     is_dissimilar =
       all(distance_matrix[candidate, s] >= min_dissimilarity for s in selected)
 
-    # TODO: Consider deleting invalid samples when implementing the lazy version
     if is_dissimilar
       push!(subsample, candidate)
+    else
+      # If the candidate is too similar to an element it will always be, we can discard it from further analysis
+      delete!(candidates, candidate)
     end
   end
 

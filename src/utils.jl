@@ -43,6 +43,20 @@ function find_maximin_element(
   return best_index
 end
 
+function find_maximin_element_lazy(X, metric, source_set, reference_set)
+  best_index = first(source_set)
+  best_score = -Inf
+  for i in source_set
+    value = getobs(X, i)
+    min_dist = minimum(j -> Distances.evaluate(metric, value, getobs(X, j)), reference_set)
+    if min_dist > best_score
+      best_score = min_dist
+      best_index = i
+    end
+  end
+  return best_index
+end
+
 """
     distance_matrix(X, metric::PreMetric)
 
@@ -63,9 +77,9 @@ function distance_matrix(X, metric::PreMetric)
   N = numobs(X)
   D = zeros(Float64, N, N)
 
-  for i = 1:N-1
+  for i = 1:(N-1)
     xi = getobs(X, i)
-    for j = i+1:N
+    for j = (i+1):N
       d = evaluate(metric, xi, getobs(X, j))
       D[i, j] = D[j, i] = d
     end

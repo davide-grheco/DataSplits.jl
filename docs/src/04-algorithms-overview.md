@@ -77,17 +77,25 @@ X_train, X_test = splitdata(result, X)
 
 ## OptiSim Split
 
-Description: Applies iterative swapping of samples between train and test sets to minimize within-set dissimilarity, guided by a dissimilarity measure.
-
-Use Cases: When split quality is paramount and computational resources allow.
+Description: Applies iterative selection of samples to maximize dissimilarity in the training set, guided by a dissimilarity measure. The standard version precomputes the full distance matrix, while the lazy version computes distances on-the-fly for memory efficiency.
 
 Pros:
 
 - Can yield high-quality, low-dissimilarity splits.
+- Lazy version is memory-efficient and suitable for large datasets.
 
 Cons:
 
-- Computationally intensive; sensitive to initial split.
+- Standard version is computationally intensive and memory-hungry for large N.
+- Lazy version may incur extra computation due to repeated distance calculations.
+
+Example (lazy version):
+
+```julia
+splitter = LazyOptiSimSplit(0.7; max_subsample_size=10, distance_cutoff=0.35)
+result = split(X, splitter)
+X_train, X_test = splitdata(result, X)
+```
 
 ## Minimum/Maximum Dissimilarity Split
 
