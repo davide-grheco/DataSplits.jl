@@ -20,8 +20,8 @@ result = split(X, splitter)
 X_train, X_test = splitdata(result, X)
 ```
 """
-struct LazyKennardStoneSplit{T} <: SplitStrategy
-  frac::ValidFraction{T}
+struct LazyKennardStoneSplit <: SplitStrategy
+  frac::ValidFraction
   metric::Distances.SemiMetric
 end
 
@@ -53,8 +53,8 @@ function _split(data, s::LazyKennardStoneSplit; rng = Random.GLOBAL_RNG)
   for i = 1:N
     if !selected[i]
       x = getobs(data, i)
-      d1 = evaluate(s.metric, x, getobs(data, i₁))
-      d2 = evaluate(s.metric, x, getobs(data, i₂))
+      d1 = Distances.evaluate(s.metric, x, getobs(data, i₁))
+      d2 = Distances.evaluate(s.metric, x, getobs(data, i₂))
       min_dists[i] = min(d1, d2)
     end
   end
@@ -67,7 +67,7 @@ function _split(data, s::LazyKennardStoneSplit; rng = Random.GLOBAL_RNG)
     ref = getobs(data, next_i)
     @inbounds for i = 1:N
       if !selected[i]
-        d = evaluate(s.metric, ref, getobs(data, i))
+        d = Distances.evaluate(s.metric, ref, getobs(data, i))
         min_dists[i] = min(min_dists[i], d)
       end
     end
@@ -85,7 +85,7 @@ function find_most_distant_pair(data, metric::Distances.SemiMetric)
     x = getobs(data, i)
     for j = (i+1):n
       y = getobs(data, j)
-      d = evaluate(metric, x, y)
+      d = Distances.evaluate(metric, x, y)
       if d > max_d
         max_d, best_i, best_j = d, i, j
       end

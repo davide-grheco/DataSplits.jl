@@ -6,6 +6,7 @@ include("strategies/random.jl")
 include("strategies/LazyKennardStone.jl")
 include("strategies/KennardStone.jl")
 include("strategies/SPXY.jl")
+include("strategies/LazySPXY.jl")
 include("strategies/MoraisLimaMartinSplit.jl")
 include("strategies/OptiSim.jl")
 include("strategies/MinimumDissimilarity.jl")
@@ -20,7 +21,7 @@ export split
 export SplitResult, splitdata
 export SplitStrategy
 export LazyCADEXSplit, LazyKennardStoneSplit, KennardStoneSplit, MoraisLimaMartinSplit
-export SPXYSplit, MDKSSplit
+export SPXYSplit, MDKSSplit, LazySPXYSplit
 export OptiSimSplit, MinimumDissimilaritySplit, MaximumDissimilaritySplit
 export RandomSplit
 export ClusterShuffleSplit, ClusterStratifiedSplit

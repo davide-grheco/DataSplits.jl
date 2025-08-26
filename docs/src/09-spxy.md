@@ -17,6 +17,10 @@ The SPXY algorithm extends Kennard–Stone by considering both the feature matri
 3. Add the two matrices to form a joint distance matrix.
 4. Apply the Kennard–Stone maximin selection on the joint distance matrix to select a representative training set.
 
+## LazySPXY Split
+
+`LazySPXYSplit` is a memory-efficient variant of SPXY that computes distances on-the-fly, making it suitable for large datasets. It produces the same result as `SPXYSplit` but avoids storing the full distance matrix in memory.
+
 ## Usage
 
 ```julia
@@ -35,6 +39,7 @@ X_train, X_test = splitdata(result, X)
 ## API Reference
 
 - [`SPXYSplit`](@ref)
+- [`LazySPXYSplit`](@ref)
 - [`MDKSSplit`](@ref)
 - [`split`](@ref)
 - [`splitdata`](@ref)
