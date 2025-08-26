@@ -46,3 +46,32 @@ function _split(X, s::MaximumDissimilaritySplit; rng = Random.GLOBAL_RNG)
   )
   return _split(X, opti; rng)
 end
+
+
+struct LazyMaximumDissimilaritySplit <: SplitStrategy
+  frac::ValidFraction
+  distance_cutoff::Float64
+  metric::Distances.SemiMetric
+end
+
+function LazyMaximumDissimilaritySplit(
+  frac::Real;
+  distance_cutoff = 0.35,
+  metric = Euclidean(),
+)
+  LazyMaximumDissimilaritySplit(ValidFraction(frac), distance_cutoff, metric)
+end
+
+function _split(X, s::LazyMaximumDissimilaritySplit; rng = Random.GLOBAL_RNG)
+  N = numobs(X)
+  return _split(
+    X,
+    LazyOptiSimSplit(
+      s.frac;
+      max_subsample_size = N,
+      distance_cutoff = s.distance_cutoff,
+      metric = s.metric,
+    );
+    rng = rng,
+  )
+end

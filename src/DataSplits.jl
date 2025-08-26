@@ -24,7 +24,7 @@ export SplitStrategy
 export LazyCADEXSplit, LazyKennardStoneSplit, KennardStoneSplit, MoraisLimaMartinSplit
 export SPXYSplit, MDKSSplit, LazySPXYSplit, LazyMDKSSplit
 export OptiSimSplit, MinimumDissimilaritySplit, MaximumDissimilaritySplit
-export LazyOptiSimSplit
+export LazyOptiSimSplit, LazyMinimumDissimilaritySplit, LazyMaximumDissimilaritySplit
 export RandomSplit
 export ClusterShuffleSplit, ClusterStratifiedSplit
 export sphere_exclusion

@@ -99,17 +99,17 @@ X_train, X_test = splitdata(result, X)
 
 ## Minimum/Maximum Dissimilarity Split
 
-Description: Greedy cluster-based strategy that adds clusters to the training set based on minimal or maximal dissimilarity criteria until the desired fraction is reached.
-
-Use Cases: When a fast, cluster-aware splitting heuristic is sufficient.
+Description: Greedy dissimilarity selection strategies for train/test splitting (Clark 1997). MinimumDissimilaritySplit is equivalent to OptiSim with `max_subsample_size = 1` (greedy, one candidate at a time). MaximumDissimilaritySplit is equivalent to OptiSim with `max_subsample_size = N` (all candidates at each step). Lazy versions compute distances on-the-fly for memory efficiency.
 
 Pros:
 
 - Simpler and faster than full optimization.
+- Lazy versions are memory-efficient and suitable for large datasets.
 
 Cons:
 
-- Greedy nature may miss globally optimal arrangement; cluster sizes may vary.
+- Greedy nature may miss globally optimal arrangement.
+- Lazy versions may incur extra computation due to repeated distance calculations.
 
 ## Sphere Exclusion Split
 
