@@ -116,8 +116,7 @@ function _split(
   strategy::SPXYSplit;
   rng = Random.GLOBAL_RNG,
 )
-  idx_range = axes(X, 1)
-  N = length(idx_range)
+  N = numobs(X)
 
   n_train, n_test = train_test_counts(N, strategy.frac)
   DX = _norm_pairwise(X, strategy.metric_X)
