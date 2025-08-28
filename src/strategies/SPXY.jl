@@ -118,12 +118,13 @@ function _split(
 )
   N = numobs(X)
 
-  n_train, n_test = train_test_counts(N, strategy.frac)
+  n_train, _ = train_test_counts(N, strategy.frac)
   DX = _norm_pairwise(X, strategy.metric_X)
   DY = _norm_pairwise(y, strategy.metric_y)
-  D = DX .+ DY
+  DX .+= DY
+  DY = nothing
 
-  train_idx, test_idx = kennard_stone_from_distance_matrix(D, n_train)
+  train_idx, test_idx = kennard_stone_from_distance_matrix(DX, n_train)
 
   return TrainTestSplit(train_idx, test_idx)
 end
