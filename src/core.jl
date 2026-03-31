@@ -1,15 +1,36 @@
 using Random
 using ArrayInterface
-using MLUtils: numobs, getobs
+using MLUtils: numobs, getobs, obsview
+using Tables
 
-abstract type SplitStrategy end
+
+# ---------------------------------------------------------------------------
+# Abstract types
+# ---------------------------------------------------------------------------
 
 """
-    SplitResult
+    AbstractSplitStrategy
+
+Abstract supertype for all splitting strategies.
+
+To implement a custom strategy, subtype this and define:
+- `_partition(data, alg; target, time, groups, rng)` returning an `AbstractSplitResult`
+- `consumes(::MyStrategy)` returning a tuple of symbols from `(:data, :target, :time, :groups)`
+- `fallback_from_data(::MyStrategy)` returning the subset of `consumes` that can fall back to `data`
+"""
+abstract type AbstractSplitStrategy end
+
+"""
+    AbstractSplitResult
 
 Abstract supertype for all split result types.
 """
-abstract type SplitResult end
+abstract type AbstractSplitResult end
+
+
+# ---------------------------------------------------------------------------
+# Concrete result types
+# ---------------------------------------------------------------------------
 
 """
     TrainTestSplit
@@ -17,21 +38,16 @@ abstract type SplitResult end
 A result type representing a train/test split.
 
 # Fields
-- `train::Vector{Int}`: Indices (1:N) of training samples.
-- `test::Vector{Int}`: Indices (1:N) of test samples.
-
-# Notes
-- Indices are always in the range 1:N, where N is the number of samples.
-- For custom data types, use `getobs(X, indices)` to access split data.
-- Data matrices are expected to have columns as samples (features × samples).
+- `train`: Indices of training samples.
+- `test`: Indices of test samples.
 
 # Examples
 ```julia
-result = split(X, KennardStoneSplit(0.8))
-X_train, X_test = splitdata(result, X)
+res = partition(X, KennardStoneSplit(0.8))
+X_train, X_test = splitdata(res, X)
 ```
 """
-struct TrainTestSplit{I} <: SplitResult
+struct TrainTestSplit{I} <: AbstractSplitResult
   train::I
   test::I
 end
@@ -42,22 +58,17 @@ end
 A result type representing a train/validation/test split.
 
 # Fields
-- `train::Vector{Int}`: Indices (1:N) of training samples.
-- `val::Vector{Int}`: Indices (1:N) of validation samples.
-- `test::Vector{Int}`: Indices (1:N) of test samples.
-
-# Notes
-- Indices are always in the range 1:N, where N is the number of samples.
-- For custom data types, use `getobs(X, indices)` to access split data.
-- Data matrices are expected to have columns as samples (features × samples).
+- `train`: Indices of training samples.
+- `val`: Indices of validation samples.
+- `test`: Indices of test samples.
 
 # Examples
 ```julia
-result = split(X, SomeTrainValTestSplit(...))
-X_train, X_val, X_test = splitdata(result, X)
+res = partition(X, SomeTrainValTestStrategy(...))
+X_train, X_val, X_test = splitdata(res, X)
 ```
 """
-struct TrainValTestSplit{I} <: SplitResult
+struct TrainValTestSplit{I} <: AbstractSplitResult
   train::I
   val::I
   test::I
@@ -69,156 +80,255 @@ end
 A result type representing a k-fold cross-validation split.
 
 # Fields
-- `folds::Vector{<:SplitResult}`: Vector of TrainTestSplit or TrainValTestSplit, one per fold.
-
-# Notes
-- Each fold contains indices in the range 1:N, where N is the number of samples.
-- For custom data types, use `getobs(X, indices)` to access split data.
-- Data matrices are expected to have columns as samples (features × samples).
+- `folds::Vector{<:AbstractSplitResult}`: One result per fold.
 
 # Examples
 ```julia
-result = split(X, SomeCVSplit(...))
-for (X_train, X_test) in splitdata(result, X)
+res = partition(X, SomeCVStrategy(...))
+for (X_train, X_test) in splitdata(res, X)
     # ...
 end
 ```
 """
-struct CrossValidationSplit{T<:SplitResult} <: SplitResult
+struct CrossValidationSplit{T<:AbstractSplitResult} <: AbstractSplitResult
   folds::Vector{T}
 end
 
 
+# ---------------------------------------------------------------------------
+# Result accessors (stable contract — do not access fields directly)
+# ---------------------------------------------------------------------------
+
 """
-    splitdata(result::SplitResult, X)
+    trainindices(res::AbstractSplitResult) -> indices
 
-Return the train/test (and optionally validation) splits from a `SplitResult` for the given data.
+Return the training indices from a split result.
+"""
+trainindices(res::TrainTestSplit) = res.train
+trainindices(res::TrainValTestSplit) = res.train
 
-# Arguments
-- `result::SplitResult`: The result of a splitting strategy.
-- `X`: Data matrix or custom container. Columns are samples.
+"""
+    testindices(res::AbstractSplitResult) -> indices
 
-# Returns
-- Tuple of data splits, e.g. `(X_train, X_test)`.
+Return the test indices from a split result.
+"""
+testindices(res::TrainTestSplit) = res.test
+testindices(res::TrainValTestSplit) = res.test
 
-# Notes
-- All indices in `result` are in the range 1:N, where N is the number of samples.
-- For custom data types, use `getobs(X, indices)` to access split data.
-- Data matrices are expected to have columns as samples (features × samples).
+"""
+    valindices(res::TrainValTestSplit) -> indices
+
+Return the validation indices from a split result.
+"""
+valindices(res::TrainValTestSplit) = res.val
+
+"""
+    folds(res::CrossValidationSplit) -> Vector{<:AbstractSplitResult}
+
+Return the individual fold results from a cross-validation split.
+"""
+folds(res::CrossValidationSplit) = res.folds
+
+
+# ---------------------------------------------------------------------------
+# Data extraction
+# ---------------------------------------------------------------------------
+
+"""
+    splitdata(res, data)
+
+Materialise the split: return a tuple of data subsets corresponding to the
+train/test (and optionally validation) indices in `res`.
+
+When `data` is a DataFrame or other Tables.jl-compatible container,
+`splitdata` returns subsets of the same type.
 
 # Examples
 ```julia
-result = split(X, KennardStoneSplit(0.8))
-X_train, X_test = splitdata(result, X)
+res = partition(X, KennardStoneSplit(0.8))
+X_train, X_test = splitdata(res, X)
 ```
 """
-function splitdata(result::SplitResult, X)
+function splitdata(res::AbstractSplitResult, data)
   throw(
     SplitNotImplementedError(
-      "splitdata is not implemented for $(typeof(result)). Please implement splitdata(::$(typeof(result)), X). If you are using a custom split result type, you need to provide a splitdata method for it.",
+      "splitdata is not implemented for $(typeof(res)). Implement splitdata(::$(typeof(res)), data).",
     ),
   )
 end
 
-function splitdata(result::TrainTestSplit, X)
-  (getobs(X, result.train), getobs(X, result.test))
-end
+splitdata(res::TrainTestSplit, data) = (getobs(data, res.train), getobs(data, res.test))
 
-function splitdata(result::TrainValTestSplit, X)
-  (getobs(X, result.train), getobs(X, result.val), getobs(X, result.test))
-end
+splitdata(res::TrainValTestSplit, data) =
+  (getobs(data, res.train), getobs(data, res.val), getobs(data, res.test))
 
-function splitdata(result::CrossValidationSplit, X)
-  [splitdata(fold, X) for fold in result.folds]
-end
-
+splitdata(res::CrossValidationSplit, data) = [splitdata(fold, data) for fold in res.folds]
 
 """
-    split(data, strategy; rng=Random.default_rng()) -> SplitResult
+    splitview(res, data)
 
-Split data into train/test (or train/val/test, or cross-validation) sets according to the given strategy.
-
-# Arguments
-- `data`: Data matrix (columns are samples) or custom container.
-- `strategy::SplitStrategy`: The splitting strategy to use.
-- `rng`: Optional random number generator.
-
-# Returns
-- `SplitResult`: An object containing the split indices.
-
-# Notes
-- All returned indices are in the range 1:N, where N is the number of samples.
-- For custom data types, implement `Base.length` and `Base.getindex` as per MLUtils.
+Like `splitdata` but returns lazy views via `MLUtils.obsview` — no data is
+copied. Prefer `splitdata` when you need independent copies.
 
 # Examples
 ```julia
-result = split(X, KennardStoneSplit(0.8))
-X_train, X_test = splitdata(result, X)
+res = partition(X, RandomSplit(0.8))
+X_train, X_test = splitview(res, X)
 ```
 """
-function split(X, strategy::SplitStrategy; rng = Random.default_rng())
-  isempty(X) && throw(
-    SplitInputError("Data must not be empty. Please provide a non-empty dataset to split."),
-  )
-  numobs(X) == 1 && throw(
-    SplitInputError(
-      "Cannot split a single data point. Please provide at least two samples.",
-    ),
-  )
+splitview(res::TrainTestSplit, data) = (obsview(data, res.train), obsview(data, res.test))
 
-  result = _split(X, strategy; rng)
-  return result
+splitview(res::TrainValTestSplit, data) =
+  (obsview(data, res.train), obsview(data, res.val), obsview(data, res.test))
+
+splitview(res::CrossValidationSplit, data) = [splitview(fold, data) for fold in res.folds]
+
+
+# ---------------------------------------------------------------------------
+# Trait system
+# ---------------------------------------------------------------------------
+
+"""
+    consumes(alg::AbstractSplitStrategy) -> NTuple{N, Symbol}
+
+Return the named slots this strategy reads, as a tuple of symbols from
+`(:data, :target, :time, :groups)`.
+
+- `:data` — the strategy inspects observation values (e.g. for distances).
+  Omitting it means only `numobs` is needed (e.g. `RandomSplit`).
+- `:target` — the strategy reads a response/property vector.
+- `:time` — the strategy reads a temporal ordering vector.
+- `:groups` — the strategy reads a group-membership vector.
+"""
+consumes(::AbstractSplitStrategy) = ()
+
+"""
+    fallback_from_data(alg::AbstractSplitStrategy) -> NTuple{N, Symbol}
+
+Return the subset of `consumes(alg)` whose keyword may be omitted in
+`partition`, in which case `data` itself fills that slot.
+
+Must satisfy: `fallback_from_data(alg) ⊆ consumes(alg)`.
+"""
+fallback_from_data(::AbstractSplitStrategy) = ()
+
+
+# ---------------------------------------------------------------------------
+# Tables.jl helper
+# ---------------------------------------------------------------------------
+
+# Convert a Tables.jl-compatible input (e.g. DataFrame) to a features×samples
+# matrix (F×N), which is the internal convention for distance-based strategies.
+# Non-table inputs are returned unchanged.
+function _to_feature_matrix(X)
+  Tables.istable(X) ? permutedims(Tables.matrix(X)) : X
 end
 
-function split(
-  data::Tuple{AbstractArray,AbstractVector},
-  strategy::SplitStrategy;
+
+# ---------------------------------------------------------------------------
+# Auxiliary slot resolution
+# ---------------------------------------------------------------------------
+
+function _resolve_slot(alg, data, kwval, slot::Symbol)
+  if slot ∈ consumes(alg)
+    if kwval === nothing
+      if slot ∈ fallback_from_data(alg)
+        kwval = data
+      else
+        throw(SplitInputError("$(typeof(alg)) requires the `$slot=` keyword."))
+      end
+    end
+    kwval isa AbstractVector ||
+      throw(SplitInputError("`$slot` must be a 1D AbstractVector, got $(typeof(kwval))."))
+    return kwval
+  else
+    kwval === nothing ||
+      throw(SplitInputError("$(typeof(alg)) does not use the `$slot=` keyword."))
+    return nothing
+  end
+end
+
+
+# ---------------------------------------------------------------------------
+# Main entry point
+# ---------------------------------------------------------------------------
+
+"""
+    partition(data, alg::AbstractSplitStrategy;
+              target=nothing, time=nothing, groups=nothing,
+              rng=Random.default_rng()) -> AbstractSplitResult
+
+Split `data` into train/test (or train/val/test, or cross-validation folds)
+according to `alg`.
+
+# Arguments
+- `data`: Observation container (matrix, vector, DataFrame, …).
+  Columns are samples for matrices; rows are samples for DataFrames.
+- `alg`: A splitting strategy.
+
+# Keywords
+- `target`: Response / property vector used by some strategies (e.g. `SPXYSplit`).
+- `time`: Temporal ordering vector used by `TimeSplit` variants.
+- `groups`: Group-membership vector used by `GroupShuffleSplit` / `GroupStratifiedSplit`.
+- `rng`: Random number generator.
+
+# Fallback rule
+When a strategy's required keyword is omitted and `fallback_from_data(alg)`
+includes that slot, `data` itself is used for that role. This makes
+single-input calls natural:
+
+```julia
+partition(dates, TimeSplitOldest(0.8))          # dates is both data and time
+partition(y, TargetPropertyHigh(0.8))           # y is both data and target
+partition(ids, GroupShuffleSplit(0.8))          # ids is both data and groups
+```
+
+# Examples
+```julia
+res = partition(X, KennardStoneSplit(0.8))
+res = partition(X, SPXYSplit(0.7); target=y)
+res = partition(X, GroupShuffleSplit(0.8); groups=patient_ids)
+df_train, df_test = splitdata(res, df)
+```
+"""
+function partition(
+  data,
+  alg::AbstractSplitStrategy;
+  target = nothing,
+  time = nothing,
+  groups = nothing,
   rng = Random.default_rng(),
 )
-  X, y = data
-  isempty(X) && throw(
-    SplitInputError("Data must not be empty. Please provide a non-empty dataset to split."),
+  isempty(data) &&
+    throw(SplitInputError("Data must not be empty. Please provide a non-empty dataset."))
+  numobs(data) < 2 && throw(SplitInputError("Cannot split fewer than 2 observations."))
+
+  resolved_target = _resolve_slot(alg, data, target, :target)
+  resolved_time = _resolve_slot(alg, data, time, :time)
+  resolved_groups = _resolve_slot(alg, data, groups, :groups)
+
+  data_internal = :data ∈ consumes(alg) ? _to_feature_matrix(data) : data
+
+  return _partition(
+    data_internal,
+    alg;
+    target = resolved_target,
+    time = resolved_time,
+    groups = resolved_groups,
+    rng = rng,
   )
-  numobs(X) == 1 && throw(
-    SplitInputError(
-      "Cannot split a single data point. Please provide at least two samples.",
-    ),
-  )
-  numobs(X) == numobs(y) || throw(
-    SplitInputError(
-      "X and y must have the same number of samples. Please ensure your feature matrix and target vector are aligned.",
-    ),
-  )
-  result = _split((X, y), strategy; rng)
-  return result
 end
 
-function split(X, y, strategy::SplitStrategy; rng = Random.default_rng())
-  isempty(X) && throw(
-    SplitInputError("Data must not be empty. Please provide a non-empty dataset to split."),
-  )
-  numobs(X) == 1 && throw(
-    SplitInputError(
-      "Cannot split a single data point. Please provide at least two samples.",
-    ),
-  )
-  numobs(X) == numobs(y) || throw(
-    SplitInputError(
-      "X and y must have the same number of samples. Please ensure your feature matrix and target vector are aligned.",
-    ),
-  )
-  result = _split(X, y, strategy; rng)
-  return result
-end
+
+# ---------------------------------------------------------------------------
+# ValidFraction
+# ---------------------------------------------------------------------------
+
 struct ValidFraction{T<:Real}
   frac::T
   function ValidFraction(frac::T) where {T<:Real}
     if !(0 < frac < 1)
-      throw(
-        SplitParameterError(
-          "Fraction must be between 0 and 1 (exclusive). Got $frac. Please provide a valid fraction for splitting.",
-        ),
-      )
+      throw(SplitParameterError("Fraction must be strictly between 0 and 1. Got $frac."))
     end
     new{T}(frac)
   end

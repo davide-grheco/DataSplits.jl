@@ -1,49 +1,38 @@
 using Distances
 
-export LazyKennardStoneSplit, CADEXSplit
-
 """
-    LazyKennardStoneSplit{T} <: SplitStrategy
+    LazyKennardStoneSplit <: AbstractSplitStrategy
 
-Memory-efficient Kennard-Stone (CADEX) splitting strategy for large datasets.
-
-Performs train/test splitting using the maximin strategy, but avoids storing the full NxN distance matrix in memory (O(N) storage).
+Memory-efficient Kennard-Stone (CADEX) algorithm. Computes distances
+on-the-fly (O(N) storage) rather than precomputing the full N×N matrix.
 
 # Fields
-- `frac::ValidFraction{T}`: Fraction of data to use for training (0 < frac < 1)
-- `metric::Distances.SemiMetric`: Distance metric to use (default: Euclidean())
+- `frac::ValidFraction`: Fraction of data to use for training (0 < frac < 1)
+- `metric::Distances.SemiMetric`: Distance metric (default: `Euclidean()`)
 
 # Examples
 ```julia
-splitter = LazyKennardStoneSplit(0.8)
-result = split(X, splitter)
-X_train, X_test = splitdata(result, X)
+res = partition(X, LazyKennardStoneSplit(0.8))
+X_train, X_test = splitdata(res, X)
 ```
 """
-struct LazyKennardStoneSplit <: SplitStrategy
+struct LazyKennardStoneSplit <: AbstractSplitStrategy
   frac::ValidFraction
   metric::Distances.SemiMetric
 end
 
-# Constructor overloads
 LazyKennardStoneSplit(frac::Real) = LazyKennardStoneSplit(ValidFraction(frac), Euclidean())
 LazyKennardStoneSplit(frac::Real, metric) =
   LazyKennardStoneSplit(ValidFraction(frac), metric)
+
 const LazyCADEXSplit = LazyKennardStoneSplit
 
+consumes(::LazyKennardStoneSplit) = (:data,)
+fallback_from_data(::LazyKennardStoneSplit) = ()
 
-"""
-    _split(data, s::LazyKennardStoneSplit; rng=Random.GLOBAL_RNG) → (train_idx, test_idx)
-
-Kennard-Stone (CADEX) algorithm for optimal train/test splitting using maximin strategy.
-Memory-optimized implementation with O(N) storage.
-Useful when working with large datasets where the NxN distance matrix does not fit memory.
-When working with small datasets, use the traditional implementation.
-"""
-function _split(data, s::LazyKennardStoneSplit; rng = Random.GLOBAL_RNG)
+function _partition(data, s::LazyKennardStoneSplit; rng = Random.GLOBAL_RNG, kwargs...)
   N = numobs(data)
-  n_train, n_test = train_test_counts(N, s.frac)
-
+  n_train, _ = train_test_counts(N, s.frac)
   i₁, i₂ = find_most_distant_pair(data, s.metric)
   selected = falses(N)
   selected[i₁] = selected[i₂] = true
@@ -80,7 +69,6 @@ end
 function find_most_distant_pair(data, metric::Distances.SemiMetric)
   max_d, best_i, best_j = -Inf, nothing, nothing
   n = numobs(data)
-
   for i = 1:(n-1)
     x = getobs(data, i)
     for j = (i+1):n
@@ -91,6 +79,5 @@ function find_most_distant_pair(data, metric::Distances.SemiMetric)
       end
     end
   end
-
   return best_i, best_j
 end
