@@ -1,9 +1,3 @@
-struct MaximumDissimilaritySplit <: SplitStrategy
-  frac::ValidFraction
-  distance_cutoff::Float64
-  metric::PreMetric
-end
-
 """
     MaximumDissimilaritySplit(frac; distance_cutoff=0.35, metric=Euclidean())
 
@@ -31,6 +25,11 @@ result = split(X, splitter)
 X_train, X_test = splitdata(result, X)
 ```
 """
+struct MaximumDissimilaritySplit <: SplitStrategy
+  frac::ValidFraction
+  distance_cutoff::Float64
+  metric::PreMetric
+end
 
 function MaximumDissimilaritySplit(frac::Real; distance_cutoff = 0.35, metric = Euclidean())
   MaximumDissimilaritySplit(ValidFraction(frac), distance_cutoff, metric)

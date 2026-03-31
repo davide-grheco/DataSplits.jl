@@ -3,12 +3,6 @@ using MLUtils
 import MLUtils: getobs, numobs
 
 
-struct LazySPXYSplit <: SplitStrategy
-  frac::ValidFraction
-  metric_X::Distances.SemiMetric
-  metric_y::Distances.SemiMetric
-end
-
 """
     LazySPXYSplit{T} <: SplitStrategy
 
@@ -27,6 +21,12 @@ result = split((X, y), splitter)
 X_train, X_test = splitdata(result, X)
 ```
 """
+struct LazySPXYSplit <: SplitStrategy
+  frac::ValidFraction
+  metric_X::Distances.SemiMetric
+  metric_y::Distances.SemiMetric
+end
+
 LazySPXYSplit(frac::Real; metric_X = Euclidean(), metric_y = Euclidean()) =
   LazySPXYSplit(ValidFraction(frac), metric_X, metric_y)
 
@@ -85,12 +85,6 @@ function _split((X, y), s::LazySPXYSplit; rng = Random.GLOBAL_RNG)
 end
 
 
-struct LazyMDKSSplit <: SplitStrategy
-  frac::ValidFraction
-  metric_X::Union{Nothing,Distances.SemiMetric}
-  metric_y::Distances.SemiMetric
-end
-
 """
     LazyMDKSSplit <: SplitStrategy
 
@@ -110,6 +104,11 @@ result = split((X, y), splitter)
 X_train, X_test = splitdata(result, X)
 ```
 """
+struct LazyMDKSSplit <: SplitStrategy
+  frac::ValidFraction
+  metric_X::Union{Nothing,Distances.SemiMetric}
+  metric_y::Distances.SemiMetric
+end
 function LazyMDKSSplit(frac::Real; metric = nothing)
   return LazyMDKSSplit(
     ValidFraction(frac),
