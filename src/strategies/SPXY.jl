@@ -2,12 +2,6 @@ using Statistics: cov
 using Distances
 
 
-struct SPXYSplit <: SplitStrategy
-  frac::ValidFraction
-  metric_X::Distances.SemiMetric
-  metric_y::Distances.SemiMetric
-end
-
 """
     SPXYSplit(frac; metric_X = Euclidean(), metric_y = Euclidean())
     SPXYSplit(frac; metric = Euclidean())
@@ -37,14 +31,14 @@ X_train, X_test = splitdata(result, X)
 # See also
 [`KennardStoneSplit`](@ref) — the classical variant that uses only `X`.
 """
+struct SPXYSplit <: SplitStrategy
+  frac::ValidFraction
+  metric_X::Distances.SemiMetric
+  metric_y::Distances.SemiMetric
+end
+
 SPXYSplit(frac::Real; metric_X = Euclidean(), metric_y = Euclidean()) =
   SPXYSplit(ValidFraction(frac), metric_X, metric_y)
-
-
-struct MDKSSplit <: SplitStrategy
-  frac::ValidFraction
-  metric::Union{Nothing,PreMetric}
-end
 
 
 """
@@ -69,6 +63,10 @@ X_train, X_test = splitdata(result, X)
 # See also
 [`SPXYSplit`](@ref)
 """
+struct MDKSSplit <: SplitStrategy
+  frac::ValidFraction
+  metric::Union{Nothing,PreMetric}
+end
 
 MDKSSplit(frac::Real; metric = nothing) = MDKSSplit(ValidFraction(frac), metric)
 
