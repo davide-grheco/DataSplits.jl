@@ -3,14 +3,15 @@ using Random, Distances
 """
     MoraisLimaMartinSplit(frac; swap_frac=0.1, metric=Euclidean())
 
-Splitting strategy executing Kennard–Stone then randomly swapping a fraction of samples between train and test sets.
+Kennard–Stone initialisation followed by random swapping of a fraction of
+samples between train and test sets.
 
 # Fields
 - `frac::ValidFraction{T}`: Fraction of data to use for training (0 < frac < 1)
-- `swap_frac::ValidFraction{T}`: Fraction of samples to swap between train and test (0 < swap_frac < 1)
-- `metric::Distances.SemiMetric`: Distance metric for Kennard–Stone (default: Euclidean())
+- `swap_frac::ValidFraction{T}`: Fraction of samples to swap (0 < swap_frac < 1)
+- `metric::Distances.SemiMetric`: Distance metric for Kennard–Stone (default: `Euclidean()`)
 """
-struct MoraisLimaMartinSplit{T,M<:Distances.SemiMetric} <: SplitStrategy
+struct MoraisLimaMartinSplit{T,M<:Distances.SemiMetric} <: AbstractSplitStrategy
   frac::ValidFraction{T}
   swap_frac::ValidFraction{T}
   metric::M
@@ -19,9 +20,12 @@ end
 MoraisLimaMartinSplit(frac::Real; swap_frac::Real = 0.1, metric = Euclidean()) =
   MoraisLimaMartinSplit(ValidFraction(frac), ValidFraction(swap_frac), metric)
 
-function _split(data, s::MoraisLimaMartinSplit; rng = Random.GLOBAL_RNG)
+consumes(::MoraisLimaMartinSplit) = (:data,)
+fallback_from_data(::MoraisLimaMartinSplit) = ()
+
+function _partition(data, s::MoraisLimaMartinSplit; rng = Random.GLOBAL_RNG, kwargs...)
   ks = KennardStoneSplit(s.frac, s.metric)
-  tt = _split(data, ks; rng = rng)
+  tt = _partition(data, ks; rng = rng)
   train_idx = copy(tt.train)
   test_idx = copy(tt.test)
   n_swap = round(Int, s.swap_frac * min(length(train_idx), length(test_idx)))

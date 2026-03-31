@@ -1,32 +1,31 @@
 using Random
 
-export RandomSplit
-
 """
-    RandomSplit{T} <: SplitStrategy
+    RandomSplit{T} <: AbstractSplitStrategy
 
-Randomly splits data into train/test sets according to the specified fraction.
+Randomly splits data into train/test sets.
 
 # Fields
 - `frac::ValidFraction{T}`: Fraction of data to use for training (0 < frac < 1)
 
 # Examples
 ```julia
-splitter = RandomSplit(0.8)
-result = split(X, splitter)
-X_train, X_test = splitdata(result, X)
+res = partition(X, RandomSplit(0.8))
+X_train, X_test = splitdata(res, X)
 ```
 """
-struct RandomSplit{T} <: SplitStrategy
+struct RandomSplit{T} <: AbstractSplitStrategy
   frac::ValidFraction{T}
 end
+
 RandomSplit(frac::Real) = RandomSplit(ValidFraction(frac))
 
-function _split(data, s::RandomSplit; rng)
+consumes(::RandomSplit) = ()
+fallback_from_data(::RandomSplit) = ()
+
+function _partition(data, s::RandomSplit; rng, kwargs...)
   N = numobs(data)
   perm = randperm(rng, N)
   cut = floor(Int, s.frac * N)
-  train_pos = perm[1:cut]
-  test_pos = perm[cut+1:end]
-  return TrainTestSplit(train_pos, test_pos)
+  return TrainTestSplit(perm[1:cut], perm[cut+1:end])
 end

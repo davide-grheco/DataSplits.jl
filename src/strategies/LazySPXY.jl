@@ -2,26 +2,24 @@ using Distances
 using MLUtils
 import MLUtils: getobs, numobs
 
-
 """
-    LazySPXYSplit{T} <: SplitStrategy
+    LazySPXYSplit <: AbstractSplitStrategy
 
-Memory-efficient SPXY splitting strategy for large datasets.
-Performs train/test splitting using the maximin strategy, but avoids storing the full NxN distance matrix in memory (O(N) storage).
+Memory-efficient SPXY splitting strategy. Computes distances on-the-fly
+(O(N) storage) rather than precomputing the full N×N matrix.
 
 # Fields
-- `frac::ValidFraction{T}`: Fraction of data to use for training (0 < frac < 1)
-- `metric_X::Distances.SemiMetric`: Distance metric for X (default: Euclidean())
-- `metric_y::Distances.SemiMetric`: Distance metric for y (default: Euclidean())
+- `frac::ValidFraction`: Fraction of data to use for training (0 < frac < 1)
+- `metric_X::Distances.SemiMetric`: Distance metric for `X` (default: `Euclidean()`)
+- `metric_y::Distances.SemiMetric`: Distance metric for `y` (default: `Euclidean()`)
 
 # Examples
 ```julia
-splitter = LazySPXYSplit(0.8)
-result = split((X, y), splitter)
-X_train, X_test = splitdata(result, X)
+res = partition(X, LazySPXYSplit(0.8); target=y)
+X_train, X_test = splitdata(res, X)
 ```
 """
-struct LazySPXYSplit <: SplitStrategy
+struct LazySPXYSplit <: AbstractSplitStrategy
   frac::ValidFraction
   metric_X::Distances.SemiMetric
   metric_y::Distances.SemiMetric
@@ -30,15 +28,55 @@ end
 LazySPXYSplit(frac::Real; metric_X = Euclidean(), metric_y = Euclidean()) =
   LazySPXYSplit(ValidFraction(frac), metric_X, metric_y)
 
+consumes(::LazySPXYSplit) = (:data, :target)
+fallback_from_data(::LazySPXYSplit) = ()
+
+"""
+    LazyMDKSSplit <: AbstractSplitStrategy
+
+Memory-efficient Minimum Dissimilarity Kennard–Stone (MDKS) splitting strategy.
+Uses Mahalanobis distance for `X` and Euclidean for `y`, normalised and summed
+as in SPXY. Computes distances on-the-fly (O(N) storage).
+
+# Fields
+- `frac::ValidFraction`: Fraction of data to use for training (0 < frac < 1)
+- `metric_X::Union{Nothing,Distances.SemiMetric}`: Distance metric for `X`;
+  if `nothing`, Mahalanobis is computed from the data at split time.
+- `metric_y::Distances.SemiMetric`: Distance metric for `y` (default: `Euclidean()`)
+
+# Examples
+```julia
+res = partition(X, LazyMDKSSplit(0.7); target=y)
+X_train, X_test = splitdata(res, X)
+```
+"""
+struct LazyMDKSSplit <: AbstractSplitStrategy
+  frac::ValidFraction
+  metric_X::Union{Nothing,Distances.SemiMetric}
+  metric_y::Distances.SemiMetric
+end
+
+function LazyMDKSSplit(frac::Real; metric = nothing)
+  LazyMDKSSplit(ValidFraction(frac), metric, Euclidean())
+end
+
+consumes(::LazyMDKSSplit) = (:data, :target)
+fallback_from_data(::LazyMDKSSplit) = ()
+
+# ---------------------------------------------------------------------------
+# Internal helpers
+# ---------------------------------------------------------------------------
 
 function _find_max_distance_XY(X, y, metric_X, metric_y)
   N = numobs(X)
   max_dx = 0.0
   max_dy = 0.0
   for i = 1:(N-1)
-    xi, yi = X[i, :], y[i]
+    xi = getobs(X, i)
+    yi = y[i]
     for j = (i+1):N
-      xj, yj = X[j, :], y[j]
+      xj = getobs(X, j)
+      yj = y[j]
       dx = evaluate(metric_X, xi, xj)
       dy = evaluate(metric_y, yi, yj)
       max_dx = max(max_dx, dx)
@@ -71,63 +109,25 @@ function Distances.evaluate(m::LazySPXYMetric, a, b)
   return dx + dy
 end
 
-function _split((X, y), s::LazySPXYSplit; rng = Random.GLOBAL_RNG)
-  max_X, max_y = _find_max_distance_XY(X, y, s.metric_X, s.metric_y)
-  if max_X == 0.0
-    max_X = 1.0
-  end
-  if max_y == 0.0
-    max_y = 1.0
-  end
+# ---------------------------------------------------------------------------
+# _partition implementations
+# ---------------------------------------------------------------------------
+
+function _partition(X, s::LazySPXYSplit; target, rng = Random.GLOBAL_RNG, kwargs...)
+  max_X, max_y = _find_max_distance_XY(X, target, s.metric_X, s.metric_y)
+  max_X = max_X == 0.0 ? 1.0 : max_X
+  max_y = max_y == 0.0 ? 1.0 : max_y
   metric = LazySPXYMetric(s.metric_X, s.metric_y, max_X, max_y)
-  data = XYObsTable(X, y)
-  return _split(data, LazyKennardStoneSplit(s.frac, metric); rng)
+  data = XYObsTable(X, target)
+  return _partition(data, LazyKennardStoneSplit(s.frac, metric); rng)
 end
 
-
-"""
-    LazyMDKSSplit <: SplitStrategy
-
-Memory-efficient Minimum Dissimilarity Kennard–Stone (MDKS) splitting strategy for large datasets.
-Performs train/test splitting using the maximin strategy, but avoids storing the full NxN distance matrix in memory (O(N) storage).
-Uses Mahalanobis distance for X and Euclidean for y, normalized and summed as in SPXY.
-
-# Fields
-- `frac::ValidFraction`: Fraction of data to use for training (0 < frac < 1)
-- `metric_X::Union{Nothing,Distances.SemiMetric}`: Distance metric for X (default: Mahalanobis(cov(X; dims=2)))
-- `metric_y::Distances.SemiMetric`: Distance metric for y (default: Euclidean())
-
-# Examples
-```julia
-splitter = LazyMDKSSplit(0.7)
-result = split((X, y), splitter)
-X_train, X_test = splitdata(result, X)
-```
-"""
-struct LazyMDKSSplit <: SplitStrategy
-  frac::ValidFraction
-  metric_X::Union{Nothing,Distances.SemiMetric}
-  metric_y::Distances.SemiMetric
-end
-function LazyMDKSSplit(frac::Real; metric = nothing)
-  return LazyMDKSSplit(
-    ValidFraction(frac),
-    metric === nothing ? nothing : metric,
-    Euclidean(),
-  )
-end
-
-function _split((X, y), s::LazyMDKSSplit; rng = Random.GLOBAL_RNG)
+function _partition(X, s::LazyMDKSSplit; target, rng = Random.GLOBAL_RNG, kwargs...)
   metric_X = s.metric_X === nothing ? Mahalanobis(cov(X; dims = 2)) : s.metric_X
-  metric_y = s.metric_y
-  max_X, max_y = _find_max_distance_XY(X, y, metric_X, metric_y)
-  if max_X == 0.0
-    max_X = 1.0
-  end
-  if max_y == 0.0
-    max_y = 1.0
-  end
-  metric = LazySPXYMetric(metric_X, metric_y, max_X, max_y)
-  data = XYObsTable(X, y)
-  return _split(data, LazyKennardStoneSplit(s.frac, metric); rng)
+  max_X, max_y = _find_max_distance_XY(X, target, metric_X, s.metric_y)
+  max_X = max_X == 0.0 ? 1.0 : max_X
+  max_y = max_y == 0.0 ? 1.0 : max_y
+  metric = LazySPXYMetric(metric_X, s.metric_y, max_X, max_y)
+  data = XYObsTable(X, target)
+  return _partition(data, LazyKennardStoneSplit(s.frac, metric); rng)
 end

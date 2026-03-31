@@ -15,19 +15,21 @@ import DataSplits: SplitInputError, SplitParameterError, SplitNotImplementedErro
   ]'
   y = [4, 1, 7, 5, 2, 5]
 
-  @test_throws SplitParameterError split(X, LazySPXYSplit(0.7))
+  @test_throws SplitInputError partition(X, LazySPXYSplit(0.7))
 
-  result = split((X, y), LazySPXYSplit(0.7))
+  result = partition(X, LazySPXYSplit(0.7); target = y)
   train_idx, test_idx = result.train, result.test
 
-  result2 =
-    split((X, y), LazySPXYSplit(0.7; metric_X = Cityblock(), metric_y = Euclidean()))
+  result2 = partition(
+    X,
+    LazySPXYSplit(0.7; metric_X = Cityblock(), metric_y = Euclidean());
+    target = y,
+  )
   train_idx2, test_idx2 = result2.train, result2.test
   @test length(train_idx2) + length(test_idx2) == length(y)
   @test isempty(intersect(train_idx2, test_idx2))
 
-  # Compare with standard SPXY for small data
-  result_spxy = split((X, y), SPXYSplit(0.7))
+  result_spxy = partition(X, SPXYSplit(0.7); target = y)
   @test Set(train_idx) == Set(result_spxy.train)
   @test Set(test_idx) == Set(result_spxy.test)
   @test isempty(intersect(train_idx, test_idx))

@@ -18,7 +18,7 @@ function make_split(
   distance_cutoff = 0.5,
   rng = Random.GLOBAL_RNG,
 )
-  return DataSplits.split(
+  return DataSplits.partition(
     X,
     OptiSimSplit(
       frac;
@@ -41,7 +41,7 @@ end
   ]'
   y = [1, 2, 3, 4, 5]
 
-  result = DataSplits.split(
+  result = DataSplits.partition(
     X,
     OptiSimSplit(
       0.75;
@@ -61,7 +61,7 @@ end
 
   X = randn(10, 50)
   rng1 = MersenneTwister(123)
-  result = DataSplits.split(
+  result = DataSplits.partition(
     X,
     OptiSimSplit(0.6; max_subsample_size = 3, distance_cutoff = 0.35, metric = Euclidean()),
     rng = rng1,
