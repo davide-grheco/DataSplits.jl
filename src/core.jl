@@ -1,5 +1,4 @@
 using Random
-using ArrayInterface
 using MLUtils: numobs, getobs, obsview
 using Tables
 
