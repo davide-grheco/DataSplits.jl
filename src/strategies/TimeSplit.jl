@@ -1,54 +1,59 @@
 """
-    TimeSplit{T} <: AbstractSplitStrategy
+    TimeSplit(order::Symbol=:asc) <: AbstractSplitStrategy
 
 Splits a 1D array of dates/times into train/test sets, grouping by unique
 values so that no group is split across train and test.
 
-The actual training fraction may be slightly above the requested one
-but never below.
+The actual training cohort size may slightly overshoot `n_train` but never
+fall below it.
 
 # Fields
-- `frac::ValidFraction{T}`: Fraction of data to use for training (0 < frac < 1)
 - `order::Symbol`: `:asc` puts the oldest observations in train (default);
   `:desc` puts the newest in train.
 
 # Examples
 ```julia
 # dates is both data and the ordering variable
-res = partition(dates, TimeSplitOldest(0.7))
+res = partition(dates, TimeSplitOldest(); train=70, test=30)
 train_idx, test_idx = trainindices(res), testindices(res)
 
 # X is the data to split; dates provides the ordering
-res = partition(X, TimeSplitOldest(0.7); time=dates)
+res = partition(X, TimeSplitOldest(); time=dates, train=70, test=30)
 X_train, X_test = splitdata(res, X)
 ```
 """
-struct TimeSplit{T} <: AbstractSplitStrategy
-  frac::ValidFraction{T}
+struct TimeSplit <: AbstractSplitStrategy
   order::Symbol
 end
 
-TimeSplit(frac::Real, order::Symbol = :asc) = TimeSplit(ValidFraction(frac), order)
+TimeSplit() = TimeSplit(:asc)
 
 """
-    TimeSplitOldest(frac)
+    TimeSplitOldest()
 
-Alias for `TimeSplit(frac, :asc)` — oldest observations go to the training set.
+Alias for `TimeSplit(:asc)` — oldest observations go to the training set.
 """
-TimeSplitOldest(frac::Real) = TimeSplit(frac, :asc)
+TimeSplitOldest() = TimeSplit(:asc)
 
 """
-    TimeSplitNewest(frac)
+    TimeSplitNewest()
 
-Alias for `TimeSplit(frac, :desc)` — newest observations go to the training set.
+Alias for `TimeSplit(:desc)` — newest observations go to the training set.
 """
-TimeSplitNewest(frac::Real) = TimeSplit(frac, :desc)
+TimeSplitNewest() = TimeSplit(:desc)
 
 consumes(::TimeSplit) = (:time,)
 fallback_from_data(::TimeSplit) = (:time,)
 
-function _partition(data, s::TimeSplit; time, rng = Random.GLOBAL_RNG, kwargs...)
-  N = numobs(data)
+function _partition(
+  data,
+  s::TimeSplit;
+  time,
+  n_train,
+  n_test,
+  rng = Random.GLOBAL_RNG,
+  kwargs...,
+)
   date_to_indices = Dict{eltype(time),Vector{Int}}()
   for (i, d) in enumerate(time)
     push!(get!(date_to_indices, d, Int[]), i)
@@ -56,7 +61,6 @@ function _partition(data, s::TimeSplit; time, rng = Random.GLOBAL_RNG, kwargs...
   dates = collect(keys(date_to_indices))
   descending = s.order in (:desc, :newest, :latest, :max, :maximum)
   sorted_dates = sort(dates; rev = descending)
-  n_train, _ = train_test_counts(N, s.frac)
   total = 0
   train_idx = Int[]
   test_idx = Int[]

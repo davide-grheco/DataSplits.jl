@@ -1,12 +1,11 @@
 using Distances, Random
 
 """
-    OptiSimSplit(frac; max_subsample_size=10, distance_cutoff=0.35, metric=Euclidean())
+    OptiSimSplit(; max_subsample_size=10, distance_cutoff=0.35, metric=Euclidean())
 
 OptiSim (Clark 1997) K-dissimilarity selection strategy for train/test splitting.
 
 # Fields
-- `frac::ValidFraction`: Fraction of samples in the training subset (0 < frac < 1)
 - `max_subsample_size::Integer`: Size of the temporary candidate subsample
 - `distance_cutoff::Real`: Two points are "similar" if their distance < `distance_cutoff`
 - `metric::Distances.SemiMetric`: Distance metric (default: `Euclidean()`)
@@ -17,41 +16,36 @@ OptiSim (Clark 1997) K-dissimilarity selection strategy for train/test splitting
 
 # Examples
 ```julia
-res = partition(X, OptiSimSplit(0.7; max_subsample_size=10))
+res = partition(X, OptiSimSplit(; max_subsample_size=10); train=70, test=30)
 X_train, X_test = splitdata(res, X)
 ```
 """
 struct OptiSimSplit <: AbstractSplitStrategy
-  frac::ValidFraction
   max_subsample_size::Integer
   distance_cutoff::Real
   metric::Distances.SemiMetric
 end
 
-function OptiSimSplit(
-  frac::Real;
+function OptiSimSplit(;
   max_subsample_size = 10,
   distance_cutoff = 0.35,
   metric = Euclidean(),
 )
-  OptiSimSplit(ValidFraction(frac), max_subsample_size, distance_cutoff, metric)
-end
-
-function OptiSimSplit(
-  frac::ValidFraction;
-  max_subsample_size = 10,
-  distance_cutoff = 0.35,
-  metric = Euclidean(),
-)
-  OptiSimSplit(frac, max_subsample_size, distance_cutoff, metric)
+  OptiSimSplit(max_subsample_size, distance_cutoff, metric)
 end
 
 consumes(::OptiSimSplit) = (:data,)
 fallback_from_data(::OptiSimSplit) = ()
 
-function _partition(X, s::OptiSimSplit; rng = Random.GLOBAL_RNG, kwargs...)
+function _partition(
+  X,
+  s::OptiSimSplit;
+  n_train,
+  n_test,
+  rng = Random.GLOBAL_RNG,
+  kwargs...,
+)
   N = numobs(X)
-  n_train, _ = train_test_counts(N, s.frac)
   D = distance_matrix(X, s.metric)
   selected_positions =
     optisim(D, n_train, s.max_subsample_size, s.distance_cutoff; rng = rng)
