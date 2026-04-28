@@ -17,6 +17,7 @@ include("strategies/GroupStratifiedSplit.jl")
 include("clustering/SphereExclusion.jl")
 include("strategies/TargetProperty.jl")
 include("strategies/TimeSplit.jl")
+include("strategies/WithValidation.jl")
 
 # Core API
 export partition
@@ -47,6 +48,9 @@ export GroupShuffleSplit, GroupStratifiedSplit
 # Target / time property
 export TargetPropertySplit, TargetPropertyHigh, TargetPropertyLow
 export TimeSplit, TimeSplitOldest, TimeSplitNewest
+
+# Validation cohort combinator
+export WithValidation
 
 # Clustering utility
 export sphere_exclusion
