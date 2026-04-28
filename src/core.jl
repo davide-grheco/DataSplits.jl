@@ -212,16 +212,13 @@ Must satisfy: `fallback_from_data(alg) ⊆ consumes(alg)`.
 """
 fallback_from_data(::AbstractSplitStrategy) = ()
 
-
-# ---------------------------------------------------------------------------
-# Tables.jl helper
-# ---------------------------------------------------------------------------
-
-# Convert a Tables.jl-compatible input (e.g. DataFrame) to a features×samples
-# matrix (F×N), which is the internal convention for distance-based strategies.
-# Non-table inputs are returned unchanged.
+"""
+Convert a Tables.jl-compatible input (e.g. DataFrame) to a features×samples
+matrix (F×N), which is the internal convention for distance-based strategies.
+Non-table inputs are returned unchanged.
+"""
 function _to_feature_matrix(X)
-  Tables.istable(X) ? permutedims(Tables.matrix(X)) : X
+  Tables.istable(X) ? transpose(Tables.matrix(X)) : X
 end
 
 
