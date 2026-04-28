@@ -18,13 +18,19 @@ import DataSplits: SplitInputError, SplitParameterError, SplitNotImplementedErro
   ]'
   y = [4, 1, 7, 5, 2, 5]
 
-  @test_throws SplitInputError partition(X, SPXYSplit(0.7))
+  # 70% train, 30% test on N=6 → n_train=4, n_test=2 (sum=100)
+  @test_throws SplitInputError partition(X, SPXYSplit(); train = 70, test = 30)
 
-  result = partition(X, SPXYSplit(0.7); target = y)
+  result = partition(X, SPXYSplit(); target = y, train = 70, test = 30)
   train_idx, test_idx = result.train, result.test
 
-  result2 =
-    partition(X, SPXYSplit(0.7; metric_X = Cityblock(), metric_y = Euclidean()); target = y)
+  result2 = partition(
+    X,
+    SPXYSplit(; metric_X = Cityblock(), metric_y = Euclidean());
+    target = y,
+    train = 70,
+    test = 30,
+  )
   train_idx2, test_idx2 = result2.train, result2.test
   @test length(train_idx2) + length(test_idx2) == length(y)
   @test isempty(intersect(train_idx2, test_idx2))
@@ -49,11 +55,16 @@ end
   ]
   y = [4, 1, 7, 5, 2]
 
-  result = partition(X, SPXYSplit(0.7); target = y)
+  result = partition(X, SPXYSplit(); target = y, train = 70, test = 30)
   train_idx, test_idx = result.train, result.test
 
-  result2 =
-    partition(X, SPXYSplit(0.7; metric_X = Cityblock(), metric_y = Euclidean()); target = y)
+  result2 = partition(
+    X,
+    SPXYSplit(; metric_X = Cityblock(), metric_y = Euclidean());
+    target = y,
+    train = 70,
+    test = 30,
+  )
   train_idx2, test_idx2 = result2.train, result2.test
   @test length(train_idx2) + length(test_idx2) == length(y)
   @test isempty(intersect(train_idx2, test_idx2))
@@ -78,15 +89,17 @@ end
   ]'
   y = [4, 1, 7, 5, 2, 5]
 
-  @test_throws SplitInputError partition(X, MDKSSplit(0.7))
+  @test_throws SplitInputError partition(X, MDKSSplit(); train = 70, test = 30)
 
-  result = partition(X, MDKSSplit(0.7); target = y)
+  result = partition(X, MDKSSplit(); target = y, train = 70, test = 30)
   train_idx, test_idx = result.train, result.test
 
   result2 = partition(
     X,
-    SPXYSplit(0.7; metric_X = Mahalanobis(cov(X; dims = 2)), metric_y = Euclidean());
+    SPXYSplit(; metric_X = Mahalanobis(cov(X; dims = 2)), metric_y = Euclidean());
     target = y,
+    train = 70,
+    test = 30,
   )
   train_idx2, test_idx2 = result2.train, result2.test
   @test length(train_idx2) + length(test_idx2) == length(y)

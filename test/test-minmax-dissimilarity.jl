@@ -15,7 +15,9 @@ using Distances
   # Maximum Dissimilarity
   result_max = DataSplits.partition(
     X,
-    MaximumDissimilaritySplit(0.6; distance_cutoff = 0.0, metric = Euclidean()),
+    MaximumDissimilaritySplit(; distance_cutoff = 0.0, metric = Euclidean());
+    train = 60,
+    test = 40,
     rng = Random.seed!(42),
   )
   train_max, test_max = result_max.train, result_max.test
@@ -26,7 +28,9 @@ using Distances
   # Minimum Dissimilarity
   result_min = DataSplits.partition(
     X,
-    MinimumDissimilaritySplit(0.6; distance_cutoff = 0.0, metric = Euclidean()),
+    MinimumDissimilaritySplit(; distance_cutoff = 0.0, metric = Euclidean());
+    train = 60,
+    test = 40,
     rng = Random.seed!(42),
   )
   train_min, test_min = result_min.train, result_min.test
@@ -48,7 +52,9 @@ end
   # Maximum Dissimilarity
   result_max = DataSplits.partition(
     X,
-    LazyMaximumDissimilaritySplit(0.6; distance_cutoff = 0.0, metric = Euclidean()),
+    LazyMaximumDissimilaritySplit(; distance_cutoff = 0.0, metric = Euclidean());
+    train = 60,
+    test = 40,
     rng = Random.seed!(42),
   )
   train_max, test_max = result_max.train, result_max.test
@@ -59,7 +65,9 @@ end
   # Minimum Dissimilarity
   result_min = DataSplits.partition(
     X,
-    LazyMinimumDissimilaritySplit(0.6; distance_cutoff = 0.0, metric = Euclidean()),
+    LazyMinimumDissimilaritySplit(; distance_cutoff = 0.0, metric = Euclidean());
+    train = 60,
+    test = 40,
     rng = Random.seed!(42),
   )
   train_min, test_min = result_min.train, result_min.test

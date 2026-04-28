@@ -2,7 +2,7 @@ using Random
 using Statistics: std, mean
 
 """
-    GroupStratifiedSplit(allocation::Symbol; n=nothing, frac) <: AbstractSplitStrategy
+    GroupStratifiedSplit(allocation::Symbol; n=nothing) <: AbstractSplitStrategy
 
 Group-stratified train/test splitting with flexible allocation methods.
 
@@ -13,22 +13,25 @@ batch numbers, site identifiers, graph communities, etc.
 # Fields
 - `allocation::Symbol`: Allocation method — `:equal`, `:proportional`, or `:neyman`.
 - `n::Union{Nothing,Int}`: Samples per group for `:equal` and `:neyman`.
-- `frac::Real`: Fraction of selected samples assigned to training (rest go to test).
 
 # Allocation methods
 - `:proportional` — use all samples from each group (shuffled).
 - `:equal` — select `n` samples from each group (requires `n`).
 - `:neyman` — select proportional to group size × within-group std (requires `n`).
 
+The training fraction within each group is derived from the global cohort
+sizes (`n_train / N`).
+
 # Examples
 ```julia
-res = partition(X, GroupStratifiedSplit(:proportional; frac=0.8); groups=patient_ids)
+res = partition(X, GroupStratifiedSplit(:proportional);
+                groups=patient_ids, train=80, test=20)
 X_train, X_test = splitdata(res, X)
 
 # With Clustering.jl
 using Clustering
-res = partition(X, GroupStratifiedSplit(:equal; n=5, frac=0.8);
-                groups=assignments(kmeans(X, 4)))
+res = partition(X, GroupStratifiedSplit(:equal; n=5);
+                groups=assignments(kmeans(X, 4)), train=80, test=20)
 ```
 
 # References
@@ -38,11 +41,10 @@ Using SOM-Based Stratified Sampling. *Neural Networks* 2010, 23(2), 283–294.
 struct GroupStratifiedSplit <: AbstractSplitStrategy
   allocation::Symbol
   n::Union{Nothing,Int}
-  frac::Real
 end
 
-GroupStratifiedSplit(allocation::Symbol; n = nothing, frac) =
-  GroupStratifiedSplit(allocation, n, frac)
+GroupStratifiedSplit(allocation::Symbol; n = nothing) =
+  GroupStratifiedSplit(allocation, n)
 
 consumes(::GroupStratifiedSplit) = (:groups,)
 fallback_from_data(::GroupStratifiedSplit) = (:groups,)
@@ -91,9 +93,13 @@ function _partition(
   data,
   s::GroupStratifiedSplit;
   groups,
+  n_train,
+  n_test,
   rng = Random.default_rng(),
   kwargs...,
 )
+  N = numobs(data)
+  frac = n_train / N
   cl_ids = unique(groups)
   idxs_by_cluster = Dict(cid => findall(==(cid), groups) for cid in cl_ids)
   selected = if s.allocation == :equal
@@ -113,9 +119,9 @@ function _partition(
   test_pos = Int[]
   for cid in cl_ids
     idxs = selected[cid]
-    n_train = min(ceil(Int, s.frac * length(idxs)), length(idxs))
-    append!(train_pos, idxs[1:n_train])
-    append!(test_pos, idxs[n_train+1:end])
+    n_train_cid = min(ceil(Int, frac * length(idxs)), length(idxs))
+    append!(train_pos, idxs[1:n_train_cid])
+    append!(test_pos, idxs[n_train_cid+1:end])
   end
   return TrainTestSplit(train_pos, test_pos)
 end
