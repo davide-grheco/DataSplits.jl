@@ -11,13 +11,13 @@ D = 100
 X = randn(D, N)
 y = randn(N)
 
-splitter = SPXYSplit(0.7)
+splitter = SPXYSplit()
 
 # Warmup
-DataSplits.split((X, y), splitter)
+partition(X, splitter; target = y, train = 70, test = 30)
 
 # Benchmark
-results = @benchmark DataSplits.split(($X, $y), $splitter)
+results = @benchmark partition($X, $splitter; target = $y, train = 70, test = 30)
 
 mem = minimum(results).memory
 med_time = median(results).time
