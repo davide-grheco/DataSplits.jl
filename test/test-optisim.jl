@@ -10,6 +10,12 @@ function sane_split_check(result, N; ntrain_expected = nothing)
   ntrain_expected === nothing || @test length(train) == ntrain_expected
 end
 
+function _pct(frac)
+  train = round(Int, frac * 100)
+  test = 100 - train
+  return train, test
+end
+
 function make_split(
   X;
   frac = 0.7,
@@ -18,14 +24,16 @@ function make_split(
   distance_cutoff = 0.5,
   rng = Random.GLOBAL_RNG,
 )
+  train, test = _pct(frac)
   return DataSplits.partition(
     X,
-    OptiSimSplit(
-      frac;
+    OptiSimSplit(;
       max_subsample_size = max_subsample_size,
       distance_cutoff = distance_cutoff,
       metric = metric,
     );
+    train = train,
+    test = test,
     rng = rng,
   )
 end
@@ -43,12 +51,13 @@ end
 
   result = DataSplits.partition(
     X,
-    OptiSimSplit(
-      0.75;
+    OptiSimSplit(;
       max_subsample_size = 3,
       distance_cutoff = 0.35,
       metric = Euclidean(),
-    ),
+    );
+    train = 80,
+    test = 20,
     rng = Random.seed!(42),
   )
   train_idx, test_idx = result.train, result.test
@@ -63,7 +72,13 @@ end
   rng1 = MersenneTwister(123)
   result = DataSplits.partition(
     X,
-    OptiSimSplit(0.6; max_subsample_size = 3, distance_cutoff = 0.35, metric = Euclidean()),
+    OptiSimSplit(;
+      max_subsample_size = 3,
+      distance_cutoff = 0.35,
+      metric = Euclidean(),
+    );
+    train = 60,
+    test = 40,
     rng = rng1,
   )
   t1a, te1a = result.train, result.test

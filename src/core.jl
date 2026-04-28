@@ -14,9 +14,12 @@ using Tables
 Abstract supertype for all splitting strategies.
 
 To implement a custom strategy, subtype this and define:
-- `_partition(data, alg; target, time, groups, rng)` returning an `AbstractSplitResult`
-- `consumes(::MyStrategy)` returning a tuple of symbols from `(:data, :target, :time, :groups)`
-- `fallback_from_data(::MyStrategy)` returning the subset of `consumes` that can fall back to `data`
+- `_partition(data, alg; n_train, n_test, target, time, groups, rng)`
+  returning an `AbstractSplitResult`.
+- `consumes(::MyStrategy)` returning a tuple of symbols from
+  `(:data, :target, :time, :groups)`.
+- `fallback_from_data(::MyStrategy)` returning the subset of `consumes`
+  that can fall back to `data`.
 """
 abstract type AbstractSplitStrategy end
 
@@ -43,7 +46,7 @@ A result type representing a train/test split.
 
 # Examples
 ```julia
-res = partition(X, KennardStoneSplit(0.8))
+res = partition(X, KennardStoneSplit(); train = 80, test = 20)
 X_train, X_test = splitdata(res, X)
 ```
 """
@@ -64,7 +67,8 @@ A result type representing a train/validation/test split.
 
 # Examples
 ```julia
-res = partition(X, SomeTrainValTestStrategy(...))
+res = partition(X, RandomSplit(), KennardStoneSplit();
+                train = 70, validation = 10, test = 20)
 X_train, X_val, X_test = splitdata(res, X)
 ```
 """
@@ -81,14 +85,6 @@ A result type representing a k-fold cross-validation split.
 
 # Fields
 - `folds::Vector{<:AbstractSplitResult}`: One result per fold.
-
-# Examples
-```julia
-res = partition(X, SomeCVStrategy(...))
-for (X_train, X_test) in splitdata(res, X)
-    # ...
-end
-```
 """
 struct CrossValidationSplit{T<:AbstractSplitResult} <: AbstractSplitResult
   folds::Vector{T}
@@ -142,12 +138,6 @@ train/test (and optionally validation) indices in `res`.
 
 When `data` is a DataFrame or other Tables.jl-compatible container,
 `splitdata` returns subsets of the same type.
-
-# Examples
-```julia
-res = partition(X, KennardStoneSplit(0.8))
-X_train, X_test = splitdata(res, X)
-```
 """
 function splitdata(res::AbstractSplitResult, data)
   throw(
@@ -169,12 +159,6 @@ splitdata(res::CrossValidationSplit, data) = [splitdata(fold, data) for fold in 
 
 Like `splitdata` but returns lazy views via `MLUtils.obsview` — no data is
 copied. Prefer `splitdata` when you need independent copies.
-
-# Examples
-```julia
-res = partition(X, RandomSplit(0.8))
-X_train, X_test = splitview(res, X)
-```
 """
 splitview(res::TrainTestSplit, data) = (obsview(data, res.train), obsview(data, res.test))
 
@@ -193,12 +177,6 @@ splitview(res::CrossValidationSplit, data) = [splitview(fold, data) for fold in 
 
 Return the named slots this strategy reads, as a tuple of symbols from
 `(:data, :target, :time, :groups)`.
-
-- `:data` — the strategy inspects observation values (e.g. for distances).
-  Omitting it means only `numobs` is needed (e.g. `RandomSplit`).
-- `:target` — the strategy reads a response/property vector.
-- `:time` — the strategy reads a temporal ordering vector.
-- `:groups` — the strategy reads a group-membership vector.
 """
 consumes(::AbstractSplitStrategy) = ()
 
@@ -226,26 +204,101 @@ end
 
 
 # ---------------------------------------------------------------------------
-# Auxiliary slot resolution
+# Slot resolution (works for one or two strategies via a tuple of algs)
 # ---------------------------------------------------------------------------
 
-function _resolve_slot(alg, data, kwval, slot::Symbol)
-  if slot ∈ consumes(alg)
-    if kwval === nothing
-      if slot ∈ fallback_from_data(alg)
-        kwval = data
-      else
-        throw(SplitInputError("$(typeof(alg)) requires the `$slot=` keyword."))
-      end
-    end
-    kwval isa AbstractVector ||
-      throw(SplitInputError("`$slot` must be a 1D AbstractVector, got $(typeof(kwval))."))
-    return kwval
-  else
+function _resolve_slot(algs::Tuple, data, kwval, slot::Symbol)
+  consumers = filter(a -> slot ∈ consumes(a), algs)
+  if isempty(consumers)
     kwval === nothing ||
-      throw(SplitInputError("$(typeof(alg)) does not use the `$slot=` keyword."))
+      throw(SplitInputError("No strategy uses the `$slot=` keyword."))
     return nothing
   end
+  if kwval === nothing
+    if all(a -> slot ∈ fallback_from_data(a), consumers)
+      kwval = data
+    else
+      bad = first(filter(a -> slot ∉ fallback_from_data(a), consumers))
+      throw(SplitInputError("$(typeof(bad)) requires the `$slot=` keyword."))
+    end
+  end
+  kwval isa AbstractVector ||
+    throw(SplitInputError("`$slot` must be a 1D AbstractVector, got $(typeof(kwval))."))
+  return kwval
+end
+
+# For the per-strategy call: only forward the slot if this strategy consumes it.
+_slot_for(alg, value, slot::Symbol) = slot ∈ consumes(alg) ? value : nothing
+
+
+# ---------------------------------------------------------------------------
+# Cohort size resolution
+# ---------------------------------------------------------------------------
+
+"""
+    _resolve_sizes(N, train, validation, test) -> (n_train, n_val, n_test)
+
+Validate and resolve cohort sizes from integer keywords.
+
+Two interpretations are accepted, distinguished by the sum of the values:
+
+- if they sum to **100**, they are treated as **percentages of `N`**;
+- if they sum to **`N`**, they are treated as **absolute counts**.
+
+Any other sum is rejected. When `validation === nothing`, the result has
+`n_val == 0` and only train and test cohorts are produced.
+
+When percentages do not divide `N` evenly, `n_train` and `n_val` are
+rounded to the nearest integer and `n_test` absorbs the remainder so that
+`n_train + n_val + n_test == N`.
+"""
+function _resolve_sizes(
+  N::Integer,
+  train::Integer,
+  validation::Union{Integer,Nothing},
+  test::Integer,
+)
+  three_cohort = validation !== nothing
+
+  for (k, v) in (
+    three_cohort ?
+    ((:train, train), (:validation, validation), (:test, test)) :
+    ((:train, train), (:test, test))
+  )
+    v >= 1 ||
+      throw(SplitParameterError("`$k` must be a positive integer, got $v."))
+  end
+
+  s = three_cohort ? train + validation + test : train + test
+
+  if s == 100
+    n_train = round(Int, (train * N) / 100)
+    n_val = three_cohort ? round(Int, (validation * N) / 100) : 0
+    n_test = N - n_train - n_val
+  elseif s == N
+    n_train = train
+    n_val = three_cohort ? validation : 0
+    n_test = test
+  else
+    parts = three_cohort ?
+      "train($train) + validation($validation) + test($test) = $s" :
+      "train($train) + test($test) = $s"
+    throw(
+      SplitParameterError(
+        "Cohort sizes must sum to 100 (percentages) or to N=$N (absolute counts); got $parts.",
+      ),
+    )
+  end
+
+  if n_train < 1 || n_test < 1 || (three_cohort && n_val < 1)
+    throw(
+      SplitParameterError(
+        "Resolved cohort sizes must each be ≥ 1; got n_train=$n_train, n_val=$n_val, n_test=$n_test.",
+      ),
+    )
+  end
+
+  return n_train, n_val, n_test
 end
 
 
@@ -254,46 +307,66 @@ end
 # ---------------------------------------------------------------------------
 
 """
-    partition(data, alg::AbstractSplitStrategy;
+    partition(data, alg [, val_alg];
+              train, test, validation=nothing,
               target=nothing, time=nothing, groups=nothing,
               rng=Random.default_rng()) -> AbstractSplitResult
 
-Split `data` into train/test (or train/val/test, or cross-validation folds)
-according to `alg`.
+Split `data` into train/test (or train/validation/test) according to one or
+two splitting strategies.
 
 # Arguments
 - `data`: Observation container (matrix, vector, DataFrame, …).
   Columns are samples for matrices; rows are samples for DataFrames.
-- `alg`: A splitting strategy.
+- `alg`: A splitting strategy. With a single strategy `alg`, this strategy
+  separates train from test. With two strategies, `alg` separates the test
+  cohort from the rest.
+- `val_alg` *(optional)*: When given, this second strategy separates the
+  validation cohort from the train pool produced by `alg`.
 
-# Keywords
-- `target`: Response / property vector used by some strategies (e.g. `SPXYSplit`).
-- `time`: Temporal ordering vector used by `TimeSplit` variants.
-- `groups`: Group-membership vector used by `GroupShuffleSplit` / `GroupStratifiedSplit`.
-- `rng`: Random number generator.
+# Cohort sizes (`train`, `validation`, `test`)
 
-# Fallback rule
-When a strategy's required keyword is omitted and `fallback_from_data(alg)`
-includes that slot, `data` itself is used for that role. This makes
-single-input calls natural:
+All sizes are positive integers. Two interpretations are accepted:
 
-```julia
-partition(dates, TimeSplitOldest(0.8))          # dates is both data and time
-partition(y, TargetPropertyHigh(0.8))           # y is both data and target
-partition(ids, GroupShuffleSplit(0.8))          # ids is both data and groups
-```
+- **Percentages** — values sum to `100`.
+- **Absolute counts** — values sum to `N = numobs(data)`.
+
+Any other sum is rejected.
+
+# Auxiliary slots
+
+- `target`: response/property vector used by some strategies (e.g. `SPXYSplit`).
+- `time`: temporal ordering vector used by `TimeSplit` variants.
+- `groups`: group-membership vector used by `GroupShuffleSplit` /
+  `GroupStratifiedSplit`.
+
+When a strategy's required slot is omitted and that slot is in
+`fallback_from_data(alg)`, `data` itself fills the role
+(e.g. `partition(dates, TimeSplitOldest(); train=70, test=30)`).
 
 # Examples
 ```julia
-res = partition(X, KennardStoneSplit(0.8))
-res = partition(X, SPXYSplit(0.7); target=y)
-res = partition(X, GroupShuffleSplit(0.8); groups=patient_ids)
-df_train, df_test = splitdata(res, df)
+# 2 cohorts, percentages
+partition(X, KennardStoneSplit(); train = 80, test = 20)
+
+# 2 cohorts, absolute counts (N = 250)
+partition(X, RandomSplit(); train = 200, test = 50)
+
+# 3 cohorts, mixed strategies
+partition(X, RandomSplit(), KennardStoneSplit();
+          train = 70, validation = 10, test = 20)
+
+# Slot keywords still apply
+partition(X, SPXYSplit(); target = y, train = 80, test = 20)
 ```
 """
 function partition(
   data,
-  alg::AbstractSplitStrategy;
+  alg::AbstractSplitStrategy,
+  val_alg::Union{Nothing,AbstractSplitStrategy} = nothing;
+  train::Integer,
+  test::Integer,
+  validation::Union{Integer,Nothing} = nothing,
   target = nothing,
   time = nothing,
   groups = nothing,
@@ -301,42 +374,80 @@ function partition(
 )
   isempty(data) &&
     throw(SplitInputError("Data must not be empty. Please provide a non-empty dataset."))
-  numobs(data) < 2 && throw(SplitInputError("Cannot split fewer than 2 observations."))
+  N = numobs(data)
+  N >= 2 || throw(SplitInputError("Cannot split fewer than 2 observations."))
 
-  resolved_target = _resolve_slot(alg, data, target, :target)
-  resolved_time = _resolve_slot(alg, data, time, :time)
-  resolved_groups = _resolve_slot(alg, data, groups, :groups)
+  if val_alg === nothing && validation !== nothing
+    throw(SplitInputError("`validation=` requires a second positional strategy."))
+  end
+  if val_alg !== nothing && validation === nothing
+    throw(SplitInputError("Two strategies require the `validation=` keyword."))
+  end
 
-  data_internal = :data ∈ consumes(alg) ? _to_feature_matrix(data) : data
+  n_train, n_val, n_test = _resolve_sizes(N, train, validation, test)
 
-  return _partition(
+  algs = val_alg === nothing ? (alg,) : (alg, val_alg)
+  resolved_target = _resolve_slot(algs, data, target, :target)
+  resolved_time = _resolve_slot(algs, data, time, :time)
+  resolved_groups = _resolve_slot(algs, data, groups, :groups)
+
+  needs_matrix = any(a -> :data ∈ consumes(a), algs)
+  data_internal = needs_matrix ? _to_feature_matrix(data) : data
+
+  if val_alg === nothing
+    return _partition(
+      data_internal,
+      alg;
+      n_train = n_train,
+      n_test = n_test,
+      target = _slot_for(alg, resolved_target, :target),
+      time = _slot_for(alg, resolved_time, :time),
+      groups = _slot_for(alg, resolved_groups, :groups),
+      rng = rng,
+    )
+  end
+
+  outer = _partition(
     data_internal,
     alg;
-    target = resolved_target,
-    time = resolved_time,
-    groups = resolved_groups,
+    n_train = n_train + n_val,
+    n_test = n_test,
+    target = _slot_for(alg, resolved_target, :target),
+    time = _slot_for(alg, resolved_time, :time),
+    groups = _slot_for(alg, resolved_groups, :groups),
     rng = rng,
   )
+  outer isa TrainTestSplit || throw(
+    SplitNotImplementedError(
+      "First strategy must return a TrainTestSplit, got $(typeof(outer)).",
+    ),
+  )
+
+  train_pool = outer.train
+  test_idx = outer.test
+
+  data_inner = obsview(data_internal, train_pool)
+  inner_target =
+    resolved_target === nothing ? nothing : view(resolved_target, train_pool)
+  inner_time = resolved_time === nothing ? nothing : view(resolved_time, train_pool)
+  inner_groups =
+    resolved_groups === nothing ? nothing : view(resolved_groups, train_pool)
+
+  inner = _partition(
+    data_inner,
+    val_alg;
+    n_train = n_train,
+    n_test = n_val,
+    target = _slot_for(val_alg, inner_target, :target),
+    time = _slot_for(val_alg, inner_time, :time),
+    groups = _slot_for(val_alg, inner_groups, :groups),
+    rng = rng,
+  )
+  inner isa TrainTestSplit || throw(
+    SplitNotImplementedError(
+      "Validation strategy must return a TrainTestSplit, got $(typeof(inner)).",
+    ),
+  )
+
+  return TrainValTestSplit(train_pool[inner.train], train_pool[inner.test], test_idx)
 end
-
-
-# ---------------------------------------------------------------------------
-# ValidFraction
-# ---------------------------------------------------------------------------
-
-struct ValidFraction{T<:Real}
-  frac::T
-  function ValidFraction(frac::T) where {T<:Real}
-    if !(0 < frac < 1)
-      throw(SplitParameterError("Fraction must be strictly between 0 and 1. Got $frac."))
-    end
-    new{T}(frac)
-  end
-end
-
-Base.:*(vf::ValidFraction, x::Number) = vf.frac * x
-Base.:*(x::Number, vf::ValidFraction) = x * vf.frac
-Base.:+(x::Number, vf::ValidFraction) = x + vf.frac
-Base.:-(x::Number, vf::ValidFraction) = x - vf.frac
-Base.float(vf::ValidFraction) = vf.frac
-Base.convert(::Type{T}, vf::ValidFraction) where {T<:Number} = convert(T, vf.frac)
