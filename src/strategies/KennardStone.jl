@@ -1,7 +1,7 @@
 using Distances, MLUtils
 
 """
-    KennardStoneSplit{T} <: AbstractSplitStrategy
+    KennardStoneSplit <: AbstractSplitStrategy
 
 In-memory Kennard-Stone (CADEX) algorithm for train/test splitting.
 
@@ -9,33 +9,35 @@ Precomputes the full N×N distance matrix; prefer `LazyKennardStoneSplit`
 for large datasets where that is prohibitive.
 
 # Fields
-- `frac::ValidFraction{T}`: Fraction of data to use for training (0 < frac < 1)
 - `metric::Distances.SemiMetric`: Distance metric (default: `Euclidean()`)
 
 # Examples
 ```julia
-res = partition(X, KennardStoneSplit(0.8))
+res = partition(X, KennardStoneSplit(); train = 80, test = 20)
 X_train, X_test = splitdata(res, X)
 
-res = partition(X, KennardStoneSplit(0.7, Cityblock()))
+res = partition(X, KennardStoneSplit(Cityblock()); train = 70, test = 30)
 ```
 """
-struct KennardStoneSplit{T} <: AbstractSplitStrategy
-  frac::ValidFraction{T}
+struct KennardStoneSplit <: AbstractSplitStrategy
   metric::Distances.SemiMetric
 end
 
-KennardStoneSplit(frac::Real) = KennardStoneSplit(ValidFraction(frac), Euclidean())
-KennardStoneSplit(frac::Real, metric) = KennardStoneSplit(ValidFraction(frac), metric)
+KennardStoneSplit() = KennardStoneSplit(Euclidean())
 
 const CADEXSplit = KennardStoneSplit
 
 consumes(::KennardStoneSplit) = (:data,)
 fallback_from_data(::KennardStoneSplit) = ()
 
-function _partition(data, s::KennardStoneSplit; rng = Random.GLOBAL_RNG, kwargs...)
-  N = numobs(data)
-  n_train, _ = train_test_counts(N, s.frac)
+function _partition(
+  data,
+  s::KennardStoneSplit;
+  n_train,
+  n_test,
+  rng = Random.GLOBAL_RNG,
+  kwargs...,
+)
   D = distance_matrix(data, s.metric)
   train_pos, test_pos = kennard_stone_from_distance_matrix(D, n_train)
   return TrainTestSplit(train_pos, test_pos)
@@ -44,10 +46,12 @@ end
 function _partition(
   data::AbstractVector{<:AbstractVector},
   s::KennardStoneSplit;
+  n_train,
+  n_test,
   rng = Random.GLOBAL_RNG,
   kwargs...,
 )
-  _partition(stack(data), s; rng)
+  _partition(stack(data), s; n_train, n_test, rng)
 end
 
 """

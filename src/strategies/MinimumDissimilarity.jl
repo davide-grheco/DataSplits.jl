@@ -1,5 +1,5 @@
 """
-    MinimumDissimilaritySplit(frac; distance_cutoff=0.35, metric=Euclidean())
+    MinimumDissimilaritySplit(; distance_cutoff=0.35, metric=Euclidean())
 
 Greedy dissimilarity selection (Clark 1997). Alias for `OptiSimSplit` with
 `max_subsample_size = 1` (considers only one candidate per iteration).
@@ -10,13 +10,12 @@ Greedy dissimilarity selection (Clark 1997). Alias for `OptiSimSplit` with
 
 # Examples
 ```julia
-res = partition(X, MinimumDissimilaritySplit(0.7))
+res = partition(X, MinimumDissimilaritySplit(); train=70, test=30)
 X_train, X_test = splitdata(res, X)
 ```
 """
-function MinimumDissimilaritySplit(frac::Real; distance_cutoff = 0.35, metric = Euclidean())
-  OptiSimSplit(
-    frac;
+function MinimumDissimilaritySplit(; distance_cutoff = 0.35, metric = Euclidean())
+  OptiSimSplit(;
     max_subsample_size = 1,
     distance_cutoff = distance_cutoff,
     metric = metric,
@@ -30,36 +29,39 @@ Lazy (on-the-fly distances) variant of `MinimumDissimilaritySplit`.
 
 # Examples
 ```julia
-res = partition(X, LazyMinimumDissimilaritySplit(0.7))
+res = partition(X, LazyMinimumDissimilaritySplit(); train=70, test=30)
 X_train, X_test = splitdata(res, X)
 ```
 """
 struct LazyMinimumDissimilaritySplit <: AbstractSplitStrategy
-  frac::ValidFraction
   distance_cutoff::Float64
   metric::Distances.SemiMetric
 end
 
-function LazyMinimumDissimilaritySplit(
-  frac::Real;
-  distance_cutoff = 0.35,
-  metric = Euclidean(),
-)
-  LazyMinimumDissimilaritySplit(ValidFraction(frac), distance_cutoff, metric)
+function LazyMinimumDissimilaritySplit(; distance_cutoff = 0.35, metric = Euclidean())
+  LazyMinimumDissimilaritySplit(distance_cutoff, metric)
 end
 
 consumes(::LazyMinimumDissimilaritySplit) = (:data,)
 fallback_from_data(::LazyMinimumDissimilaritySplit) = ()
 
-function _partition(X, s::LazyMinimumDissimilaritySplit; rng = Random.GLOBAL_RNG, kwargs...)
+function _partition(
+  X,
+  s::LazyMinimumDissimilaritySplit;
+  n_train,
+  n_test,
+  rng = Random.GLOBAL_RNG,
+  kwargs...,
+)
   _partition(
     X,
-    LazyOptiSimSplit(
-      s.frac;
+    LazyOptiSimSplit(;
       max_subsample_size = 1,
       distance_cutoff = s.distance_cutoff,
       metric = s.metric,
     );
+    n_train = n_train,
+    n_test = n_test,
     rng = rng,
   )
 end

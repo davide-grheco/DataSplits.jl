@@ -7,32 +7,34 @@ Memory-efficient Kennard-Stone (CADEX) algorithm. Computes distances
 on-the-fly (O(N) storage) rather than precomputing the full N×N matrix.
 
 # Fields
-- `frac::ValidFraction`: Fraction of data to use for training (0 < frac < 1)
 - `metric::Distances.SemiMetric`: Distance metric (default: `Euclidean()`)
 
 # Examples
 ```julia
-res = partition(X, LazyKennardStoneSplit(0.8))
+res = partition(X, LazyKennardStoneSplit(); train = 80, test = 20)
 X_train, X_test = splitdata(res, X)
 ```
 """
 struct LazyKennardStoneSplit <: AbstractSplitStrategy
-  frac::ValidFraction
   metric::Distances.SemiMetric
 end
 
-LazyKennardStoneSplit(frac::Real) = LazyKennardStoneSplit(ValidFraction(frac), Euclidean())
-LazyKennardStoneSplit(frac::Real, metric) =
-  LazyKennardStoneSplit(ValidFraction(frac), metric)
+LazyKennardStoneSplit() = LazyKennardStoneSplit(Euclidean())
 
 const LazyCADEXSplit = LazyKennardStoneSplit
 
 consumes(::LazyKennardStoneSplit) = (:data,)
 fallback_from_data(::LazyKennardStoneSplit) = ()
 
-function _partition(data, s::LazyKennardStoneSplit; rng = Random.GLOBAL_RNG, kwargs...)
+function _partition(
+  data,
+  s::LazyKennardStoneSplit;
+  n_train,
+  n_test,
+  rng = Random.GLOBAL_RNG,
+  kwargs...,
+)
   N = numobs(data)
-  n_train, _ = train_test_counts(N, s.frac)
   i₁, i₂ = find_most_distant_pair(data, s.metric)
   selected = falses(N)
   selected[i₁] = selected[i₂] = true

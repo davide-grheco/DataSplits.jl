@@ -1,25 +1,32 @@
 using Test
-using DataSplits: train_test_counts, SplitParameterError, ValidFraction
+using DataSplits: SplitParameterError
+import DataSplits
 
-@testset "train_test_counts" begin
-  # Normal case
-  @test train_test_counts(10, 0.7) == (7, 3)
-  @test train_test_counts(10, 0.3) == (3, 7)
-  # Edge: minimum allowed
-  @test train_test_counts(4, 0.5) == (2, 2)
-  # Throws if not enough samples
-  @test_throws SplitParameterError train_test_counts(1, 0.5)
-  # Throws if fraction out of bounds
-  @test_throws SplitParameterError train_test_counts(10, 0.0)
-  @test_throws SplitParameterError train_test_counts(10, 1.0)
-  @test_throws SplitParameterError train_test_counts(10, -0.1)
-  @test_throws SplitParameterError train_test_counts(10, 1.1)
-  # Throws if split would result in too few samples
-  @test_throws SplitParameterError train_test_counts(10, 0.01)
-  @test_throws SplitParameterError train_test_counts(10, 0.95)
-  # Custom minimums
-  @test train_test_counts(10, 0.6; min_train = 3, min_test = 3) == (6, 4)
-  @test_throws SplitParameterError train_test_counts(5, 0.6; min_train = 3, min_test = 3)
-  # Works with ValidFraction
-  @test train_test_counts(10, ValidFraction(0.7)) == (7, 3)
+@testset "_resolve_sizes" begin
+  # Percentages (sum to 100)
+  @test DataSplits._resolve_sizes(10, 70, nothing, 30) == (7, 0, 3)
+  @test DataSplits._resolve_sizes(10, 30, nothing, 70) == (3, 0, 7)
+  @test DataSplits._resolve_sizes(200, 80, nothing, 20) == (160, 0, 40)
+  @test DataSplits._resolve_sizes(100, 70, 10, 20) == (70, 10, 20)
+  @test DataSplits._resolve_sizes(200, 70, 10, 20) == (140, 20, 40)
+
+  # Absolute counts (sum to N)
+  @test DataSplits._resolve_sizes(10, 7, nothing, 3) == (7, 0, 3)
+  @test DataSplits._resolve_sizes(50, 35, nothing, 15) == (35, 0, 15)
+  @test DataSplits._resolve_sizes(50, 30, 10, 10) == (30, 10, 10)
+
+  # Rounding remainder absorbed by train (50% of 7 → train=4, test=3)
+  @test DataSplits._resolve_sizes(7, 50, nothing, 50) == (4, 0, 3)
+
+  # Each value must be ≥ 1
+  @test_throws SplitParameterError DataSplits._resolve_sizes(10, 0, nothing, 100)
+  @test_throws SplitParameterError DataSplits._resolve_sizes(10, 100, nothing, 0)
+  @test_throws SplitParameterError DataSplits._resolve_sizes(10, 70, 0, 30)
+
+  # Sum is neither 100 nor N
+  @test_throws SplitParameterError DataSplits._resolve_sizes(50, 30, nothing, 25)
+  @test_throws SplitParameterError DataSplits._resolve_sizes(40, 30, nothing, 30)
+
+  # Resolved n_train < 1 (1% of 10 = 0)
+  @test_throws SplitParameterError DataSplits._resolve_sizes(10, 1, nothing, 99)
 end

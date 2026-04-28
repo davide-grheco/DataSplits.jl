@@ -15,21 +15,31 @@ import DataSplits: SplitInputError
   ]'
   y = [4, 1, 7, 5, 2, 5]
 
-  @test_throws SplitInputError partition(X, LazyMDKSSplit(0.7))
+  @test_throws SplitInputError partition(X, LazyMDKSSplit(); train = 70, test = 30)
 
-  result = partition(X, LazyMDKSSplit(0.7); target = y)
+  result = partition(X, LazyMDKSSplit(); target = y, train = 70, test = 30)
   train_idx, test_idx = result.train, result.test
   @test length(train_idx) + length(test_idx) == length(y)
   @test isempty(intersect(train_idx, test_idx))
 
-  result2 =
-    partition(X, LazyMDKSSplit(0.7; metric = Mahalanobis(cov(X; dims = 2))); target = y)
+  result2 = partition(
+    X,
+    LazyMDKSSplit(; metric = Mahalanobis(cov(X; dims = 2)));
+    target = y,
+    train = 70,
+    test = 30,
+  )
   train_idx2, test_idx2 = result2.train, result2.test
   @test length(train_idx2) + length(test_idx2) == length(y)
   @test isempty(intersect(train_idx2, test_idx2))
 
-  result_mdks =
-    partition(X, MDKSSplit(0.7; metric = Mahalanobis(cov(X; dims = 2))); target = y)
+  result_mdks = partition(
+    X,
+    MDKSSplit(; metric = Mahalanobis(cov(X; dims = 2)));
+    target = y,
+    train = 70,
+    test = 30,
+  )
   @test Set(train_idx2) == Set(result_mdks.train)
   @test Set(test_idx2) == Set(result_mdks.test)
   @test isempty(intersect(result_mdks.train, result_mdks.test))

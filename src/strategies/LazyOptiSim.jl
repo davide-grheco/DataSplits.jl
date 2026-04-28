@@ -8,7 +8,6 @@ Memory-efficient, lazy implementation of the OptiSim (Clark 1997) dissimilarity
 selection strategy. Computes distances on-the-fly; avoids the full N×N matrix.
 
 # Fields
-- `frac::ValidFraction`: Fraction of samples in the training subset (0 < frac < 1)
 - `max_subsample_size::Int`: Size of the temporary candidate subsample (default: 10)
 - `distance_cutoff::Float64`: Similarity threshold (default: 0.35)
 - `metric::Distances.SemiMetric`: Distance metric (default: `Euclidean()`)
@@ -18,36 +17,31 @@ selection strategy. Computes distances on-the-fly; avoids the full N×N matrix.
   Diverse Representative Subsets. *J. Chem. Inf. Comput. Sci.*, 37(6), 1181–1188.
 """
 struct LazyOptiSimSplit <: AbstractSplitStrategy
-  frac::ValidFraction
   max_subsample_size::Int
   distance_cutoff::Float64
   metric::Distances.SemiMetric
 end
 
-function LazyOptiSimSplit(
-  frac::Real;
+function LazyOptiSimSplit(;
   max_subsample_size = 10,
   distance_cutoff = 0.35,
   metric = Euclidean(),
 )
-  LazyOptiSimSplit(ValidFraction(frac), max_subsample_size, distance_cutoff, metric)
-end
-
-function LazyOptiSimSplit(
-  frac::ValidFraction;
-  max_subsample_size = 10,
-  distance_cutoff = 0.35,
-  metric = Euclidean(),
-)
-  LazyOptiSimSplit(frac, max_subsample_size, distance_cutoff, metric)
+  LazyOptiSimSplit(max_subsample_size, distance_cutoff, metric)
 end
 
 consumes(::LazyOptiSimSplit) = (:data,)
 fallback_from_data(::LazyOptiSimSplit) = ()
 
-function _partition(X, s::LazyOptiSimSplit; rng = Random.GLOBAL_RNG, kwargs...)
+function _partition(
+  X,
+  s::LazyOptiSimSplit;
+  n_train,
+  n_test,
+  rng = Random.GLOBAL_RNG,
+  kwargs...,
+)
   N = numobs(X)
-  n_train, _ = train_test_counts(N, s.frac)
   candidates = Set(1:N)
   selected = Set{Int}()
   push!(selected, rand(rng, candidates))

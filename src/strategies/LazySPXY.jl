@@ -9,24 +9,22 @@ Memory-efficient SPXY splitting strategy. Computes distances on-the-fly
 (O(N) storage) rather than precomputing the full N×N matrix.
 
 # Fields
-- `frac::ValidFraction`: Fraction of data to use for training (0 < frac < 1)
 - `metric_X::Distances.SemiMetric`: Distance metric for `X` (default: `Euclidean()`)
 - `metric_y::Distances.SemiMetric`: Distance metric for `y` (default: `Euclidean()`)
 
 # Examples
 ```julia
-res = partition(X, LazySPXYSplit(0.8); target=y)
+res = partition(X, LazySPXYSplit(); target=y, train=80, test=20)
 X_train, X_test = splitdata(res, X)
 ```
 """
 struct LazySPXYSplit <: AbstractSplitStrategy
-  frac::ValidFraction
   metric_X::Distances.SemiMetric
   metric_y::Distances.SemiMetric
 end
 
-LazySPXYSplit(frac::Real; metric_X = Euclidean(), metric_y = Euclidean()) =
-  LazySPXYSplit(ValidFraction(frac), metric_X, metric_y)
+LazySPXYSplit(; metric_X = Euclidean(), metric_y = Euclidean()) =
+  LazySPXYSplit(metric_X, metric_y)
 
 consumes(::LazySPXYSplit) = (:data, :target)
 fallback_from_data(::LazySPXYSplit) = ()
@@ -39,26 +37,22 @@ Uses Mahalanobis distance for `X` and Euclidean for `y`, normalised and summed
 as in SPXY. Computes distances on-the-fly (O(N) storage).
 
 # Fields
-- `frac::ValidFraction`: Fraction of data to use for training (0 < frac < 1)
 - `metric_X::Union{Nothing,Distances.SemiMetric}`: Distance metric for `X`;
   if `nothing`, Mahalanobis is computed from the data at split time.
 - `metric_y::Distances.SemiMetric`: Distance metric for `y` (default: `Euclidean()`)
 
 # Examples
 ```julia
-res = partition(X, LazyMDKSSplit(0.7); target=y)
+res = partition(X, LazyMDKSSplit(); target=y, train=70, test=30)
 X_train, X_test = splitdata(res, X)
 ```
 """
 struct LazyMDKSSplit <: AbstractSplitStrategy
-  frac::ValidFraction
   metric_X::Union{Nothing,Distances.SemiMetric}
   metric_y::Distances.SemiMetric
 end
 
-function LazyMDKSSplit(frac::Real; metric = nothing)
-  LazyMDKSSplit(ValidFraction(frac), metric, Euclidean())
-end
+LazyMDKSSplit(; metric = nothing) = LazyMDKSSplit(metric, Euclidean())
 
 consumes(::LazyMDKSSplit) = (:data, :target)
 fallback_from_data(::LazyMDKSSplit) = ()
@@ -113,21 +107,49 @@ end
 # _partition implementations
 # ---------------------------------------------------------------------------
 
-function _partition(X, s::LazySPXYSplit; target, rng = Random.GLOBAL_RNG, kwargs...)
+function _partition(
+  X,
+  s::LazySPXYSplit;
+  target,
+  n_train,
+  n_test,
+  rng = Random.GLOBAL_RNG,
+  kwargs...,
+)
   max_X, max_y = _find_max_distance_XY(X, target, s.metric_X, s.metric_y)
   max_X = max_X == 0.0 ? 1.0 : max_X
   max_y = max_y == 0.0 ? 1.0 : max_y
   metric = LazySPXYMetric(s.metric_X, s.metric_y, max_X, max_y)
   data = XYObsTable(X, target)
-  return _partition(data, LazyKennardStoneSplit(s.frac, metric); rng)
+  return _partition(
+    data,
+    LazyKennardStoneSplit(metric);
+    n_train = n_train,
+    n_test = n_test,
+    rng = rng,
+  )
 end
 
-function _partition(X, s::LazyMDKSSplit; target, rng = Random.GLOBAL_RNG, kwargs...)
+function _partition(
+  X,
+  s::LazyMDKSSplit;
+  target,
+  n_train,
+  n_test,
+  rng = Random.GLOBAL_RNG,
+  kwargs...,
+)
   metric_X = s.metric_X === nothing ? Mahalanobis(cov(X; dims = 2)) : s.metric_X
   max_X, max_y = _find_max_distance_XY(X, target, metric_X, s.metric_y)
   max_X = max_X == 0.0 ? 1.0 : max_X
   max_y = max_y == 0.0 ? 1.0 : max_y
   metric = LazySPXYMetric(metric_X, s.metric_y, max_X, max_y)
   data = XYObsTable(X, target)
-  return _partition(data, LazyKennardStoneSplit(s.frac, metric); rng)
+  return _partition(
+    data,
+    LazyKennardStoneSplit(metric);
+    n_train = n_train,
+    n_test = n_test,
+    rng = rng,
+  )
 end

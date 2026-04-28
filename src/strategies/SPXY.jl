@@ -2,7 +2,7 @@ using Statistics: cov
 using Distances
 
 """
-    SPXYSplit(frac; metric_X=Euclidean(), metric_y=Euclidean())
+    SPXYSplit(; metric_X=Euclidean(), metric_y=Euclidean())
 
 Sample set Partitioning based on joint X–Y distance (SPXY).
 
@@ -10,14 +10,14 @@ A variant of Kennard–Stone where the joint distance matrix is the element-wise
 sum of the (normalised) pairwise distance matrices of `X` and `y`.
 
 # Fields
-- `frac::ValidFraction`: Fraction of samples in the training subset (0 < frac < 1)
 - `metric_X::Distances.SemiMetric`: Distance metric for `X` (default: `Euclidean()`)
 - `metric_y::Distances.SemiMetric`: Distance metric for `y` (default: `Euclidean()`)
 
 # Examples
 ```julia
-res = partition(X, SPXYSplit(0.7); target=y)
-res = partition(X, SPXYSplit(0.7; metric_X=Mahalanobis(cov(X; dims=2))); target=y)
+res = partition(X, SPXYSplit(); target=y, train=70, test=30)
+res = partition(X, SPXYSplit(; metric_X=Mahalanobis(cov(X; dims=2)));
+                target=y, train=70, test=30)
 X_train, X_test = splitdata(res, X)
 ```
 
@@ -25,19 +25,18 @@ X_train, X_test = splitdata(res, X)
 [`KennardStoneSplit`](@ref) — the classical variant that uses only `X`.
 """
 struct SPXYSplit <: AbstractSplitStrategy
-  frac::ValidFraction
   metric_X::Distances.SemiMetric
   metric_y::Distances.SemiMetric
 end
 
-SPXYSplit(frac::Real; metric_X = Euclidean(), metric_y = Euclidean()) =
-  SPXYSplit(ValidFraction(frac), metric_X, metric_y)
+SPXYSplit(; metric_X = Euclidean(), metric_y = Euclidean()) =
+  SPXYSplit(metric_X, metric_y)
 
 consumes(::SPXYSplit) = (:data, :target)
 fallback_from_data(::SPXYSplit) = ()
 
 """
-    MDKSSplit(frac; metric=nothing)
+    MDKSSplit(; metric=nothing)
 
 Minimum Dissimilarity Kennard–Stone (MDKS) split using Mahalanobis distance for `X`
 and Euclidean distance for `y`.
@@ -47,8 +46,9 @@ matrix of `X` at split time.
 
 # Examples
 ```julia
-res = partition(X, MDKSSplit(0.7); target=y)
-res = partition(X, MDKSSplit(0.7; metric=Mahalanobis(cov(X; dims=2))); target=y)
+res = partition(X, MDKSSplit(); target=y, train=70, test=30)
+res = partition(X, MDKSSplit(; metric=Mahalanobis(cov(X; dims=2)));
+                target=y, train=70, test=30)
 X_train, X_test = splitdata(res, X)
 ```
 
@@ -56,11 +56,10 @@ X_train, X_test = splitdata(res, X)
 [`SPXYSplit`](@ref)
 """
 struct MDKSSplit <: AbstractSplitStrategy
-  frac::ValidFraction
   metric::Union{Nothing,PreMetric}
 end
 
-MDKSSplit(frac::Real; metric = nothing) = MDKSSplit(ValidFraction(frac), metric)
+MDKSSplit(; metric = nothing) = MDKSSplit(metric)
 
 consumes(::MDKSSplit) = (:data, :target)
 fallback_from_data(::MDKSSplit) = ()
@@ -70,9 +69,15 @@ fallback_from_data(::MDKSSplit) = ()
   return D ./ maximum(D)
 end
 
-function _partition(X, s::SPXYSplit; target, rng = Random.GLOBAL_RNG, kwargs...)
-  N = numobs(X)
-  n_train, _ = train_test_counts(N, s.frac)
+function _partition(
+  X,
+  s::SPXYSplit;
+  target,
+  n_train,
+  n_test,
+  rng = Random.GLOBAL_RNG,
+  kwargs...,
+)
   DX = _norm_pairwise(X, s.metric_X)
   DY = _norm_pairwise(target, s.metric_y)
   DX .+= DY
@@ -80,7 +85,22 @@ function _partition(X, s::SPXYSplit; target, rng = Random.GLOBAL_RNG, kwargs...)
   return TrainTestSplit(train_idx, test_idx)
 end
 
-function _partition(X, s::MDKSSplit; target, rng = Random.GLOBAL_RNG, kwargs...)
+function _partition(
+  X,
+  s::MDKSSplit;
+  target,
+  n_train,
+  n_test,
+  rng = Random.GLOBAL_RNG,
+  kwargs...,
+)
   metric_X = s.metric === nothing ? Mahalanobis(cov(X; dims = 2)) : s.metric
-  _partition(X, SPXYSplit(s.frac, metric_X, Euclidean()); target = target, rng = rng)
+  _partition(
+    X,
+    SPXYSplit(metric_X, Euclidean());
+    target = target,
+    n_train = n_train,
+    n_test = n_test,
+    rng = rng,
+  )
 end

@@ -1,31 +1,46 @@
 using Random, Distances
 
 """
-    MoraisLimaMartinSplit(frac; swap_frac=0.1, metric=Euclidean())
+    MoraisLimaMartinSplit(; swap_frac=0.1, metric=Euclidean())
 
 Kennard–Stone initialisation followed by random swapping of a fraction of
 samples between train and test sets.
 
 # Fields
-- `frac::ValidFraction{T}`: Fraction of data to use for training (0 < frac < 1)
-- `swap_frac::ValidFraction{T}`: Fraction of samples to swap (0 < swap_frac < 1)
+- `swap_frac::Float64`: Fraction of samples to swap (0 < swap_frac < 1)
 - `metric::Distances.SemiMetric`: Distance metric for Kennard–Stone (default: `Euclidean()`)
+
+# Examples
+```julia
+res = partition(X, MoraisLimaMartinSplit(); train=80, test=20)
+res = partition(X, MoraisLimaMartinSplit(; swap_frac=0.05); train=80, test=20)
+```
 """
-struct MoraisLimaMartinSplit{T,M<:Distances.SemiMetric} <: AbstractSplitStrategy
-  frac::ValidFraction{T}
-  swap_frac::ValidFraction{T}
+struct MoraisLimaMartinSplit{M<:Distances.SemiMetric} <: AbstractSplitStrategy
+  swap_frac::Float64
   metric::M
 end
 
-MoraisLimaMartinSplit(frac::Real; swap_frac::Real = 0.1, metric = Euclidean()) =
-  MoraisLimaMartinSplit(ValidFraction(frac), ValidFraction(swap_frac), metric)
+function MoraisLimaMartinSplit(; swap_frac::Real = 0.1, metric = Euclidean())
+  0 < swap_frac < 1 || throw(
+    SplitParameterError("`swap_frac` must be strictly between 0 and 1, got $swap_frac."),
+  )
+  MoraisLimaMartinSplit(Float64(swap_frac), metric)
+end
 
 consumes(::MoraisLimaMartinSplit) = (:data,)
 fallback_from_data(::MoraisLimaMartinSplit) = ()
 
-function _partition(data, s::MoraisLimaMartinSplit; rng = Random.GLOBAL_RNG, kwargs...)
-  ks = KennardStoneSplit(s.frac, s.metric)
-  tt = _partition(data, ks; rng = rng)
+function _partition(
+  data,
+  s::MoraisLimaMartinSplit;
+  n_train,
+  n_test,
+  rng = Random.GLOBAL_RNG,
+  kwargs...,
+)
+  ks = KennardStoneSplit(s.metric)
+  tt = _partition(data, ks; n_train = n_train, n_test = n_test, rng = rng)
   train_idx = copy(tt.train)
   test_idx = copy(tt.test)
   n_swap = round(Int, s.swap_frac * min(length(train_idx), length(test_idx)))
