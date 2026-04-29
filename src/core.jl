@@ -373,9 +373,42 @@ function _check_min_sizes(n_train::Integer, n_val::Integer, n_test::Integer)
 end
 
 
+function Base.show(io::IO, res::TrainTestSplit)
+  print(
+    io,
+    "TrainTestSplit  train: $(length(res.train)) obs  test: $(length(res.test)) obs",
+  )
+end
+
+function Base.show(io::IO, res::TrainValTestSplit)
+  print(
+    io,
+    "TrainValTestSplit  train: $(length(res.train)) obs  val: $(length(res.val)) obs  test: $(length(res.test)) obs",
+  )
+end
+
+function Base.show(io::IO, res::CrossValidationSplit)
+  print(io, "CrossValidationSplit  $(length(res.folds)) folds")
+end
+
+
 # ---------------------------------------------------------------------------
-# Main entry points
+# Result type iteration (enables destructuring: train, test = res)
 # ---------------------------------------------------------------------------
+
+Base.iterate(res::TrainTestSplit, state = 1) =
+  state == 1 ? (res.train, 2) : state == 2 ? (res.test, 3) : nothing
+
+Base.iterate(res::TrainValTestSplit, state = 1) =
+  state == 1 ? (res.train, 2) :
+  state == 2 ? (res.val, 3) : state == 3 ? (res.test, 4) : nothing
+
+Base.iterate(res::CrossValidationSplit, state = 1) =
+  state <= length(res.folds) ? (res.folds[state], state + 1) : nothing
+
+Base.length(res::TrainTestSplit) = 2
+Base.length(res::TrainValTestSplit) = 3
+Base.length(res::CrossValidationSplit) = length(res.folds)
 
 """
     partition(data, alg;
