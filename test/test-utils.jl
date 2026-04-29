@@ -1,6 +1,6 @@
 using Test
 using DataSplits: SplitParameterError
-import DataSplits
+import DataSplits: ValidFraction
 
 @testset "_resolve_sizes" begin
   # Percentages (sum to 100)

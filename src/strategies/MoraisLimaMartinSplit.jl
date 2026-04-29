@@ -7,7 +7,7 @@ Kennard–Stone initialisation followed by random swapping of a fraction of
 samples between train and test sets.
 
 # Fields
-- `swap_frac::Float64`: Fraction of samples to swap (0 < swap_frac < 1)
+- `swap_frac::ValidFraction`: Fraction of samples to swap (0 < swap_frac < 1)
 - `metric::Distances.SemiMetric`: Distance metric for Kennard–Stone (default: `Euclidean()`)
 
 # Examples
@@ -16,16 +16,13 @@ res = partition(X, MoraisLimaMartinSplit(); train=80, test=20)
 res = partition(X, MoraisLimaMartinSplit(; swap_frac=0.05); train=80, test=20)
 ```
 """
-struct MoraisLimaMartinSplit{M<:Distances.SemiMetric} <: AbstractSplitStrategy
-  swap_frac::Float64
+struct MoraisLimaMartinSplit{T<:Real,M<:Distances.SemiMetric} <: AbstractSplitStrategy
+  swap_frac::ValidFraction{T}
   metric::M
 end
 
 function MoraisLimaMartinSplit(; swap_frac::Real = 0.1, metric = Euclidean())
-  0 < swap_frac < 1 || throw(
-    SplitParameterError("`swap_frac` must be strictly between 0 and 1, got $swap_frac."),
-  )
-  MoraisLimaMartinSplit(Float64(swap_frac), metric)
+  MoraisLimaMartinSplit(ValidFraction(swap_frac), metric)
 end
 
 consumes(::MoraisLimaMartinSplit) = (:data,)

@@ -2,6 +2,8 @@ module DataSplits
 
 include("core.jl")
 include("utils.jl")
+include("validation.jl")
+include("core.jl")
 include("strategies/random.jl")
 include("strategies/LazyKennardStone.jl")
 include("strategies/KennardStone.jl")
