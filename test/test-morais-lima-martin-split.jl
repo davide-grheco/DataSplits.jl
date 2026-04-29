@@ -38,5 +38,5 @@ using Test
   @test r1.train == r2.train
   @test r1.test == r2.test
 
-  @test_throws SplitParameterError MoraisLimaMartinSplit(; swap_frac = 1.0)
+  @test_throws SplitParameterError MoraisLimaMartinSplit(; swap_frac = 1.5)
 end
