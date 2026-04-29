@@ -1,6 +1,5 @@
 module DataSplits
 
-include("core.jl")
 include("utils.jl")
 include("validation.jl")
 include("core.jl")
