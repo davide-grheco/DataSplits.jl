@@ -4,7 +4,6 @@ version = "0.3.0"
 authors = ["Davide Crucitti <davide.crucitti@grheco.com>"]
 
 [deps]
-ArrayInterface = "4fba245c-0d91-5ea0-9b3e-6abc04ee57a9"
 Clustering = "aaaa29a8-35af-508c-8bc3-b662a17a0fe5"
 Distances = "b4f34e82-e78d-54a5-968a-f98e89d6e8f7"
 MLUtils = "f1d291b0-491e-4a28-83b9-f70985020b54"
@@ -14,7 +13,6 @@ StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 Tables = "bd369af6-aec1-5ad0-b16a-f7cc5008161c"
 
 [compat]
-ArrayInterface = "6,7"
 Clustering = "0.15"
 Distances = "0.10.3 - 0.11"
 MLUtils = "0.4.8"
