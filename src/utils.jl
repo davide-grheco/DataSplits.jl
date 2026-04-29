@@ -118,4 +118,3 @@ Error thrown when a required split method or feature is not implemented.
 struct SplitNotImplementedError <: Exception
   msg::String
 end
-

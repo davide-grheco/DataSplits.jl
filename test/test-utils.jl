@@ -30,3 +30,34 @@ import DataSplits: ValidFraction
   # Resolved n_train < 1 (1% of 10 = 0)
   @test_throws SplitParameterError DataSplits._resolve_sizes(10, 1, nothing, 99)
 end
+@testset "_resolve_sizes (fractions)" begin
+  @test DataSplits._resolve_sizes(10, 0.7, nothing, 0.3) == (7, 0, 3)
+  @test DataSplits._resolve_sizes(100, 0.7, 0.1, 0.2) == (70, 10, 20)
+  @test DataSplits._resolve_sizes(200, 0.8, nothing, 0.2) == (160, 0, 40)
+
+  # Floating-point imprecision tolerated
+  @test DataSplits._resolve_sizes(10, 0.1 + 0.2, nothing, 0.7) == (3, 0, 7)
+
+  # Out-of-range fractions
+  @test_throws SplitParameterError DataSplits._resolve_sizes(10, 0.0, nothing, 1.0)
+  @test_throws SplitParameterError DataSplits._resolve_sizes(10, 1.0, nothing, 0.0)
+
+  # Sum ≠ 1
+  @test_throws SplitParameterError DataSplits._resolve_sizes(10, 0.5, nothing, 0.6)
+
+  # Resolved cohort < 1 (0.01 * 10 rounds to 0)
+  @test_throws SplitParameterError DataSplits._resolve_sizes(10, 0.01, nothing, 0.99)
+end
+
+@testset "ValidFraction" begin
+  vf = ValidFraction(0.8)
+  @test vf.frac == 0.8
+  @test vf * 10 ≈ 8.0
+  @test 10 * vf ≈ 8.0
+  @test float(vf) == 0.8
+  @test convert(Float64, vf) == 0.8
+  @test_throws SplitParameterError ValidFraction(0.0)
+  @test_throws SplitParameterError ValidFraction(1.0)
+  @test_throws SplitParameterError ValidFraction(-0.1)
+  @test_throws SplitParameterError ValidFraction(1.5)
+end

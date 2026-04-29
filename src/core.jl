@@ -206,8 +206,7 @@ end
 function _resolve_slot(algs::Tuple, data, kwval, slot::Symbol)
   consumers = filter(a -> slot ∈ consumes(a), algs)
   if isempty(consumers)
-    kwval === nothing ||
-      throw(SplitInputError("No strategy uses the `$slot=` keyword."))
+    kwval === nothing || throw(SplitInputError("No strategy uses the `$slot=` keyword."))
     return nothing
   end
   if kwval === nothing
@@ -227,66 +226,142 @@ end
 _slot_for(alg, value, slot::Symbol) = slot ∈ consumes(alg) ? value : nothing
 
 
-# ---------------------------------------------------------------------------
-# Cohort size resolution
-# ---------------------------------------------------------------------------
-
 """
     _resolve_sizes(N, train, validation, test) -> (n_train, n_val, n_test)
 
-Validate and resolve cohort sizes from integer keywords.
+Validate and resolve cohort sizes.
 
-Two interpretations are accepted, distinguished by the sum of the values:
+**Integer form** — two interpretations, distinguished by the sum:
+- sum == `100`: values are percentages of `N`.
+- sum == `N`: values are absolute counts.
+Any other sum is rejected.
 
-- if they sum to **100**, they are treated as **percentages of `N`**;
-- if they sum to **`N`**, they are treated as **absolute counts**.
+**Float form** — values must each be in `(0, 1)` and sum to approximately 1.0.
 
-Any other sum is rejected. When `validation === nothing`, the result has
-`n_val == 0` and only train and test cohorts are produced.
-
-When percentages do not divide `N` evenly, `n_train` and `n_val` are
-rounded to the nearest integer and `n_test` absorbs the remainder so that
-`n_train + n_val + n_test == N`.
+When `validation === nothing`, `n_val == 0` and only train and test cohorts
+are produced. Rounding remainder is absorbed by `n_test`.
 """
-function _resolve_sizes(
-  N::Integer,
-  train::Integer,
-  validation::Union{Integer,Nothing},
-  test::Integer,
-)
-  three_cohort = validation !== nothing
+function _resolve_sizes(N::Integer, train::Integer, ::Nothing, test::Integer)
+  parts = (:train => train, :test => test)
 
-  for (k, v) in (
-    three_cohort ?
-    ((:train, train), (:validation, validation), (:test, test)) :
-    ((:train, train), (:test, test))
-  )
-    v >= 1 ||
-      throw(SplitParameterError("`$k` must be a positive integer, got $v."))
-  end
+  _assert_positive_integer(:N, N)
+  _assert_positive_integer_parts(parts...)
 
-  s = three_cohort ? train + validation + test : train + test
+  n_train, n_test = _resolve_integer_parts(N, parts)
+
+  _check_min_sizes(n_train, n_test)
+
+  return n_train, 0, n_test
+end
+
+function _resolve_sizes(N::Integer, train::Integer, validation::Integer, test::Integer)
+  parts = (:train => train, :validation => validation, :test => test)
+
+  _assert_positive_integer(:N, N)
+  _assert_positive_integer_parts(parts...)
+
+  n_train, n_val, n_test = _resolve_integer_parts(N, parts)
+
+  _check_min_sizes(n_train, n_val, n_test)
+
+  return n_train, n_val, n_test
+end
+
+function _resolve_integer_parts(N::Integer, parts::Tuple)
+  values = last.(parts)
+  s = sum(values)
 
   if s == 100
-    n_train = round(Int, (train * N) / 100)
-    n_val = three_cohort ? round(Int, (validation * N) / 100) : 0
-    n_test = N - n_train - n_val
+    return _resolve_percentage_parts(N, values)
   elseif s == N
-    n_train = train
-    n_val = three_cohort ? validation : 0
-    n_test = test
+    return values
+  end
+
+  throw(
+    SplitParameterError(
+      "Cohort sizes must sum to 100 (percentages) or to N=$N (absolute counts); got $(_format_integer_parts(parts, s)).",
+    ),
+  )
+end
+
+function _resolve_percentage_parts(N::Integer, percentages::Tuple)
+  leading = map(p -> round(Int, (p * N) / 100), Base.front(percentages))
+  final = N - sum(leading)
+
+  return (leading..., final)
+end
+
+function _format_integer_parts(parts::Tuple, total::Integer)
+  expr = join(("$(name)($(value))" for (name, value) in parts), " + ")
+  return "$expr = $total"
+end
+
+function _resolve_sizes(
+  N::Integer,
+  train::Union{Real,ValidFraction},
+  validation::Union{Real,ValidFraction,Nothing},
+  test::Union{Real,ValidFraction,Nothing},
+)
+  _assert_positive_integer(:N, N)
+  train = _as_valid_fraction(train)
+  validation = _as_valid_fraction(validation)
+  test = _as_valid_fraction(test)
+
+  if validation === nothing
+    _assert_unit_fraction_sum(train, test)
   else
-    parts = three_cohort ?
-      "train($train) + validation($validation) + test($test) = $s" :
-      "train($train) + test($test) = $s"
+    _assert_unit_fraction_sum(train, validation, test)
+  end
+
+  return _resolve_sizes(N, train, validation, test)
+end
+
+
+function _resolve_sizes(
+  N::Integer,
+  train::ValidFraction,
+  validation::Nothing,
+  test::Union{ValidFraction,Nothing},
+)
+  n_train = round(Int, train * N)
+  n_val = 0
+  n_test = N - n_train
+
+  _check_min_sizes(n_train, n_test)
+
+  return n_train, n_val, n_test
+end
+
+function _resolve_sizes(
+  N::Integer,
+  train::ValidFraction,
+  validation::ValidFraction,
+  test::ValidFraction,
+)
+  n_train = round(Int, train * N)
+  n_val = round(Int, validation * N)
+  n_test = N - n_train - n_val
+
+  _check_min_sizes(n_train, n_val, n_test)
+
+  return n_train, n_val, n_test
+end
+
+function _check_min_sizes(n_train::Integer, n_test::Integer)
+  if n_train < 1 || n_test < 1
     throw(
       SplitParameterError(
-        "Cohort sizes must sum to 100 (percentages) or to N=$N (absolute counts); got $parts.",
+        "Resolved cohort sizes must each be ≥ 1; got n_train=$n_train, n_test=$n_test.",
       ),
     )
   end
 
-  if n_train < 1 || n_test < 1 || (three_cohort && n_val < 1)
+  return nothing
+end
+
+
+function _check_min_sizes(n_train::Integer, n_val::Integer, n_test::Integer)
+  if n_train < 1 || n_val < 1 || n_test < 1
     throw(
       SplitParameterError(
         "Resolved cohort sizes must each be ≥ 1; got n_train=$n_train, n_val=$n_val, n_test=$n_test.",
@@ -294,75 +369,48 @@ function _resolve_sizes(
     )
   end
 
-  return n_train, n_val, n_test
+  return nothing
 end
 
 
 # ---------------------------------------------------------------------------
-# Main entry point
+# Main entry points
 # ---------------------------------------------------------------------------
 
 """
-    partition(data, alg [, val_alg];
-              train, test, validation=nothing,
+    partition(data, alg;
+              train, test,
               target=nothing, time=nothing, groups=nothing,
-              rng=Random.default_rng()) -> AbstractSplitResult
+              rng=Random.default_rng()) -> TrainTestSplit
 
-Split `data` into train/test (or train/validation/test) according to one or
-two splitting strategies.
+Split `data` into train and test cohorts according to `alg`.
 
-# Arguments
-- `data`: Observation container (matrix, vector, DataFrame, …).
-  Columns are samples for matrices; rows are samples for DataFrames.
-- `alg`: A splitting strategy. With a single strategy `alg`, this strategy
-  separates train from test. With two strategies, `alg` separates the test
-  cohort from the rest.
-- `val_alg` *(optional)*: When given, this second strategy separates the
-  validation cohort from the train pool produced by `alg`.
+# Cohort sizes (`train`, `test`)
 
-# Cohort sizes (`train`, `validation`, `test`)
-
-All sizes are positive integers. Two interpretations are accepted:
-
+Integers are accepted in two ways:
 - **Percentages** — values sum to `100`.
 - **Absolute counts** — values sum to `N = numobs(data)`.
 
-Any other sum is rejected.
+Floats in `(0, 1)` summing to `1.0` are also accepted and converted to counts.
 
 # Auxiliary slots
 
-- `target`: response/property vector used by some strategies (e.g. `SPXYSplit`).
-- `time`: temporal ordering vector used by `TimeSplit` variants.
-- `groups`: group-membership vector used by `GroupShuffleSplit` /
-  `GroupStratifiedSplit`.
-
-When a strategy's required slot is omitted and that slot is in
-`fallback_from_data(alg)`, `data` itself fills the role
-(e.g. `partition(dates, TimeSplitOldest(); train=70, test=30)`).
+- `target`: response/property vector (e.g. for `SPXYSplit`).
+- `time`: temporal ordering vector (e.g. for `TimeSplit`).
+- `groups`: group-membership vector (e.g. for `GroupShuffleSplit`).
 
 # Examples
 ```julia
-# 2 cohorts, percentages
 partition(X, KennardStoneSplit(); train = 80, test = 20)
-
-# 2 cohorts, absolute counts (N = 250)
-partition(X, RandomSplit(); train = 200, test = 50)
-
-# 3 cohorts, mixed strategies
-partition(X, RandomSplit(), KennardStoneSplit();
-          train = 70, validation = 10, test = 20)
-
-# Slot keywords still apply
+partition(X, RandomSplit(); train = 0.8, test = 0.2)
 partition(X, SPXYSplit(); target = y, train = 80, test = 20)
 ```
 """
 function partition(
   data,
-  alg::AbstractSplitStrategy,
-  val_alg::Union{Nothing,AbstractSplitStrategy} = nothing;
-  train::Integer,
-  test::Integer,
-  validation::Union{Integer,Nothing} = nothing,
+  alg::AbstractSplitStrategy;
+  train::Real,
+  test::Real,
   target = nothing,
   time = nothing,
   groups = nothing,
@@ -373,35 +421,80 @@ function partition(
   N = numobs(data)
   N >= 2 || throw(SplitInputError("Cannot split fewer than 2 observations."))
 
-  if val_alg === nothing && validation !== nothing
-    throw(SplitInputError("`validation=` requires a second positional strategy."))
-  end
-  if val_alg !== nothing && validation === nothing
-    throw(SplitInputError("Two strategies require the `validation=` keyword."))
-  end
+  n_train, _, n_test = _resolve_sizes(N, train, nothing, test)
+
+  algs = (alg,)
+  resolved_target = _resolve_slot(algs, data, target, :target)
+  resolved_time = _resolve_slot(algs, data, time, :time)
+  resolved_groups = _resolve_slot(algs, data, groups, :groups)
+
+  data_internal = :data ∈ consumes(alg) ? _to_feature_matrix(data) : data
+
+  return _partition(
+    data_internal,
+    alg;
+    n_train = n_train,
+    n_test = n_test,
+    target = _slot_for(alg, resolved_target, :target),
+    time = _slot_for(alg, resolved_time, :time),
+    groups = _slot_for(alg, resolved_groups, :groups),
+    rng = rng,
+  )
+end
+
+"""
+    partition(data, alg, val_alg;
+              train, validation, test,
+              target=nothing, time=nothing, groups=nothing,
+              rng=Random.default_rng()) -> TrainValTestSplit
+
+Split `data` into train, validation, and test cohorts using two strategies.
+
+`alg` separates the test cohort from the rest; `val_alg` then separates the
+validation cohort from the remaining train pool.
+
+# Cohort sizes (`train`, `validation`, `test`)
+
+Integers are accepted in two ways:
+- **Percentages** — values sum to `100`.
+- **Absolute counts** — values sum to `N = numobs(data)`.
+
+Floats in `(0, 1)` summing to `1.0` are also accepted.
+
+# Examples
+```julia
+partition(X, RandomSplit(), KennardStoneSplit();
+          train = 70, validation = 10, test = 20)
+partition(X, RandomSplit(), KennardStoneSplit();
+          train = 0.7, validation = 0.1, test = 0.2)
+```
+"""
+function partition(
+  data,
+  alg::AbstractSplitStrategy,
+  val_alg::AbstractSplitStrategy;
+  train::Real,
+  validation::Real,
+  test::Real,
+  target = nothing,
+  time = nothing,
+  groups = nothing,
+  rng = Random.default_rng(),
+)
+  isempty(data) &&
+    throw(SplitInputError("Data must not be empty. Please provide a non-empty dataset."))
+  N = numobs(data)
+  N >= 2 || throw(SplitInputError("Cannot split fewer than 2 observations."))
 
   n_train, n_val, n_test = _resolve_sizes(N, train, validation, test)
 
-  algs = val_alg === nothing ? (alg,) : (alg, val_alg)
+  algs = (alg, val_alg)
   resolved_target = _resolve_slot(algs, data, target, :target)
   resolved_time = _resolve_slot(algs, data, time, :time)
   resolved_groups = _resolve_slot(algs, data, groups, :groups)
 
   needs_matrix = any(a -> :data ∈ consumes(a), algs)
   data_internal = needs_matrix ? _to_feature_matrix(data) : data
-
-  if val_alg === nothing
-    return _partition(
-      data_internal,
-      alg;
-      n_train = n_train,
-      n_test = n_test,
-      target = _slot_for(alg, resolved_target, :target),
-      time = _slot_for(alg, resolved_time, :time),
-      groups = _slot_for(alg, resolved_groups, :groups),
-      rng = rng,
-    )
-  end
 
   outer = _partition(
     data_internal,
@@ -423,11 +516,9 @@ function partition(
   test_idx = outer.test
 
   data_inner = obsview(data_internal, train_pool)
-  inner_target =
-    resolved_target === nothing ? nothing : view(resolved_target, train_pool)
+  inner_target = resolved_target === nothing ? nothing : view(resolved_target, train_pool)
   inner_time = resolved_time === nothing ? nothing : view(resolved_time, train_pool)
-  inner_groups =
-    resolved_groups === nothing ? nothing : view(resolved_groups, train_pool)
+  inner_groups = resolved_groups === nothing ? nothing : view(resolved_groups, train_pool)
 
   inner = _partition(
     data_inner,

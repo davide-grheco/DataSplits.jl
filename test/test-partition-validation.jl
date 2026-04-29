@@ -134,23 +134,7 @@ import DataSplits: SplitInputError, SplitParameterError, SplitNotImplementedErro
   end
 
   @testset "input validation" begin
-    # validation kwarg without second strategy
-    @test_throws SplitInputError partition(
-      X,
-      RandomSplit();
-      train = 70,
-      validation = 10,
-      test = 20,
-    )
-    # second strategy without validation kwarg
-    @test_throws SplitInputError partition(
-      X,
-      RandomSplit(),
-      RandomSplit();
-      train = 70,
-      test = 30,
-    )
-    # bad sum
+    # bad sum (three-cohort)
     @test_throws SplitParameterError partition(
       X,
       RandomSplit(),
@@ -159,5 +143,37 @@ import DataSplits: SplitInputError, SplitParameterError, SplitNotImplementedErro
       validation = 10,
       test = 30,
     )
+    # empty data
+    @test_throws SplitInputError partition(
+      zeros(3, 0),
+      RandomSplit();
+      train = 70,
+      test = 30,
+    )
+  end
+
+  @testset "float fractions" begin
+    res = partition(
+      X,
+      RandomSplit();
+      train = 0.7,
+      test = 0.3,
+      rng = MersenneTwister(10),
+    )
+    @test length(res.train) == 70
+    @test length(res.test) == 30
+
+    res3 = partition(
+      X,
+      RandomSplit(),
+      RandomSplit();
+      train = 0.7,
+      validation = 0.1,
+      test = 0.2,
+      rng = MersenneTwister(11),
+    )
+    @test length(res3.train) == 70
+    @test length(res3.val) == 10
+    @test length(res3.test) == 20
   end
 end
