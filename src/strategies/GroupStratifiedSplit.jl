@@ -43,8 +43,7 @@ struct GroupStratifiedSplit <: AbstractSplitStrategy
   n::Union{Nothing,Int}
 end
 
-GroupStratifiedSplit(allocation::Symbol; n = nothing) =
-  GroupStratifiedSplit(allocation, n)
+GroupStratifiedSplit(allocation::Symbol; n = nothing) = GroupStratifiedSplit(allocation, n)
 
 consumes(::GroupStratifiedSplit) = (:groups,)
 fallback_from_data(::GroupStratifiedSplit) = (:groups,)
@@ -121,7 +120,7 @@ function _partition(
     idxs = selected[cid]
     n_train_cid = min(ceil(Int, frac * length(idxs)), length(idxs))
     append!(train_pos, idxs[1:n_train_cid])
-    append!(test_pos, idxs[n_train_cid+1:end])
+    append!(test_pos, idxs[(n_train_cid+1):end])
   end
   return TrainTestSplit(train_pos, test_pos)
 end
