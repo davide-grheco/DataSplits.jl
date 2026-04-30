@@ -153,13 +153,7 @@ import DataSplits: SplitInputError, SplitParameterError, SplitNotImplementedErro
   end
 
   @testset "float fractions" begin
-    res = partition(
-      X,
-      RandomSplit();
-      train = 0.7,
-      test = 0.3,
-      rng = MersenneTwister(10),
-    )
+    res = partition(X, RandomSplit(); train = 0.7, test = 0.3, rng = MersenneTwister(10))
     @test length(res.train) == 70
     @test length(res.test) == 30
 
