@@ -63,8 +63,8 @@ function find_most_distant_pair(D::AbstractMatrix)
   n = size(D, 1)
   max_d = -Inf
   i₁, i₂ = 1, 2
-  @inbounds for i = 1:n-1
-    for j = i+1:n
+  @inbounds for i = 1:(n-1)
+    for j = (i+1):n
       if D[i, j] > max_d
         max_d = D[i, j]
         i₁, i₂ = i, j
@@ -93,6 +93,6 @@ function kennard_stone_from_distance_matrix(D::AbstractMatrix, n_train::Integer)
     min_dists[k_idx] = -Inf
   end
   train_idx = selected_order[1:n_train]
-  test_idx = selected_order[n_train+1:end]
+  test_idx = selected_order[(n_train+1):end]
   return train_idx, test_idx
 end
