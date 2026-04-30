@@ -43,7 +43,8 @@ end
 
 @testset "GroupShuffleSplit fallback: ids as both data and groups" begin
   ids = vcat(fill(:a, 40), fill(:b, 40), fill(:c, 40))
-  result = partition(ids, GroupShuffleSplit(); train = 60, test = 40, rng = MersenneTwister(42))
+  result =
+    partition(ids, GroupShuffleSplit(); train = 60, test = 40, rng = MersenneTwister(42))
   @test length(result.train) + length(result.test) == 120
   @test isempty(intersect(result.train, result.test))
 end

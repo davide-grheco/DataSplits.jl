@@ -38,11 +38,35 @@ rng = MersenneTwister(42)
   end
 
   @testset "Edge Cases" begin
-    @test_throws SplitInputError partition(zeros(2, 0), strategy; train = 60, test = 40, rng)
-    @test_throws SplitParameterError partition(rand(2, 10), strategy; train = 0, test = 100, rng)
-    @test_throws SplitParameterError partition(rand(2, 10), strategy; train = 100, test = 0, rng)
+    @test_throws SplitInputError partition(
+      zeros(2, 0),
+      strategy;
+      train = 60,
+      test = 40,
+      rng,
+    )
+    @test_throws SplitParameterError partition(
+      rand(2, 10),
+      strategy;
+      train = 0,
+      test = 100,
+      rng,
+    )
+    @test_throws SplitParameterError partition(
+      rand(2, 10),
+      strategy;
+      train = 100,
+      test = 0,
+      rng,
+    )
     # Sum neither 100 nor N
-    @test_throws SplitParameterError partition(rand(2, 10), strategy; train = 50, test = 40, rng)
+    @test_throws SplitParameterError partition(
+      rand(2, 10),
+      strategy;
+      train = 50,
+      test = 40,
+      rng,
+    )
   end
 
   @testset "Randomness" begin

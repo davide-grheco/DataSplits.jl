@@ -52,5 +52,5 @@ function _partition(
 )
   descending = s.order in (:desc, :high, :largest, :max, :maximum)
   idx = sortperm(target; rev = descending)
-  return TrainTestSplit(idx[1:n_train], idx[n_train+1:end])
+  return TrainTestSplit(idx[1:n_train], idx[(n_train+1):end])
 end

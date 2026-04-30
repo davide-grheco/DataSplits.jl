@@ -51,11 +51,7 @@ end
 
   result = DataSplits.partition(
     X,
-    OptiSimSplit(;
-      max_subsample_size = 3,
-      distance_cutoff = 0.35,
-      metric = Euclidean(),
-    );
+    OptiSimSplit(; max_subsample_size = 3, distance_cutoff = 0.35, metric = Euclidean());
     train = 80,
     test = 20,
     rng = Random.seed!(42),
@@ -72,11 +68,7 @@ end
   rng1 = MersenneTwister(123)
   result = DataSplits.partition(
     X,
-    OptiSimSplit(;
-      max_subsample_size = 3,
-      distance_cutoff = 0.35,
-      metric = Euclidean(),
-    );
+    OptiSimSplit(; max_subsample_size = 3, distance_cutoff = 0.35, metric = Euclidean());
     train = 60,
     test = 40,
     rng = rng1,

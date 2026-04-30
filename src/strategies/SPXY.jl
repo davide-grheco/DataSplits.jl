@@ -29,8 +29,7 @@ struct SPXYSplit <: AbstractSplitStrategy
   metric_y::Distances.SemiMetric
 end
 
-SPXYSplit(; metric_X = Euclidean(), metric_y = Euclidean()) =
-  SPXYSplit(metric_X, metric_y)
+SPXYSplit(; metric_X = Euclidean(), metric_y = Euclidean()) = SPXYSplit(metric_X, metric_y)
 
 consumes(::SPXYSplit) = (:data, :target)
 fallback_from_data(::SPXYSplit) = ()
