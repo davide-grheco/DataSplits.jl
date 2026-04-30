@@ -45,3 +45,5 @@ repos:
     rev: v2.3.0
     hooks:
       - id: julia-formatter
+        entry: julia --project=@formatter -e 'using JuliaFormatter; format(ARGS)' --
+        files: \.jl$
