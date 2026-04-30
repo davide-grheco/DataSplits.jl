@@ -42,6 +42,8 @@ repos:
     hooks:
       - id: yamllint
   - repo: https://github.com/domluna/JuliaFormatter.jl
-    rev: v2.0.0
+    rev: v2.3.0
     hooks:
       - id: julia-formatter
+        entry: julia --project=@formatter -e 'using JuliaFormatter; format(ARGS)' --
+        files: \.jl$
