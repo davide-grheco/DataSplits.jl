@@ -26,6 +26,7 @@ include("strategies/StratifiedKFold.jl")
 include("strategies/ShuffleSplit.jl")
 include("strategies/StratifiedShuffleSplit.jl")
 include("strategies/PredefinedSplit.jl")
+include("strategies/TimeSeriesSplit.jl")
 
 # Core API
 export partition
@@ -55,7 +56,7 @@ export RandomSplit
 export GroupShuffleSplit, GroupStratifiedSplit
 
 # Cross-validation
-export GroupKFold, KFold, LeavePOut, LeaveOneOut, LeavePGroupsOut, LeaveOneGroupOut
+export GroupKFold, KFold, LeavePOut, LeaveOneOut, LeavePGroupsOut, LeaveOneGroupOut, TimeSeriesSplit
 export StratifiedKFold
 export ShuffleSplit, StratifiedShuffleSplit
 export PredefinedSplit
