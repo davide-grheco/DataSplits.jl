@@ -92,3 +92,52 @@ end
     test = 20,
   )
 end
+
+@testset "GroupKFold deterministic by default" begin
+  many = repeat(1:30, inner = 4)
+  data = randn(2, length(many))
+  cvs1 = partition(data, GroupKFold(5); groups = many)
+  cvs2 = partition(data, GroupKFold(5); groups = many)
+  for (a, b) in zip(cvs1, cvs2)
+    @test a.test == b.test
+    @test a.train == b.train
+  end
+end
+
+@testset "GroupKFold shuffle=true varies with the rng seed" begin
+  many = repeat(1:30, inner = 4)
+  data = randn(2, length(many))
+  alg = GroupKFold(5; shuffle = true)
+  cvs1 = partition(data, alg; groups = many, rng = MersenneTwister(1))
+  cvs2 = partition(data, alg; groups = many, rng = MersenneTwister(2))
+  any_different = any(zip(cvs1, cvs2)) do (a, b)
+    Set(a.test) != Set(b.test)
+  end
+  @test any_different
+end
+
+@testset "GroupKFold shuffle=true reproducible with the same seed" begin
+  many = repeat(1:30, inner = 4)
+  data = randn(2, length(many))
+  alg = GroupKFold(5; shuffle = true)
+  cvs1 = partition(data, alg; groups = many, rng = MersenneTwister(42))
+  cvs2 = partition(data, alg; groups = many, rng = MersenneTwister(42))
+  for (a, b) in zip(cvs1, cvs2)
+    @test a.test == b.test
+    @test a.train == b.train
+  end
+end
+
+@testset "GroupKFold shuffle=true still respects groups and balances folds" begin
+  many = repeat(1:30, inner = 4)
+  data = randn(2, length(many))
+  cvs =
+    partition(data, GroupKFold(5; shuffle = true); groups = many, rng = MersenneTwister(7))
+  for fold in cvs
+    train_groups = unique(many[fold.train])
+    test_groups = unique(many[fold.test])
+    @test isempty(intersect(train_groups, test_groups))
+  end
+  fold_sizes = [length(fold.test) for fold in cvs]
+  @test maximum(fold_sizes) - minimum(fold_sizes) <= 4
+end
