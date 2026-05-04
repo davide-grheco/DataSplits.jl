@@ -477,10 +477,7 @@ function partition(
   groups = nothing,
   rng = Random.default_rng(),
 )
-  isempty(data) &&
-    throw(SplitInputError("Data must not be empty. Please provide a non-empty dataset."))
-  N = numobs(data)
-  N >= 2 || throw(SplitInputError("Cannot split fewer than 2 observations."))
+  N = _assert_partitionable(data)
 
   n_train, _, n_test = _resolve_sizes(N, train, nothing, test)
 
@@ -542,10 +539,7 @@ function partition(
   groups = nothing,
   rng = Random.default_rng(),
 )
-  isempty(data) &&
-    throw(SplitInputError("Data must not be empty. Please provide a non-empty dataset."))
-  N = numobs(data)
-  N >= 2 || throw(SplitInputError("Cannot split fewer than 2 observations."))
+  N = _assert_partitionable(data)
 
   n_train, n_val, n_test = _resolve_sizes(N, train, validation, test)
 
@@ -634,10 +628,7 @@ function partition(
   groups = nothing,
   rng = Random.default_rng(),
 )
-  isempty(data) &&
-    throw(SplitInputError("Data must not be empty. Please provide a non-empty dataset."))
-  N = numobs(data)
-  N >= 2 || throw(SplitInputError("Cannot split fewer than 2 observations."))
+  N = _assert_partitionable(data)
 
   algs = (alg,)
   resolved_target = _resolve_slot(algs, data, target, :target)
