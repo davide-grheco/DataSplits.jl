@@ -19,6 +19,7 @@ include("clustering/SphereExclusion.jl")
 include("strategies/TargetProperty.jl")
 include("strategies/TimeSplit.jl")
 include("strategies/GroupKFold.jl")
+include("strategies/KFold.jl")
 
 # Core API
 export partition
@@ -47,7 +48,7 @@ export RandomSplit
 export GroupShuffleSplit, GroupStratifiedSplit
 
 # Cross-validation
-export GroupKFold
+export GroupKFold, KFold
 
 # Target / time property
 export TargetPropertySplit, TargetPropertyHigh, TargetPropertyLow
