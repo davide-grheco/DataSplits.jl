@@ -18,10 +18,11 @@ include("strategies/GroupStratifiedSplit.jl")
 include("clustering/SphereExclusion.jl")
 include("strategies/TargetProperty.jl")
 include("strategies/TimeSplit.jl")
+include("strategies/GroupKFold.jl")
 
 # Core API
 export partition
-export AbstractSplitResult, AbstractSplitStrategy
+export AbstractSplitResult, AbstractSplitStrategy, AbstractCVStrategy
 export splitdata, splitview
 export trainindices, testindices, valindices, folds
 
@@ -44,6 +45,9 @@ export RandomSplit
 
 # Group-aware
 export GroupShuffleSplit, GroupStratifiedSplit
+
+# Cross-validation
+export GroupKFold
 
 # Target / time property
 export TargetPropertySplit, TargetPropertyHigh, TargetPropertyLow
