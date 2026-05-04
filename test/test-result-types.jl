@@ -44,3 +44,17 @@ end
   @test length(res3) == 3
   @test collect(res3) == [res3.train, res3.val, res3.test]
 end
+
+@testset "CrossValidationSplit indexing" begin
+  folds_vec = [TrainTestSplit([1, 2], [3]), TrainTestSplit([1, 3], [2])]
+  cvs = CrossValidationSplit(folds_vec)
+  @test cvs[1] === folds_vec[1]
+  @test cvs[2] === folds_vec[2]
+  @test cvs[end] === folds_vec[2]
+  @test first(cvs) === folds_vec[1]
+  @test last(cvs) === folds_vec[2]
+  sub = cvs[1:1]
+  @test sub isa CrossValidationSplit
+  @test length(sub) == 1
+  @test eltype(typeof(cvs)) <: TrainTestSplit
+end

@@ -12,15 +12,37 @@ using Tables
 
 Abstract supertype for all splitting strategies.
 
-To implement a custom strategy, subtype this and define:
+To implement a custom train/test (or train/val/test) strategy, subtype this and define:
 - `_partition(data, alg; n_train, n_test, target, time, groups, rng)`
   returning an `AbstractSplitResult`.
 - `consumes(::MyStrategy)` returning a tuple of symbols from
   `(:data, :target, :time, :groups)`.
 - `fallback_from_data(::MyStrategy)` returning the subset of `consumes`
   that can fall back to `data`.
+
+For cross-validation strategies (returning `CrossValidationSplit`) see
+[`AbstractCVStrategy`](@ref) — the contract there omits `n_train` / `n_test`.
 """
 abstract type AbstractSplitStrategy end
+
+"""
+    AbstractCVStrategy <: AbstractSplitStrategy
+
+Abstract supertype for cross-validation strategies — strategies that produce
+a `CrossValidationSplit` (a vector of folds) rather than a single
+train/test or train/val/test partition.
+
+Dispatching on this subtype selects the `partition(data, alg::AbstractCVStrategy; …)`
+method, which does **not** accept `train` / `test` / `validation` keywords:
+fold sizes are determined by the strategy itself (typically through `k`).
+
+To implement a custom CV strategy:
+- Subtype this and define `_partition(data, alg; target, time, groups, rng, kwargs...)`
+  returning a `CrossValidationSplit`.
+- Declare `consumes` and (optionally) `fallback_from_data` exactly as for
+  any `AbstractSplitStrategy`.
+"""
+abstract type AbstractCVStrategy <: AbstractSplitStrategy end
 
 """
     AbstractSplitResult
@@ -410,6 +432,12 @@ Base.length(res::TrainTestSplit) = 2
 Base.length(res::TrainValTestSplit) = 3
 Base.length(res::CrossValidationSplit) = length(res.folds)
 
+Base.getindex(res::CrossValidationSplit, i::Integer) = res.folds[i]
+Base.getindex(res::CrossValidationSplit, idx) = CrossValidationSplit(res.folds[idx])
+Base.firstindex(res::CrossValidationSplit) = firstindex(res.folds)
+Base.lastindex(res::CrossValidationSplit) = lastindex(res.folds)
+Base.eltype(::Type{CrossValidationSplit{T}}) where {T} = T
+
 """
     partition(data, alg;
               train, test,
@@ -449,10 +477,7 @@ function partition(
   groups = nothing,
   rng = Random.default_rng(),
 )
-  isempty(data) &&
-    throw(SplitInputError("Data must not be empty. Please provide a non-empty dataset."))
-  N = numobs(data)
-  N >= 2 || throw(SplitInputError("Cannot split fewer than 2 observations."))
+  N = _assert_partitionable(data)
 
   n_train, _, n_test = _resolve_sizes(N, train, nothing, test)
 
@@ -514,10 +539,7 @@ function partition(
   groups = nothing,
   rng = Random.default_rng(),
 )
-  isempty(data) &&
-    throw(SplitInputError("Data must not be empty. Please provide a non-empty dataset."))
-  N = numobs(data)
-  N >= 2 || throw(SplitInputError("Cannot split fewer than 2 observations."))
+  N = _assert_partitionable(data)
 
   n_train, n_val, n_test = _resolve_sizes(N, train, validation, test)
 
@@ -570,4 +592,57 @@ function partition(
   )
 
   return TrainValTestSplit(train_pool[inner.train], train_pool[inner.test], test_idx)
+end
+
+"""
+    partition(data, alg::AbstractCVStrategy;
+              target=nothing, time=nothing, groups=nothing,
+              rng=Random.default_rng()) -> CrossValidationSplit
+
+Produce a cross-validation split: a `CrossValidationSplit` wrapping one
+fold result per element of the partition.
+
+Unlike the train/test and train/val/test forms, this method does **not**
+accept `train` / `test` / `validation` keywords — fold sizes are fixed by
+the strategy (typically via `k`).
+
+# Auxiliary slots
+
+- `target`: response/property vector (e.g. for `StratifiedKFold`).
+- `time`: temporal ordering vector (e.g. for `TimeSeriesCV`).
+- `groups`: group-membership vector (e.g. for `GroupKFold`).
+
+# Examples
+```julia
+cvs = partition(X, GroupKFold(5); groups = patient_ids)
+for (X_train, X_test) in splitview(cvs, X)
+  fit!(model, X_train); evaluate(model, X_test)
+end
+```
+"""
+function partition(
+  data,
+  alg::AbstractCVStrategy;
+  target = nothing,
+  time = nothing,
+  groups = nothing,
+  rng = Random.default_rng(),
+)
+  N = _assert_partitionable(data)
+
+  algs = (alg,)
+  resolved_target = _resolve_slot(algs, data, target, :target)
+  resolved_time = _resolve_slot(algs, data, time, :time)
+  resolved_groups = _resolve_slot(algs, data, groups, :groups)
+
+  data_internal = :data ∈ consumes(alg) ? _to_feature_matrix(data) : data
+
+  return _partition(
+    data_internal,
+    alg;
+    target = _slot_for(alg, resolved_target, :target),
+    time = _slot_for(alg, resolved_time, :time),
+    groups = _slot_for(alg, resolved_groups, :groups),
+    rng = rng,
+  )
 end
