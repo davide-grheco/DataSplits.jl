@@ -66,3 +66,18 @@ function _assert_positive_integer_parts(parts::Pair{Symbol,<:Integer}...)
 
   return nothing
 end
+
+"""
+    _assert_partitionable(data) -> N
+
+Validate that `data` is non-empty and has at least 2 observations.
+Returns `numobs(data)` for downstream use. Used by every `partition`
+method to guarantee a meaningful split is possible.
+"""
+function _assert_partitionable(data)
+  isempty(data) &&
+    throw(SplitInputError("Data must not be empty. Please provide a non-empty dataset."))
+  N = numobs(data)
+  N >= 2 || throw(SplitInputError("Cannot split fewer than 2 observations."))
+  return N
+end
