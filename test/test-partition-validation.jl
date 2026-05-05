@@ -152,6 +152,76 @@ import DataSplits: SplitInputError, SplitParameterError, SplitNotImplementedErro
     )
   end
 
+  @testset "slot length must match numobs(data)" begin
+    short_y = randn(N - 5)
+    short_groups = repeat(1:5, inner = 10)
+    short_dates = repeat(1:5, inner = 10)
+
+    @test_throws SplitInputError partition(
+      X,
+      TargetPropertyHigh();
+      train = 70,
+      test = 30,
+      target = short_y,
+    )
+    @test_throws SplitInputError partition(
+      X,
+      GroupShuffleSplit();
+      train = 70,
+      test = 30,
+      groups = short_groups,
+    )
+    @test_throws SplitInputError partition(
+      X,
+      TimeSplitOldest();
+      train = 70,
+      test = 30,
+      time = short_dates,
+    )
+    @test_throws SplitInputError partition(X, GroupKFold(5); groups = short_groups)
+
+    # Longer-than-data also rejected (issue #22 mentions BoundsError on splitdata).
+    long_groups = repeat(1:15, inner = 10)
+    long_y = randn(N + 10)
+    @test_throws SplitInputError partition(
+      X,
+      GroupShuffleSplit();
+      train = 70,
+      test = 30,
+      groups = long_groups,
+    )
+    @test_throws SplitInputError partition(
+      X,
+      TargetPropertyHigh();
+      train = 70,
+      test = 30,
+      target = long_y,
+    )
+
+    # Three-cohort partition validates too.
+    @test_throws SplitInputError partition(
+      X,
+      RandomSplit(),
+      TargetPropertyHigh();
+      train = 60,
+      validation = 20,
+      test = 20,
+      target = short_y,
+    )
+
+    # Length error message mentions the slot name.
+    err = try
+      partition(X, GroupShuffleSplit(); train = 70, test = 30, groups = short_groups)
+    catch e
+      e
+    end
+    @test occursin("groups", err.msg)
+
+    # Fallback path (slot omitted, data plays its role) is unaffected.
+    res = partition(y, TargetPropertyHigh(); train = 70, test = 30)
+    @test length(res.train) == 70
+  end
+
   @testset "float fractions" begin
     res = partition(X, RandomSplit(); train = 0.7, test = 0.3, rng = MersenneTwister(10))
     @test length(res.train) == 70
