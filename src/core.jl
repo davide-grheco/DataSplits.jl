@@ -231,7 +231,8 @@ function _resolve_slot(algs::Tuple, data, kwval, slot::Symbol)
     kwval === nothing || throw(SplitInputError("No strategy uses the `$slot=` keyword."))
     return nothing
   end
-  if kwval === nothing
+  user_provided = kwval !== nothing
+  if !user_provided
     if all(a -> slot ∈ fallback_from_data(a), consumers)
       kwval = data
     else
@@ -241,6 +242,14 @@ function _resolve_slot(algs::Tuple, data, kwval, slot::Symbol)
   end
   kwval isa AbstractVector ||
     throw(SplitInputError("`$slot` must be a 1D AbstractVector, got $(typeof(kwval))."))
+  if user_provided
+    N = numobs(data)
+    length(kwval) == N || throw(
+      SplitInputError(
+        "`$slot` length ($(length(kwval))) does not match number of observations ($N).",
+      ),
+    )
+  end
   return kwval
 end
 
