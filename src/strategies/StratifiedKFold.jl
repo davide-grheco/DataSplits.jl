@@ -1,7 +1,7 @@
 using Statistics: quantile
 
 """
-    StratifiedKFold(k::Integer; bins::Integer=10) <: AbstractCVStrategy
+    StratifiedKFold(k::Integer; bins::Integer=10, shuffle::Bool=false) <: AbstractCVStrategy
 
 Stratified k-fold cross-validation. Within each fold, every class (or
 quantile bin) is represented in roughly the same proportion as in the
@@ -15,6 +15,10 @@ plays that role).
 - `bins::Int`: Number of quantile bins used when `target` is floating-point
   (must be ≥ 2; default `10`). Ignored for non-float targets, which are
   treated as discrete classes.
+- `shuffle::Bool`: When `true`, member indices within each class are
+  randomly permuted before round-robin assignment using the `rng` passed
+  to `partition`, so different seeds yield different fold assignments.
+  When `false` (default), assignment is fully deterministic.
 
 # Stratification rule
 - **Discrete `target`** (e.g. `Int`, `Bool`, `Symbol`, `String`): each unique
@@ -43,19 +47,25 @@ cvs = partition(X, StratifiedKFold(5); target = y_continuous)
 
 # Regression with a custom number of bins.
 cvs = partition(X, StratifiedKFold(5; bins = 4); target = y_continuous)
+
+# Shuffled — different seeds give different fold assignments.
+cvs = partition(X, StratifiedKFold(5; shuffle = true); target = labels,
+                rng = MersenneTwister(42))
 ```
 """
 struct StratifiedKFold <: AbstractCVStrategy
   k::Int
   bins::Int
+  shuffle::Bool
 end
 
-StratifiedKFold(k::Integer; bins::Integer = 10) = StratifiedKFold(Int(k), Int(bins))
+StratifiedKFold(k::Integer; bins::Integer = 10, shuffle::Bool = false) =
+  StratifiedKFold(Int(k), Int(bins), shuffle)
 
 consumes(::StratifiedKFold) = (:target,)
 fallback_from_data(::StratifiedKFold) = (:target,)
 
-function _partition(data, alg::StratifiedKFold; target, kwargs...)
+function _partition(data, alg::StratifiedKFold; target, rng = Random.default_rng(), kwargs...)
   alg.k >= 2 ||
     throw(SplitParameterError("StratifiedKFold requires k ≥ 2, got k=$(alg.k)."))
   alg.bins >= 2 ||
@@ -79,6 +89,7 @@ function _partition(data, alg::StratifiedKFold; target, kwargs...)
         "StratifiedKFold(k=$(alg.k)): class/bin $(repr(c)) has only $(length(members)) members; reduce k or bins.",
       ),
     )
+    alg.shuffle && shuffle!(rng, members)
     for (j, idx) in enumerate(members)
       f = mod1(j, alg.k)
       push!(fold_test[f], idx)

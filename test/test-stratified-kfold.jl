@@ -119,6 +119,56 @@ end
   end
 end
 
+@testset "StratifiedKFold deterministic by default" begin
+  labels = vcat(fill(:a, 30), fill(:b, 30), fill(:c, 30))
+  X = randn(2, 90)
+  cvs1 = partition(X, StratifiedKFold(5); target = labels)
+  cvs2 = partition(X, StratifiedKFold(5); target = labels)
+  for (a, b) in zip(cvs1, cvs2)
+    @test a.train == b.train
+    @test a.test == b.test
+  end
+end
+
+@testset "StratifiedKFold shuffle=true varies with rng seed" begin
+  labels = vcat(fill(:a, 30), fill(:b, 30), fill(:c, 30))
+  X = randn(2, 90)
+  alg = StratifiedKFold(5; shuffle = true)
+  cvs1 = partition(X, alg; target = labels, rng = MersenneTwister(1))
+  cvs2 = partition(X, alg; target = labels, rng = MersenneTwister(2))
+  any_different = any(zip(cvs1, cvs2)) do (a, b)
+    Set(a.test) != Set(b.test)
+  end
+  @test any_different
+end
+
+@testset "StratifiedKFold shuffle=true reproducible with same seed" begin
+  labels = vcat(fill(:a, 30), fill(:b, 30), fill(:c, 30))
+  X = randn(2, 90)
+  alg = StratifiedKFold(5; shuffle = true)
+  cvs1 = partition(X, alg; target = labels, rng = MersenneTwister(42))
+  cvs2 = partition(X, alg; target = labels, rng = MersenneTwister(42))
+  for (a, b) in zip(cvs1, cvs2)
+    @test a.train == b.train
+    @test a.test == b.test
+  end
+end
+
+@testset "StratifiedKFold shuffle=true preserves class balance" begin
+  labels = vcat(fill(:a, 50), fill(:b, 50))
+  X = randn(2, 100)
+  cvs = partition(
+    X,
+    StratifiedKFold(5; shuffle = true);
+    target = labels,
+    rng = MersenneTwister(0),
+  )
+  for fold in cvs
+    counts = [count(==(c), labels[fold.test]) for c in (:a, :b)]
+    @test all(==(10), counts)
+  end
+end
+
 @testset "StratifiedKFold tolerates dense duplicate-value continuous targets" begin
   Random.seed!(11)
   y = vcat(zeros(80), randn(20))
