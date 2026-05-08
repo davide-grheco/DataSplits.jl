@@ -20,6 +20,34 @@ end
       fold_test_sizes_balanced(cvs)
   end
 end
+const shuffle_split_case_gen = @composed function make_shuffle_split_case(
+  N = Data.Integers(2, 100),
+  n_splits = Data.Integers(1, 10),
+)
+  n_train = Data.produce!(Data.Integers(1, N - 1))
+  return (N, n_splits, n_train, N - n_train)
+end
+
+@testset "ShuffleSplit properties" begin
+  @check max_examples = 300 rng = Xoshiro(40) function shuffle_split_valid_resamples(
+    case = shuffle_split_case_gen,
+  )
+    N, n_splits, n_train, n_test = case
+    X = reshape(collect(1:N), 1, N)
+
+    cvs = partition(
+      X,
+      ShuffleSplit(n_splits);
+      train = n_train,
+      test = n_test,
+      rng = Xoshiro(42),
+    )
+
+    length(folds(cvs)) == n_splits &&
+      all(fold -> is_full_partition(fold, N), folds(cvs)) &&
+      all(fold -> has_correct_split_size(fold, n_train, n_test), folds(cvs))
+  end
+end
 
 const grouped_case_gen =
   @composed function make_grouped_case(n_groups = Data.Integers(2, 30))

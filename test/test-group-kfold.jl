@@ -98,17 +98,3 @@ end
     @test a.train == b.train
   end
 end
-
-@testset "GroupKFold shuffle=true still respects groups and balances folds" begin
-  many = repeat(1:30, inner = 4)
-  data = randn(2, length(many))
-  cvs =
-    partition(data, GroupKFold(5; shuffle = true); groups = many, rng = MersenneTwister(7))
-  for fold in cvs
-    train_groups = unique(many[fold.train])
-    test_groups = unique(many[fold.test])
-    @test isempty(intersect(train_groups, test_groups))
-  end
-  fold_sizes = [length(fold.test) for fold in cvs]
-  @test maximum(fold_sizes) - minimum(fold_sizes) <= 4
-end

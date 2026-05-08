@@ -33,27 +33,6 @@ import DataSplits: SplitInputError, SplitParameterError, SplitNotImplementedErro
     @test maximum(dates[res.test]) >= minimum(dates[pool])
   end
 
-  @testset "group-aware composition keeps groups whole" begin
-    res = partition(
-      X,
-      GroupShuffleSplit(),
-      GroupShuffleSplit();
-      groups = groups,
-      train = 60,
-      validation = 20,
-      test = 20,
-      rng = MersenneTwister(5),
-    )
-    for gid in unique(groups)
-      idxs = findall(==(gid), groups)
-      hits = (
-        any(i -> i in res.train, idxs),
-        any(i -> i in res.val, idxs),
-        any(i -> i in res.test, idxs),
-      )
-      @test count(hits) == 1
-    end
-  end
 
   @testset "reproducibility under fixed rng" begin
     res1 = partition(

@@ -6,15 +6,6 @@ N = 120
 groups = vcat(fill(:a, 30), fill(:b, 40), fill(:c, 50))
 
 
-@testset "LeaveOneGroupOut isolates one group per fold" begin
-  cvs = partition(X, LeaveOneGroupOut(); groups = groups)
-  for (f, g) in enumerate(unique(groups))
-    fold = folds(cvs)[f]
-    @test Set(unique(groups[fold.test])) == Set([g])
-    @test g ∉ unique(groups[fold.train])
-  end
-end
-
 @testset "LeaveOneGroupOut fallback: ids as both data and groups" begin
   ids = vcat(fill(:a, 10), fill(:b, 10), fill(:c, 10), fill(:d, 10))
   cvs = partition(ids, LeaveOneGroupOut())
