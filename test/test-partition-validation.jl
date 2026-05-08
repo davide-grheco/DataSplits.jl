@@ -27,10 +27,7 @@ import DataSplits: SplitInputError, SplitParameterError, SplitNotImplementedErro
     @test length(train) == 70
     @test length(val) == 10
     @test length(test) == 20
-    @test isempty(intersect(train, val))
-    @test isempty(intersect(train, test))
-    @test isempty(intersect(val, test))
-    @test sort(vcat(train, val, test)) == 1:N
+    @test is_full_partition(res, N)
   end
 
   @testset "two RandomSplit strategies, absolute counts" begin
@@ -79,9 +76,7 @@ import DataSplits: SplitInputError, SplitParameterError, SplitNotImplementedErro
     )
     @test res isa DataSplits.TrainValTestSplit
     @test length(res.train) + length(res.val) + length(res.test) == N
-    @test isempty(intersect(res.train, res.val))
-    @test isempty(intersect(res.train, res.test))
-    @test isempty(intersect(res.val, res.test))
+    @test is_disjoint(res)
     # Test cohort is the most-recent dates (TimeSplitOldest pushes oldest to train pool)
     pool = vcat(res.train, res.val)
     @test maximum(dates[res.test]) >= minimum(dates[pool])

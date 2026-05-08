@@ -33,14 +33,14 @@ import DataSplits: SplitInputError, SplitParameterError, SplitNotImplementedErro
   )
   train_idx2, test_idx2 = result2.train, result2.test
   @test length(train_idx2) + length(test_idx2) == length(y)
-  @test isempty(intersect(train_idx2, test_idx2))
+  @test is_disjoint(result2)
 
   expected_train = Set([2, 3, 5, 6])
   expected_test = Set([1, 4])
 
   @test Set(train_idx) == expected_train
   @test Set(test_idx) == expected_test
-  @test isempty(intersect(train_idx, test_idx))
+  @test is_disjoint(result)
   @test length(train_idx) + length(test_idx) == length(y)
 end
 
@@ -67,14 +67,14 @@ end
   )
   train_idx2, test_idx2 = result2.train, result2.test
   @test length(train_idx2) + length(test_idx2) == length(y)
-  @test isempty(intersect(train_idx2, test_idx2))
+  @test is_disjoint(result2)
 
   expected_train = Set([2, 3, 5, 1])
   expected_test = Set([4])
 
   @test Set(train_idx) == expected_train
   @test Set(test_idx) == expected_test
-  @test isempty(intersect(train_idx, test_idx))
+  @test is_disjoint(result)
   @test length(train_idx) + length(test_idx) == numobs(y)
 end
 
@@ -103,13 +103,13 @@ end
   )
   train_idx2, test_idx2 = result2.train, result2.test
   @test length(train_idx2) + length(test_idx2) == length(y)
-  @test isempty(intersect(train_idx2, test_idx2))
+  @test is_disjoint(result2)
 
   expected_train = Set([2, 3, 5, 6])
   expected_test = Set([1, 4])
 
   @test Set(train_idx) == expected_train
   @test Set(test_idx) == expected_test
-  @test isempty(intersect(train_idx, test_idx))
+  @test is_disjoint(result)
   @test length(train_idx) + length(test_idx) == length(y)
 end

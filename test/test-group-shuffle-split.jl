@@ -10,7 +10,7 @@ N = 120
   result =
     partition(ids, GroupShuffleSplit(); train = 60, test = 40, rng = MersenneTwister(42))
   @test length(result.train) + length(result.test) == 120
-  @test isempty(intersect(result.train, result.test))
+  @test is_disjoint(result)
 end
 
 @testset "GroupShuffleSplit with Clustering.jl assignments" begin
@@ -24,5 +24,5 @@ end
     rng = MersenneTwister(1),
   )
   @test length(result.train) + length(result.test) == N
-  @test isempty(intersect(result.train, result.test))
+  @test is_disjoint(result)
 end

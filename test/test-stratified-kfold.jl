@@ -20,7 +20,7 @@ end
   cvs = partition(X, StratifiedKFold(5; bins = 4); target = y)
 
   for fold in cvs
-    @test isempty(intersect(fold.train, fold.test))
+    @test is_disjoint(fold)
     train_mean, test_mean = mean(y[fold.train]), mean(y[fold.test])
     @test abs(train_mean - test_mean) < 0.5
   end
@@ -139,7 +139,6 @@ end
   X = randn(2, 100)
   cvs = partition(X, StratifiedKFold(5; bins = 4); target = y)
   for fold in cvs
-    @test isempty(intersect(fold.train, fold.test))
-    @test sort(vcat(fold.train, fold.test)) == collect(1:100)
+    @test is_full_partition(fold, 100)
   end
 end

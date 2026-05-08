@@ -2,7 +2,7 @@ using DataSplits
 using Test
 using Dates
 
-include("property-helpers.jl")
+include("helpers.jl")
 
 for (root, dirs, files) in walkdir(@__DIR__)
   for file in files

@@ -22,7 +22,7 @@ using Distances
   )
   train_max, test_max = result_max.train, result_max.test
   @test length(train_max) == 3
-  @test isempty(intersect(train_max, test_max))
+  @test is_disjoint(result_max)
   @test length(train_max) + length(test_max) == 5
 
   # Minimum Dissimilarity
@@ -35,7 +35,7 @@ using Distances
   )
   train_min, test_min = result_min.train, result_min.test
   @test length(train_min) == 3
-  @test isempty(intersect(train_min, test_min))
+  @test is_disjoint(result_min)
   @test length(train_min) + length(test_min) == 5
 end
 
@@ -59,7 +59,7 @@ end
   )
   train_max, test_max = result_max.train, result_max.test
   @test length(train_max) == 3
-  @test isempty(intersect(train_max, test_max))
+  @test is_disjoint(result_max)
   @test length(train_max) + length(test_max) == 5
 
   # Minimum Dissimilarity
@@ -72,6 +72,6 @@ end
   )
   train_min, test_min = result_min.train, result_min.test
   @test length(train_min) == 3
-  @test isempty(intersect(train_min, test_min))
+  @test is_disjoint(result_min)
   @test length(train_min) + length(test_min) == 5
 end

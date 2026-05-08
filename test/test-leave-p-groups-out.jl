@@ -67,8 +67,7 @@ end
   # binomial(4, 2) == 6 folds.
   @test length(cvs) == 6
   for fold in cvs
-    @test isempty(intersect(fold.train, fold.test))
-    @test sort(vcat(fold.train, fold.test)) == collect(1:20)
+    @test is_full_partition(fold, 20)
     @test length(unique(ids[fold.test])) == 2
   end
 end

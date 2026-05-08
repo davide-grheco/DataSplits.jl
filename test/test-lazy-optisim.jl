@@ -4,10 +4,9 @@ using Random
 using Distances
 
 function sane_split_check(result, N; ntrain_expected = nothing)
-  train, test = result.train, result.test
-  @test isempty(intersect(train, test))
-  @test length(train) + length(test) == N
-  ntrain_expected === nothing || @test length(train) == ntrain_expected
+  @test is_disjoint(result)
+  @test length(result.train) + length(result.test) == N
+  ntrain_expected === nothing || @test length(result.train) == ntrain_expected
 end
 
 function _pct(frac)
@@ -65,7 +64,7 @@ end
   @test Set(train_idx) == Set([5, 4, 2, 3])
   @test Set(test_idx) == Set([1])
 
-  @test isempty(intersect(train_idx, test_idx))
+  @test is_disjoint(result)
   @test length(train_idx) + length(test_idx) == 5
 
   X = randn(10, 50)

@@ -12,10 +12,10 @@ end
     N, k = case
     X = reshape(collect(1:N), 1, N)
 
-    cvs = partition(X, KFold(k))
-
+      every_observation_tests_once(cvs, N) &&
+      fold_test_sizes_balanced(cvs)
     length(cvs) == k &&
-      all(fold -> pbt_is_full_train_test_partition(fold, N), cvs) &&
+      all(fold -> is_full_partition(fold, N), cvs) &&
       pbt_every_observation_tests_once(cvs, N) &&
       pbt_fold_test_sizes_balanced(cvs)
   end
@@ -41,10 +41,10 @@ const grouped_case_gen =
     X = reshape(collect(1:N), 1, N)
 
     cvs = partition(X, GroupKFold(k); groups = groups)
-
-    length(cvs) == k &&
-      all(fold -> pbt_is_full_train_test_partition(fold, N), cvs) &&
-      all(fold -> pbt_no_group_leakage(fold, groups), cvs) &&
+      every_observation_tests_once(cvs, N) &&
+      every_group_tests_once(cvs, groups)
+      all(fold -> is_full_partition(fold, N), cvs) &&
+      all(fold -> no_group_leakage(fold, groups), cvs) &&
       pbt_every_observation_tests_once(cvs, N) &&
       pbt_every_group_tests_once(cvs, groups)
   end
@@ -70,10 +70,10 @@ const stratified_case_gen =
     N = length(labels)
     X = reshape(collect(1:N), 1, N)
 
-    cvs = partition(X, StratifiedKFold(k); target = labels)
-
+      every_observation_tests_once(cvs, N) &&
+      class_counts_balanced_across_test_folds(cvs, labels)
     length(cvs) == k &&
-      all(fold -> pbt_is_full_train_test_partition(fold, N), cvs) &&
+      all(fold -> is_full_partition(fold, N), cvs) &&
       pbt_every_observation_tests_once(cvs, N) &&
       pbt_class_counts_balanced_across_test_folds(cvs, labels)
   end
@@ -98,7 +98,7 @@ end
       length(test_sets) == binomial(N, p) &&
       all(fold -> length(testindices(fold)) == p, cvs) &&
       all(fold -> length(trainindices(fold)) == N - p, cvs) &&
-      all(fold -> pbt_is_full_train_test_partition(fold, N), cvs)
+      all(fold -> is_full_partition(fold, N), cvs)
   end
 end
 
@@ -128,8 +128,8 @@ const leavepgroups_case_gen =
 
     length(cvs) == binomial(n_groups, p) &&
       length(test_group_sets) == binomial(n_groups, p) &&
-      all(fold -> pbt_is_full_train_test_partition(fold, N), cvs) &&
-      all(fold -> pbt_no_group_leakage(fold, groups), cvs) &&
+      all(fold -> is_full_partition(fold, N), cvs) &&
+      all(fold -> no_group_leakage(fold, groups), cvs) &&
       all(fold -> length(unique(groups[testindices(fold)])) == p, cvs)
   end
 end

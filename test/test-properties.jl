@@ -53,8 +53,7 @@ const split_grouped_case_gen =
       result =
         partition(X, RandomSplit(); train = n_train, test = n_test, rng = Xoshiro(42))
 
-      pbt_has_train_test_sizes(result, n_train, n_test) &&
-        pbt_is_full_train_test_partition(result, N)
+      has_correct_split_size(result, n_train, n_test) && is_full_partition(result, N)
     end
   end
 
@@ -67,9 +66,9 @@ const split_grouped_case_gen =
 
       result = partition(times, TimeSplitOldest(); train = n_train, test = n_test)
 
-      pbt_has_train_test_sizes(result, n_train, n_test) &&
-        pbt_is_full_train_test_partition(result, N) &&
-        pbt_oldest_train_before_test(result, times)
+      has_correct_split_size(result, n_train, n_test) &&
+        is_full_partition(result, N) &&
+        oldest_train_before_test(result, times)
     end
 
     @check max_examples = 300 rng = Xoshiro(3) function newest_puts_train_after_test(
@@ -80,9 +79,9 @@ const split_grouped_case_gen =
 
       result = partition(times, TimeSplitNewest(); train = n_train, test = n_test)
 
-      pbt_has_train_test_sizes(result, n_train, n_test) &&
-        pbt_is_full_train_test_partition(result, N) &&
-        pbt_newest_train_after_test(result, times)
+      has_correct_split_size(result, n_train, n_test) &&
+        is_full_partition(result, N) &&
+        newest_train_after_test(result, times)
     end
   end
 
@@ -95,9 +94,9 @@ const split_grouped_case_gen =
 
       result = partition(times, TimeSplitOldest(); train = n_train, test = n_test)
 
-      pbt_is_full_train_test_partition(result, N) &&
-        pbt_no_time_value_split(result, times) &&
-        pbt_oldest_train_before_test(result, times)
+      is_full_partition(result, N) &&
+        no_time_value_split(result, times) &&
+        oldest_train_before_test(result, times)
     end
 
     @check max_examples = 300 rng = Xoshiro(16) function newest_respects_time_groups(
@@ -108,9 +107,9 @@ const split_grouped_case_gen =
 
       result = partition(times, TimeSplitNewest(); train = n_train, test = n_test)
 
-      pbt_is_full_train_test_partition(result, N) &&
-        pbt_no_time_value_split(result, times) &&
-        pbt_newest_train_after_test(result, times)
+      is_full_partition(result, N) &&
+        no_time_value_split(result, times) &&
+        newest_train_after_test(result, times)
     end
   end
 
@@ -127,8 +126,8 @@ const split_grouped_case_gen =
       result =
         partition(groups, GroupShuffleSplit(); train = 1, test = N - 1, rng = Xoshiro(42))
 
-      pbt_is_full_train_test_partition(result, N) &&
-        pbt_no_group_leakage(result, groups) &&
+      is_full_partition(result, N) &&
+        no_group_leakage(result, groups) &&
         !isempty(trainindices(result)) &&
         !isempty(testindices(result))
     end
@@ -150,8 +149,8 @@ const split_grouped_case_gen =
         rng = Xoshiro(42),
       )
 
-      pbt_is_full_train_test_partition(result, N) &&
-        pbt_no_group_leakage(result, groups) &&
+      is_full_partition(result, N) &&
+        no_group_leakage(result, groups) &&
         !isempty(trainindices(result)) &&
         !isempty(testindices(result))
     end

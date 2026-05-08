@@ -20,7 +20,7 @@ end
   cvs = partition(ids, GroupKFold(3))
   @test length(cvs) == 3
   for fold in cvs
-    @test isempty(intersect(fold.train, fold.test))
+    @test is_disjoint(fold)
   end
 end
 

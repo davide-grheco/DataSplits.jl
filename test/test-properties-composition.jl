@@ -64,8 +64,7 @@ const comp_group_composition_case_gen =
         rng = Xoshiro(42),
       )
 
-      pbt_has_train_val_test_sizes(result, n_train, n_val, n_test) &&
-        pbt_is_full_train_val_test_partition(result, N)
+      has_correct_split_size(result, n_train, n_val, n_test) && is_full_partition(result, N)
     end
   end
 
@@ -87,8 +86,8 @@ const comp_group_composition_case_gen =
         rng = Xoshiro(42),
       )
 
-      pbt_is_full_train_test_partition(percentage_result, N) &&
-        pbt_is_full_train_test_partition(fraction_result, N) &&
+      is_full_partition(percentage_result, N) &&
+        is_full_partition(fraction_result, N) &&
         abs(
           length(trainindices(percentage_result)) - length(trainindices(fraction_result)),
         ) <= 1 &&
@@ -125,8 +124,8 @@ const comp_group_composition_case_gen =
         rng = Xoshiro(42),
       )
 
-      pbt_is_full_train_val_test_partition(percentage_result, N) &&
-        pbt_is_full_train_val_test_partition(fraction_result, N) &&
+      is_full_partition(percentage_result, N) &&
+        is_full_partition(fraction_result, N) &&
         abs(
           length(trainindices(percentage_result)) - length(trainindices(fraction_result)),
         ) <= 1 &&
@@ -192,7 +191,7 @@ const comp_group_composition_case_gen =
       explicit_result =
         partition(X, TimeSplitOldest(); time = times, train = n_train, test = n_test)
 
-      pbt_same_train_test_indices(fallback_result, explicit_result)
+      same_indices(fallback_result, explicit_result)
     end
   end
 
@@ -211,7 +210,7 @@ const comp_group_composition_case_gen =
       explicit_result =
         partition(X, TargetPropertyHigh(); target = y, train = n_train, test = n_test)
 
-      pbt_same_train_test_indices(fallback_result, explicit_result)
+      same_indices(fallback_result, explicit_result)
     end
   end
 
@@ -242,7 +241,7 @@ const comp_group_composition_case_gen =
         rng = Xoshiro(42),
       )
 
-      pbt_same_train_test_indices(fallback_result, explicit_result)
+      same_indices(fallback_result, explicit_result)
     end
   end
 
@@ -265,9 +264,9 @@ const comp_group_composition_case_gen =
         rng = Xoshiro(42),
       )
 
-      pbt_has_train_val_test_sizes(result, n_train, n_val, n_test) &&
-        pbt_is_full_train_val_test_partition(result, N) &&
-        pbt_no_group_leakage_train_val_test(result, groups)
+      has_correct_split_size(result, n_train, n_val, n_test) &&
+        is_full_partition(result, N) &&
+        no_group_leakage(result, groups)
     end
   end
 end

@@ -34,8 +34,7 @@ end
     @test fold isa TrainTestSplit
     @test length(fold.test) == 1
     @test length(fold.train) == 7
-    @test isempty(intersect(fold.train, fold.test))
-    @test sort(vcat(fold.train, fold.test)) == collect(1:8)
+    @test is_full_partition(fold, 8)
   end
 end
 

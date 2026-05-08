@@ -22,7 +22,7 @@ rng = MersenneTwister(42)
     @test length(test_idx) == 4
     @test all(1 .≤ train_idx .≤ 10)
     @test all(1 .≤ test_idx .≤ 10)
-    @test isempty(intersect(train_idx, test_idx))
+    @test is_disjoint(result)
   end
 
   @testset "Offset Array" begin
@@ -34,7 +34,7 @@ rng = MersenneTwister(42)
     @test length(test_idx) == 4
     @test all(1 .≤ train_idx .≤ 10)
     @test all(1 .≤ test_idx .≤ 10)
-    @test isempty(intersect(train_idx, test_idx))
+    @test is_disjoint(result)
   end
 
   @testset "Edge Cases" begin

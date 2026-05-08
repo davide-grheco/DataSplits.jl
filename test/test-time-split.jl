@@ -17,7 +17,7 @@ using Test
   X = rand(3, 10)
   result2 = partition(X, s; time = d, train = 60, test = 40)
   @test length(result2.train) + length(result2.test) == 10
-  @test isempty(intersect(result2.train, result2.test))
+  @test is_disjoint(result2)
 
   # All same date
   d2 = fill(Date(2020, 1, 1), 10)

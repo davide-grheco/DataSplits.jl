@@ -6,10 +6,9 @@ using NPZ
 using MLUtils
 
 function check_split(result, N; n_test_expected = nothing)
-  train, test = result.train, result.test
-  @test sort(vcat(train, test)) == 1:N
-  @test isempty(intersect(train, test))
+  @test is_full_partition(result, N)
   if n_test_expected !== nothing
+    train, test = result.train, result.test
     @test length(test) == n_test_expected
     @test length(train) == N - length(test)
   end

@@ -11,7 +11,7 @@ import DataSplits: SplitInputError, SplitParameterError
     result = partition(X, s; groups = groups, train = 50, test = 50)
     train, test = result.train, result.test
     @test length(train) + length(test) == 15
-    @test isempty(intersect(train, test))
+    @test is_disjoint(result)
     # Each group contributes to both train and test
     for gid in unique(groups)
       idxs = findall(==(gid), groups)
@@ -24,7 +24,7 @@ import DataSplits: SplitInputError, SplitParameterError
     result = partition(X, s; groups = groups, train = 50, test = 50)
     train, test = result.train, result.test
     @test length(train) + length(test) <= 12   # at most 4 per cluster × 3
-    @test isempty(intersect(train, test))
+    @test is_disjoint(result)
   end
 
   @testset "Neyman allocation" begin
@@ -32,7 +32,7 @@ import DataSplits: SplitInputError, SplitParameterError
     result = partition(X, s; groups = groups, train = 50, test = 50)
     train, test = result.train, result.test
     @test length(train) + length(test) <= 15
-    @test isempty(intersect(train, test))
+    @test is_disjoint(result)
   end
 
   @testset "Unknown allocation raises error" begin
@@ -43,7 +43,7 @@ import DataSplits: SplitInputError, SplitParameterError
   @testset "Fallback: groups as both data and groups" begin
     result = partition(groups, GroupStratifiedSplit(:proportional); train = 60, test = 40)
     @test length(result.train) + length(result.test) == 15
-    @test isempty(intersect(result.train, result.test))
+    @test is_disjoint(result)
   end
 
   @testset "Neyman allocation on non-matrix data (issue #21)" begin
