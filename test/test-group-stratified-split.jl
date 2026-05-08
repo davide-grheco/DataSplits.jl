@@ -45,4 +45,44 @@ import DataSplits: SplitInputError, SplitParameterError
     @test length(result.train) + length(result.test) == 15
     @test isempty(intersect(result.train, result.test))
   end
+
+  @testset "Neyman allocation on non-matrix data (issue #21)" begin
+    # Tables.jl input (NamedTuple of vectors): used to crash with
+    # `MethodError: no method matching std(::NamedTuple; dims=2)`.
+    nt = (a = randn(15), b = randn(15), c = randn(15), d = randn(15))
+    res = partition(
+      nt,
+      GroupStratifiedSplit(:neyman; n = 4);
+      groups = groups,
+      train = 50,
+      test = 50,
+    )
+    @test isempty(intersect(res.train, res.test))
+    @test length(res.train) + length(res.test) <= 15
+
+    # Vector input: used to crash with `InexactError: Int64(NaN)` because
+    # `std(::Vector; dims=2)` returned `NaN`.
+    v = randn(15)
+    res = partition(
+      v,
+      GroupStratifiedSplit(:neyman; n = 4);
+      groups = groups,
+      train = 50,
+      test = 50,
+    )
+    @test isempty(intersect(res.train, res.test))
+    @test length(res.train) + length(res.test) <= 15
+
+    # Singleton group: within-group std falls back to 0 instead of NaN.
+    groups_singleton = vcat(fill(1, 7), fill(2, 7), [3])
+    Xs = rand(4, 15)
+    res = partition(
+      Xs,
+      GroupStratifiedSplit(:neyman; n = 2);
+      groups = groups_singleton,
+      train = 50,
+      test = 50,
+    )
+    @test isempty(intersect(res.train, res.test))
+  end
 end
