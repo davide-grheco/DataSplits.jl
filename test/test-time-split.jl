@@ -16,7 +16,7 @@ using Test
   # Explicit time= keyword
   X = rand(3, 10)
   result2 = partition(X, s; time = d, train = 60, test = 40)
-  @test length(result2.train) + length(result2.test) == 10
+  @test total_size(result2) == 10
   @test is_disjoint(result2)
 
   # All same date

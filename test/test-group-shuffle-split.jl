@@ -9,7 +9,7 @@ N = 120
   ids = vcat(fill(:a, 40), fill(:b, 40), fill(:c, 40))
   result =
     partition(ids, GroupShuffleSplit(); train = 60, test = 40, rng = MersenneTwister(42))
-  @test length(result.train) + length(result.test) == 120
+  @test total_size(result) == 120
   @test is_disjoint(result)
 end
 
@@ -23,6 +23,6 @@ end
     test = 30,
     rng = MersenneTwister(1),
   )
-  @test length(result.train) + length(result.test) == N
+  @test total_size(result) == N
   @test is_disjoint(result)
 end

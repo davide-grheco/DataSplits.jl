@@ -10,7 +10,7 @@ import DataSplits: SplitInputError, SplitParameterError
     s = GroupStratifiedSplit(:proportional)
     result = partition(X, s; groups = groups, train = 50, test = 50)
     train, test = result.train, result.test
-    @test length(train) + length(test) == 15
+    @test total_size(result) == 15
     @test is_disjoint(result)
     # Each group contributes to both train and test
     for gid in unique(groups)
@@ -23,7 +23,7 @@ import DataSplits: SplitInputError, SplitParameterError
     s = GroupStratifiedSplit(:equal; n = 4)
     result = partition(X, s; groups = groups, train = 50, test = 50)
     train, test = result.train, result.test
-    @test length(train) + length(test) <= 12   # at most 4 per cluster × 3
+    @test total_size(result) <= 12   # at most 4 per cluster × 3
     @test is_disjoint(result)
   end
 
@@ -31,7 +31,7 @@ import DataSplits: SplitInputError, SplitParameterError
     s = GroupStratifiedSplit(:neyman; n = 4)
     result = partition(X, s; groups = groups, train = 50, test = 50)
     train, test = result.train, result.test
-    @test length(train) + length(test) <= 15
+    @test total_size(result) <= 15
     @test is_disjoint(result)
   end
 
@@ -42,7 +42,7 @@ import DataSplits: SplitInputError, SplitParameterError
 
   @testset "Fallback: groups as both data and groups" begin
     result = partition(groups, GroupStratifiedSplit(:proportional); train = 60, test = 40)
-    @test length(result.train) + length(result.test) == 15
+    @test total_size(result) == 15
     @test is_disjoint(result)
   end
 
@@ -57,8 +57,8 @@ import DataSplits: SplitInputError, SplitParameterError
       train = 50,
       test = 50,
     )
-    @test isempty(intersect(res.train, res.test))
-    @test length(res.train) + length(res.test) <= 15
+    @test is_disjoint(res)
+    @test total_size(res) <= 15
 
     # Vector input: used to crash with `InexactError: Int64(NaN)` because
     # `std(::Vector; dims=2)` returned `NaN`.
@@ -70,8 +70,8 @@ import DataSplits: SplitInputError, SplitParameterError
       train = 50,
       test = 50,
     )
-    @test isempty(intersect(res.train, res.test))
-    @test length(res.train) + length(res.test) <= 15
+    @test is_disjoint(res)
+    @test total_size(res) <= 15
 
     # Singleton group: within-group std falls back to 0 instead of NaN.
     groups_singleton = vcat(fill(1, 7), fill(2, 7), [3])
@@ -83,7 +83,7 @@ import DataSplits: SplitInputError, SplitParameterError
       train = 50,
       test = 50,
     )
-    @test isempty(intersect(res.train, res.test))
+    @test is_disjoint(res)
   end
 
   @testset "Neyman allocation handles all-zero within-group dispersion" begin
@@ -98,7 +98,7 @@ import DataSplits: SplitInputError, SplitParameterError
       test = 50,
     )
 
-    @test isempty(intersect(res.train, res.test))
-    @test length(res.train) + length(res.test) == 2 * length(unique(groups_constant))
+    @test is_disjoint(res)
+    @test total_size(res) == 2 * length(unique(groups_constant))
   end
 end

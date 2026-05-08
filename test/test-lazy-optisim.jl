@@ -5,8 +5,9 @@ using Distances
 
 function sane_split_check(result, N; ntrain_expected = nothing)
   @test is_disjoint(result)
-  @test length(result.train) + length(result.test) == N
-  ntrain_expected === nothing || @test length(result.train) == ntrain_expected
+  @test total_size(result) == N
+  ntrain_expected === nothing ||
+    @test has_correct_split_size(result, ntrain_expected, N - ntrain_expected)
 end
 
 function _pct(frac)

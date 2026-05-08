@@ -18,7 +18,7 @@ import DataSplits: SplitInputError
   @test_throws SplitInputError partition(X, LazyMDKSSplit(); train = 70, test = 30)
 
   result = partition(X, LazyMDKSSplit(); target = y, train = 70, test = 30)
-  @test length(result.train) + length(result.test) == length(y)
+  @test total_size(result) == length(y)
   @test is_disjoint(result)
 
   result2 = partition(
@@ -28,7 +28,7 @@ import DataSplits: SplitInputError
     train = 70,
     test = 30,
   )
-  @test length(result2.train) + length(result2.test) == length(y)
+  @test total_size(result2) == length(y)
   @test is_disjoint(result2)
 
   result_mdks = partition(
@@ -41,5 +41,5 @@ import DataSplits: SplitInputError
   @test Set(result2.train) == Set(result_mdks.train)
   @test Set(result2.test) == Set(result_mdks.test)
   @test is_disjoint(result_mdks)
-  @test length(result_mdks.train) + length(result_mdks.test) == length(y)
+  @test total_size(result_mdks) == length(y)
 end

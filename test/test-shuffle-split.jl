@@ -10,16 +10,14 @@ import DataSplits: SplitParameterError
     cvs = partition(X, ShuffleSplit(10); train = 0.8, test = 0.2)
     @test length(folds(cvs)) == 10
     for f in folds(cvs)
-      @test length(f.train) == 40
-      @test length(f.test) == 10
-      @test isempty(intersect(f.train, f.test))
-      @test sort(vcat(f.train, f.test)) == 1:50
+      @test has_correct_split_size(f, 40, 10)
+      @test is_disjoint(f)
+      @test is_full_partition(f, 50)
     end
   end
 
   @testset "Resamples are independent (different from KFold)" begin
-    cvs = partition(X, ShuffleSplit(20); train = 0.8, test = 0.2,
-                    rng = MersenneTwister(0))
+    cvs = partition(X, ShuffleSplit(20); train = 0.8, test = 0.2, rng = MersenneTwister(0))
     # Across resamples each observation should appear in test multiple times,
     # not exactly once like in KFold.
     test_counts = zeros(Int, 50)
@@ -36,8 +34,7 @@ import DataSplits: SplitParameterError
     cvs = partition(X, ShuffleSplit(5); train = 30, test = 20)
     @test length(folds(cvs)) == 5
     for f in folds(cvs)
-      @test length(f.train) == 30
-      @test length(f.test) == 20
+      @test has_correct_split_size(f, 30, 20)
     end
   end
 

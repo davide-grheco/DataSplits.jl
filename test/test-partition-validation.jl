@@ -75,7 +75,7 @@ import DataSplits: SplitInputError, SplitParameterError, SplitNotImplementedErro
       rng = MersenneTwister(4),
     )
     @test res isa DataSplits.TrainValTestSplit
-    @test length(res.train) + length(res.val) + length(res.test) == N
+    @test total_size(res) == N
     @test is_disjoint(res)
     # Test cohort is the most-recent dates (TimeSplitOldest pushes oldest to train pool)
     pool = vcat(res.train, res.val)

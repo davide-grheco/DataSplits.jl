@@ -51,6 +51,15 @@ function is_disjoint(result::TrainValTestSplit)
          isempty(intersect(valindices(result), trainindices(result)))
 end
 
+"""
+    is_disjoint(result)
+
+Fallback for unnamed types or NamedTuples with `.train`/`.test` fields.
+"""
+function is_disjoint(result)
+  return isempty(intersect(result.train, result.test))
+end
+
 function has_correct_split_size(result, n_train, n_test)
   return length(trainindices(result)) == n_train && length(testindices(result)) == n_test
 end
@@ -60,6 +69,16 @@ function has_correct_split_size(result, n_train, n_val, n_test)
          length(valindices(result)) == n_val &&
          length(testindices(result)) == n_test
 end
+
+"""
+    total_size(result)
+
+Return total number of samples in the split (train + test + val).
+"""
+total_size(result::TrainTestSplit) =
+  length(trainindices(result)) + length(testindices(result))
+total_size(result::TrainValTestSplit) =
+  length(trainindices(result)) + length(valindices(result)) + length(testindices(result))
 
 function no_group_leakage(result::TrainTestSplit, groups)
   train_groups = Set(groups[trainindices(result)])

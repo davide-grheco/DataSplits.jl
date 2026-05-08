@@ -15,8 +15,8 @@ import DataSplits: SplitInputError, SplitParameterError
     @test sort(test_concat) == 1:12
     # Within a fold, train ∩ test is empty and train ∪ test = 1:12.
     for f in folds(cvs)
-      @test isempty(intersect(f.train, f.test))
-      @test sort(vcat(f.train, f.test)) == 1:12
+      @test is_disjoint(f)
+      @test is_full_partition(f, 12)
     end
   end
 
@@ -51,10 +51,7 @@ import DataSplits: SplitInputError, SplitParameterError
   end
 
   @testset "All-negative fold IDs raise SplitParameterError" begin
-    @test_throws SplitParameterError partition(
-      X,
-      PredefinedSplit(fill(-1, 12)),
-    )
+    @test_throws SplitParameterError partition(X, PredefinedSplit(fill(-1, 12)))
   end
 
   @testset "Construction accepts any integer vector" begin
