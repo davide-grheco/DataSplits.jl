@@ -48,3 +48,67 @@ function pbt_no_group_leakage_train_val_test(result, groups)
          isempty(intersect(train_groups, test_groups)) &&
          isempty(intersect(val_groups, test_groups))
 end
+
+function pbt_same_train_test_indices(a, b)
+  return trainindices(a) == trainindices(b) && testindices(a) == testindices(b)
+end
+
+function pbt_same_train_val_test_indices(a, b)
+  return trainindices(a) == trainindices(b) &&
+         valindices(a) == valindices(b) &&
+         testindices(a) == testindices(b)
+end
+
+function pbt_every_observation_tests_once(cvs, N)
+  test_counts = zeros(Int, N)
+  for fold in cvs
+    for i in testindices(fold)
+      test_counts[i] += 1
+    end
+  end
+  all(==(1), test_counts)
+end
+
+function pbt_fold_test_sizes_balanced(cvs)
+  sizes = [length(testindices(fold)) for fold in cvs]
+  maximum(sizes) - minimum(sizes) <= 1
+end
+
+function pbt_every_group_tests_once(cvs, groups)
+  group_counts = Dict(g => 0 for g in unique(groups))
+  for fold in cvs
+    for g in unique(groups[testindices(fold)])
+      group_counts[g] += 1
+    end
+  end
+  all(==(1), values(group_counts))
+end
+
+function pbt_class_counts_balanced_across_test_folds(cvs, labels)
+  for c in unique(labels)
+    counts = [count(==(c), labels[testindices(fold)]) for fold in cvs]
+    maximum(counts) - minimum(counts) <= 1 || return false
+  end
+  return true
+end
+
+function pbt_no_time_value_split(result, times)
+  train_times = Set(times[trainindices(result)])
+  test_times = Set(times[testindices(result)])
+
+  return isempty(intersect(train_times, test_times))
+end
+
+function pbt_oldest_train_before_test(result, times)
+  train = trainindices(result)
+  test = testindices(result)
+
+  return all(times[i] <= times[j] for i in train, j in test)
+end
+
+function pbt_newest_train_after_test(result, times)
+  train = trainindices(result)
+  test = testindices(result)
+
+  return all(times[i] >= times[j] for i in train, j in test)
+end

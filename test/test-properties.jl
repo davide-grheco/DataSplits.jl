@@ -1,11 +1,5 @@
 using DataSplits:
-  partition,
-  RandomSplit,
-  TimeSplitOldest,
-  TimeSplitNewest,
-  GroupShuffleSplit,
-  trainindices,
-  testindices
+  partition, RandomSplit, TimeSplitOldest, TimeSplitNewest, GroupShuffleSplit
 
 # ---------------------------------------------------------------------
 # Generators
@@ -43,32 +37,6 @@ const split_grouped_case_gen =
 
     return groups
   end
-
-# ---------------------------------------------------------------------
-# Property helpers
-# ---------------------------------------------------------------------
-
-
-function pbt_no_time_value_split(result, times)
-  train_times = Set(times[trainindices(result)])
-  test_times = Set(times[testindices(result)])
-
-  return isempty(intersect(train_times, test_times))
-end
-
-function pbt_oldest_train_before_test(result, times)
-  train = trainindices(result)
-  test = testindices(result)
-
-  return all(times[i] <= times[j] for i in train, j in test)
-end
-
-function pbt_newest_train_after_test(result, times)
-  train = trainindices(result)
-  test = testindices(result)
-
-  return all(times[i] >= times[j] for i in train, j in test)
-end
 
 # ---------------------------------------------------------------------
 # Properties

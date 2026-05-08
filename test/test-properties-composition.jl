@@ -1,13 +1,5 @@
 using DataSplits:
-  partition,
-  splitdata,
-  RandomSplit,
-  TimeSplitOldest,
-  GroupShuffleSplit,
-  TargetPropertyHigh,
-  trainindices,
-  valindices,
-  testindices
+  partition, splitdata, RandomSplit, TimeSplitOldest, GroupShuffleSplit, TargetPropertyHigh
 
 const comp_train_val_test_sizes_gen =
   @composed function make_comp_train_val_test_sizes(N = Data.Integers(3, 200))
@@ -53,50 +45,6 @@ const comp_group_composition_case_gen =
 
     return (groups, n_train, n_val, n_test)
   end
-
-function comp_is_full_train_test_partition(result, N)
-  train = trainindices(result)
-  test = testindices(result)
-
-  return isempty(intersect(train, test)) && sort(vcat(train, test)) == collect(1:N)
-end
-
-function comp_is_full_train_val_test_partition(result, N)
-  train = trainindices(result)
-  val = valindices(result)
-  test = testindices(result)
-
-  return isempty(intersect(train, val)) &&
-         isempty(intersect(train, test)) &&
-         isempty(intersect(val, test)) &&
-         sort(vcat(train, val, test)) == collect(1:N)
-end
-
-function comp_has_train_val_test_sizes(result, n_train, n_val, n_test)
-  return length(trainindices(result)) == n_train &&
-         length(valindices(result)) == n_val &&
-         length(testindices(result)) == n_test
-end
-
-function comp_same_train_test_indices(a, b)
-  return trainindices(a) == trainindices(b) && testindices(a) == testindices(b)
-end
-
-function comp_same_train_val_test_indices(a, b)
-  return trainindices(a) == trainindices(b) &&
-         valindices(a) == valindices(b) &&
-         testindices(a) == testindices(b)
-end
-
-function comp_no_group_leakage_train_val_test(result, groups)
-  train_groups = Set(groups[trainindices(result)])
-  val_groups = Set(groups[valindices(result)])
-  test_groups = Set(groups[testindices(result)])
-
-  return isempty(intersect(train_groups, val_groups)) &&
-         isempty(intersect(train_groups, test_groups)) &&
-         isempty(intersect(val_groups, test_groups))
-end
 
 @testset "partition composition properties" begin
   @testset "RandomSplit + RandomSplit creates a valid train/val/test partition" begin
@@ -244,7 +192,7 @@ end
       explicit_result =
         partition(X, TimeSplitOldest(); time = times, train = n_train, test = n_test)
 
-      comp_same_train_test_indices(fallback_result, explicit_result)
+      pbt_same_train_test_indices(fallback_result, explicit_result)
     end
   end
 
@@ -263,7 +211,7 @@ end
       explicit_result =
         partition(X, TargetPropertyHigh(); target = y, train = n_train, test = n_test)
 
-      comp_same_train_test_indices(fallback_result, explicit_result)
+      pbt_same_train_test_indices(fallback_result, explicit_result)
     end
   end
 
@@ -294,7 +242,7 @@ end
         rng = Xoshiro(42),
       )
 
-      comp_same_train_test_indices(fallback_result, explicit_result)
+      pbt_same_train_test_indices(fallback_result, explicit_result)
     end
   end
 
@@ -319,7 +267,7 @@ end
 
       pbt_has_train_val_test_sizes(result, n_train, n_val, n_test) &&
         pbt_is_full_train_val_test_partition(result, N) &&
-        comp_no_group_leakage_train_val_test(result, groups)
+        pbt_no_group_leakage_train_val_test(result, groups)
     end
   end
 end

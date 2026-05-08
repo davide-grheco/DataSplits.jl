@@ -1,29 +1,4 @@
-using Test
-using Random
-using Supposition
-using Supposition.Data
-using DataSplits: partition, KFold
-
-function is_train_test_partition(fold, N)
-  train = trainindices(fold)
-  test = testindices(fold)
-  isempty(intersect(train, test)) && sort(vcat(train, test)) == collect(1:N)
-end
-
-function every_observation_tests_once(cvs, N)
-  test_counts = zeros(Int, N)
-  for fold in cvs
-    for i in testindices(fold)
-      test_counts[i] += 1
-    end
-  end
-  all(==(1), test_counts)
-end
-
-function fold_test_sizes_balanced(cvs)
-  sizes = [length(testindices(fold)) for fold in cvs]
-  maximum(sizes) - minimum(sizes) <= 1
-end
+using DataSplits: partition, KFold, trainindices, testindices
 
 const kfold_case_gen = @composed function make_kfold_case(N = Data.Integers(2, 200))
   k = Data.produce!(Data.Integers(2, N))
@@ -41,8 +16,8 @@ end
 
     length(cvs) == k &&
       all(fold -> pbt_is_full_train_test_partition(fold, N), cvs) &&
-      every_observation_tests_once(cvs, N) &&
-      fold_test_sizes_balanced(cvs)
+      pbt_every_observation_tests_once(cvs, N) &&
+      pbt_fold_test_sizes_balanced(cvs)
   end
 end
 
@@ -57,22 +32,6 @@ const grouped_case_gen =
     return (groups, k)
   end
 
-function no_group_leakage(fold, groups)
-  train_groups = Set(groups[trainindices(fold)])
-  test_groups = Set(groups[testindices(fold)])
-  isempty(intersect(train_groups, test_groups))
-end
-
-function every_group_tests_once(cvs, groups)
-  group_counts = Dict(g => 0 for g in unique(groups))
-  for fold in cvs
-    for g in unique(groups[testindices(fold)])
-      group_counts[g] += 1
-    end
-  end
-  all(==(1), values(group_counts))
-end
-
 @testset "GroupKFold properties" begin
   @check max_examples = 300 rng = Xoshiro(11) function groupkfold_is_valid(
     case = grouped_case_gen,
@@ -85,9 +44,9 @@ end
 
     length(cvs) == k &&
       all(fold -> pbt_is_full_train_test_partition(fold, N), cvs) &&
-      all(fold -> no_group_leakage(fold, groups), cvs) &&
-      every_observation_tests_once(cvs, N) &&
-      every_group_tests_once(cvs, groups)
+      all(fold -> pbt_no_group_leakage(fold, groups), cvs) &&
+      pbt_every_observation_tests_once(cvs, N) &&
+      pbt_every_group_tests_once(cvs, groups)
   end
 end
 
@@ -103,14 +62,6 @@ const stratified_case_gen =
     return (labels, k)
   end
 
-function class_counts_balanced_across_test_folds(cvs, labels)
-  for c in unique(labels)
-    counts = [count(==(c), labels[testindices(fold)]) for fold in cvs]
-    maximum(counts) - minimum(counts) <= 1 || return false
-  end
-  return true
-end
-
 @testset "StratifiedKFold properties" begin
   @check max_examples = 300 rng = Xoshiro(12) function stratified_kfold_balances_classes(
     case = stratified_case_gen,
@@ -123,8 +74,8 @@ end
 
     length(cvs) == k &&
       all(fold -> pbt_is_full_train_test_partition(fold, N), cvs) &&
-      every_observation_tests_once(cvs, N) &&
-      class_counts_balanced_across_test_folds(cvs, labels)
+      pbt_every_observation_tests_once(cvs, N) &&
+      pbt_class_counts_balanced_across_test_folds(cvs, labels)
   end
 end
 
@@ -178,7 +129,7 @@ const leavepgroups_case_gen =
     length(cvs) == binomial(n_groups, p) &&
       length(test_group_sets) == binomial(n_groups, p) &&
       all(fold -> pbt_is_full_train_test_partition(fold, N), cvs) &&
-      all(fold -> no_group_leakage(fold, groups), cvs) &&
+      all(fold -> pbt_no_group_leakage(fold, groups), cvs) &&
       all(fold -> length(unique(groups[testindices(fold)])) == p, cvs)
   end
 end
