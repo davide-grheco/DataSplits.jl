@@ -85,4 +85,20 @@ import DataSplits: SplitInputError, SplitParameterError
     )
     @test isempty(intersect(res.train, res.test))
   end
+
+  @testset "Neyman allocation handles all-zero within-group dispersion" begin
+    X = ones(4, 15)
+    groups_constant = vcat(fill(1, 5), fill(2, 5), fill(3, 5))
+
+    res = partition(
+      X,
+      GroupStratifiedSplit(:neyman; n = 2);
+      groups = groups_constant,
+      train = 50,
+      test = 50,
+    )
+
+    @test isempty(intersect(res.train, res.test))
+    @test length(res.train) + length(res.test) == 2 * length(unique(groups_constant))
+  end
 end
