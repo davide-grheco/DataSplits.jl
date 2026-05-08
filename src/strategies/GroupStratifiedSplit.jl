@@ -95,6 +95,14 @@ function _neyman_allocation(cl_ids, idxs_by_cluster, n, data, rng)
   for cid in cl_ids
     stds[cid] = _within_group_std(data, idxs_by_cluster[cid])
   end
+
+  numerators = Dict(cid => length(idxs_by_cluster[cid]) * stds[cid] for cid in cl_ids)
+  denom = sum(values(numerators))
+
+  if !isfinite(denom) || iszero(denom)
+    return _equal_allocation(cl_ids, idxs_by_cluster, n, rng)
+  end
+
   numerators = Dict(cid => length(idxs_by_cluster[cid]) * stds[cid] for cid in cl_ids)
   denom = sum(values(numerators))
   total = n * length(cl_ids)
