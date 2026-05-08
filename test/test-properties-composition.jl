@@ -116,8 +116,8 @@ end
         rng = Xoshiro(42),
       )
 
-      comp_has_train_val_test_sizes(result, n_train, n_val, n_test) &&
-        comp_is_full_train_val_test_partition(result, N)
+      pbt_has_train_val_test_sizes(result, n_train, n_val, n_test) &&
+        pbt_is_full_train_val_test_partition(result, N)
     end
   end
 
@@ -139,8 +139,8 @@ end
         rng = Xoshiro(42),
       )
 
-      comp_is_full_train_test_partition(percentage_result, N) &&
-        comp_is_full_train_test_partition(fraction_result, N) &&
+      pbt_is_full_train_test_partition(percentage_result, N) &&
+        pbt_is_full_train_test_partition(fraction_result, N) &&
         abs(
           length(trainindices(percentage_result)) - length(trainindices(fraction_result)),
         ) <= 1 &&
@@ -177,8 +177,8 @@ end
         rng = Xoshiro(42),
       )
 
-      comp_is_full_train_val_test_partition(percentage_result, N) &&
-        comp_is_full_train_val_test_partition(fraction_result, N) &&
+      pbt_is_full_train_val_test_partition(percentage_result, N) &&
+        pbt_is_full_train_val_test_partition(fraction_result, N) &&
         abs(
           length(trainindices(percentage_result)) - length(trainindices(fraction_result)),
         ) <= 1 &&
@@ -317,8 +317,8 @@ end
         rng = Xoshiro(42),
       )
 
-      comp_has_train_val_test_sizes(result, n_train, n_val, n_test) &&
-        comp_is_full_train_val_test_partition(result, N) &&
+      pbt_has_train_val_test_sizes(result, n_train, n_val, n_test) &&
+        pbt_is_full_train_val_test_partition(result, N) &&
         comp_no_group_leakage_train_val_test(result, groups)
     end
   end

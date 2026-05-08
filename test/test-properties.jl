@@ -48,49 +48,24 @@ const split_grouped_case_gen =
 # Property helpers
 # ---------------------------------------------------------------------
 
-function pbt_train(result)
-  return trainindices(result)
-end
-
-function pbt_test(result)
-  return testindices(result)
-end
-
-function pbt_has_train_test_sizes(result, n_train, n_test)
-  return length(pbt_train(result)) == n_train && length(pbt_test(result)) == n_test
-end
-
-function pbt_is_full_train_test_partition(result, N)
-  train = pbt_train(result)
-  test = pbt_test(result)
-
-  return isempty(intersect(train, test)) && sort(vcat(train, test)) == collect(1:N)
-end
 
 function pbt_no_time_value_split(result, times)
-  train_times = Set(times[pbt_train(result)])
-  test_times = Set(times[pbt_test(result)])
+  train_times = Set(times[trainindices(result)])
+  test_times = Set(times[testindices(result)])
 
   return isempty(intersect(train_times, test_times))
 end
 
-function pbt_no_group_leakage(result, groups)
-  train_groups = Set(groups[pbt_train(result)])
-  test_groups = Set(groups[pbt_test(result)])
-
-  return isempty(intersect(train_groups, test_groups))
-end
-
 function pbt_oldest_train_before_test(result, times)
-  train = pbt_train(result)
-  test = pbt_test(result)
+  train = trainindices(result)
+  test = testindices(result)
 
   return all(times[i] <= times[j] for i in train, j in test)
 end
 
 function pbt_newest_train_after_test(result, times)
-  train = pbt_train(result)
-  test = pbt_test(result)
+  train = trainindices(result)
+  test = testindices(result)
 
   return all(times[i] >= times[j] for i in train, j in test)
 end
@@ -186,8 +161,8 @@ end
 
       pbt_is_full_train_test_partition(result, N) &&
         pbt_no_group_leakage(result, groups) &&
-        !isempty(pbt_train(result)) &&
-        !isempty(pbt_test(result))
+        !isempty(trainindices(result)) &&
+        !isempty(testindices(result))
     end
   end
 
@@ -209,8 +184,8 @@ end
 
       pbt_is_full_train_test_partition(result, N) &&
         pbt_no_group_leakage(result, groups) &&
-        !isempty(pbt_train(result)) &&
-        !isempty(pbt_test(result))
+        !isempty(trainindices(result)) &&
+        !isempty(testindices(result))
     end
   end
 end
