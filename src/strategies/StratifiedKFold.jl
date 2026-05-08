@@ -72,12 +72,6 @@ function _partition(data, alg::StratifiedKFold; target, rng = Random.default_rng
     throw(SplitParameterError("StratifiedKFold requires bins ≥ 2, got bins=$(alg.bins)."))
 
   N = numobs(data)
-  # Anticipates issue #22 (length validation belongs in `partition`).
-  length(target) == N || throw(
-    SplitInputError(
-      "`target` length ($(length(target))) does not match number of observations ($N).",
-    ),
-  )
 
   classes = _stratification_classes(target, alg.bins)
 
