@@ -12,12 +12,12 @@ end
     N, k = case
     X = reshape(collect(1:N), 1, N)
 
-      every_observation_tests_once(cvs, N) &&
-      fold_test_sizes_balanced(cvs)
+    cvs = partition(X, KFold(k))
+
     length(cvs) == k &&
       all(fold -> is_full_partition(fold, N), cvs) &&
-      pbt_every_observation_tests_once(cvs, N) &&
-      pbt_fold_test_sizes_balanced(cvs)
+      every_observation_tests_once(cvs, N) &&
+      fold_test_sizes_balanced(cvs)
   end
 end
 
@@ -41,12 +41,12 @@ const grouped_case_gen =
     X = reshape(collect(1:N), 1, N)
 
     cvs = partition(X, GroupKFold(k); groups = groups)
-      every_observation_tests_once(cvs, N) &&
-      every_group_tests_once(cvs, groups)
+
+    length(cvs) == k &&
       all(fold -> is_full_partition(fold, N), cvs) &&
       all(fold -> no_group_leakage(fold, groups), cvs) &&
-      pbt_every_observation_tests_once(cvs, N) &&
-      pbt_every_group_tests_once(cvs, groups)
+      every_observation_tests_once(cvs, N) &&
+      every_group_tests_once(cvs, groups)
   end
 end
 
@@ -70,12 +70,12 @@ const stratified_case_gen =
     N = length(labels)
     X = reshape(collect(1:N), 1, N)
 
-      every_observation_tests_once(cvs, N) &&
-      class_counts_balanced_across_test_folds(cvs, labels)
+    cvs = partition(X, StratifiedKFold(k); target = labels)
+
     length(cvs) == k &&
       all(fold -> is_full_partition(fold, N), cvs) &&
-      pbt_every_observation_tests_once(cvs, N) &&
-      pbt_class_counts_balanced_across_test_folds(cvs, labels)
+      every_observation_tests_once(cvs, N) &&
+      class_counts_balanced_across_test_folds(cvs, labels)
   end
 end
 
