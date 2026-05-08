@@ -56,12 +56,6 @@ function _partition(data, alg::LeavePGroupsOut; groups, kwargs...)
     throw(SplitParameterError("LeavePGroupsOut requires p ≥ 1, got p=$(alg.p)."))
 
   N = numobs(data)
-  # Anticipates issue #22 (length validation belongs in `partition`).
-  length(groups) == N || throw(
-    SplitInputError(
-      "`groups` length ($(length(groups))) does not match number of observations ($N).",
-    ),
-  )
 
   group_to_indices = Dict{eltype(groups),Vector{Int}}()
   group_order = eltype(groups)[]
