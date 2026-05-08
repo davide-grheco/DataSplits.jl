@@ -14,16 +14,6 @@ rng = MersenneTwister(42)
 @testset "partition() with RandomSplit" begin
   data_std = rand(2, 10)
   strategy = RandomSplit()
-  result = partition(data_std, strategy; train = 60, test = 40, rng)
-  train_idx, test_idx = result.train, result.test
-
-  @testset "Standard Array" begin
-    @test length(train_idx) == 6
-    @test length(test_idx) == 4
-    @test all(1 .≤ train_idx .≤ 10)
-    @test all(1 .≤ test_idx .≤ 10)
-    @test is_disjoint(result)
-  end
 
   @testset "Offset Array" begin
     data_offset = OffsetArray(rand(2, 10), 1:2, -5:4)

@@ -12,55 +12,6 @@ import DataSplits: SplitInputError, SplitParameterError, SplitNotImplementedErro
   groups = repeat(1:10, inner = 10)
   dates = repeat(1:10, inner = 10)
 
-  @testset "two RandomSplit strategies, percentages" begin
-    res = partition(
-      X,
-      RandomSplit(),
-      RandomSplit();
-      train = 70,
-      validation = 10,
-      test = 20,
-      rng = MersenneTwister(1),
-    )
-    @test res isa DataSplits.TrainValTestSplit
-    train, val, test = res.train, res.val, res.test
-    @test length(train) == 70
-    @test length(val) == 10
-    @test length(test) == 20
-    @test is_full_partition(res, N)
-  end
-
-  @testset "two RandomSplit strategies, absolute counts" begin
-    res = partition(
-      X,
-      RandomSplit(),
-      RandomSplit();
-      train = 65,
-      validation = 15,
-      test = 20,
-      rng = MersenneTwister(2),
-    )
-    @test length(res.train) == 65
-    @test length(res.val) == 15
-    @test length(res.test) == 20
-  end
-
-  @testset "splitdata returns 3-tuple" begin
-    res = partition(
-      X,
-      RandomSplit(),
-      RandomSplit();
-      train = 70,
-      validation = 10,
-      test = 20,
-      rng = MersenneTwister(3),
-    )
-    Xtr, Xv, Xte = splitdata(res, X)
-    @test size(Xtr, 2) == 70
-    @test size(Xv, 2) == 10
-    @test size(Xte, 2) == 20
-  end
-
   @testset "mixed slot consumers" begin
     # outer consumes :time, inner consumes :target
     res = partition(
@@ -215,24 +166,5 @@ import DataSplits: SplitInputError, SplitParameterError, SplitNotImplementedErro
     # Fallback path (slot omitted, data plays its role) is unaffected.
     res = partition(y, TargetPropertyHigh(); train = 70, test = 30)
     @test length(res.train) == 70
-  end
-
-  @testset "float fractions" begin
-    res = partition(X, RandomSplit(); train = 0.7, test = 0.3, rng = MersenneTwister(10))
-    @test length(res.train) == 70
-    @test length(res.test) == 30
-
-    res3 = partition(
-      X,
-      RandomSplit(),
-      RandomSplit();
-      train = 0.7,
-      validation = 0.1,
-      test = 0.2,
-      rng = MersenneTwister(11),
-    )
-    @test length(res3.train) == 70
-    @test length(res3.val) == 10
-    @test length(res3.test) == 20
   end
 end

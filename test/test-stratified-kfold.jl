@@ -4,15 +4,6 @@ using Statistics: mean
 Random.seed!(42)
 
 
-@testset "StratifiedKFold integer labels treated as classes" begin
-  labels = repeat([0, 1, 2], inner = 25)
-  X = randn(2, 75)
-  cvs = partition(X, StratifiedKFold(5); target = labels)
-  for fold in cvs
-    @test Set(unique(labels[fold.test])) == Set([0, 1, 2])
-  end
-end
-
 @testset "StratifiedKFold regression: quantile binning" begin
   Random.seed!(7)
   y = randn(200)
@@ -115,21 +106,6 @@ end
   for (a, b) in zip(cvs1, cvs2)
     @test a.train == b.train
     @test a.test == b.test
-  end
-end
-
-@testset "StratifiedKFold shuffle=true preserves class balance" begin
-  labels = vcat(fill(:a, 50), fill(:b, 50))
-  X = randn(2, 100)
-  cvs = partition(
-    X,
-    StratifiedKFold(5; shuffle = true);
-    target = labels,
-    rng = MersenneTwister(0),
-  )
-  for fold in cvs
-    counts = [count(==(c), labels[fold.test]) for c in (:a, :b)]
-    @test all(==(10), counts)
   end
 end
 

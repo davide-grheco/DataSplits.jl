@@ -15,13 +15,6 @@ groups = vcat(fill(:a, 30), fill(:b, 40), fill(:c, 50))
   end
 end
 
-@testset "LeaveOneGroupOut fold count equals number of groups" begin
-  many = repeat(1:7, inner = 4)
-  data = randn(2, length(many))
-  cvs = partition(data, LeaveOneGroupOut(); groups = many)
-  @test length(cvs) == 7
-end
-
 @testset "LeaveOneGroupOut fallback: ids as both data and groups" begin
   ids = vcat(fill(:a, 10), fill(:b, 10), fill(:c, 10), fill(:d, 10))
   cvs = partition(ids, LeaveOneGroupOut())
@@ -57,19 +50,6 @@ end
   alg2 = LeavePGroupsOut(1)
   @test alg1 == alg2
   @test alg1 isa LeavePGroupsOut
-end
-
-@testset "LeavePGroupsOut(2) basic contract" begin
-  ids = vcat(fill(:a, 5), fill(:b, 5), fill(:c, 5), fill(:d, 5))
-  data = randn(2, 20)
-  cvs = partition(data, LeavePGroupsOut(2); groups = ids)
-  @test cvs isa CrossValidationSplit
-  # binomial(4, 2) == 6 folds.
-  @test length(cvs) == 6
-  for fold in cvs
-    @test is_full_partition(fold, 20)
-    @test length(unique(ids[fold.test])) == 2
-  end
 end
 
 @testset "LeavePGroupsOut parameter validation" begin

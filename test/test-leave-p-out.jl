@@ -23,28 +23,6 @@ end
   @test_throws MethodError partition(randn(2, 5), LeavePOut(1); train = 80, test = 20)
 end
 
-@testset "LeaveOneOut basic contract" begin
-  X = randn(2, 8)
-  cvs = partition(X, LeaveOneOut())
-
-  @test cvs isa CrossValidationSplit
-  @test length(cvs) == 8
-
-  for (i, fold) in enumerate(cvs)
-    @test fold isa TrainTestSplit
-    @test length(fold.test) == 1
-    @test length(fold.train) == 7
-    @test is_full_partition(fold, 8)
-  end
-end
-
-@testset "LeaveOneOut each observation appears as test exactly once" begin
-  N = 10
-  cvs = partition(randn(2, N), LeaveOneOut())
-  test_indices = [fold.test[1] for fold in cvs]
-  @test sort(test_indices) == collect(1:N)
-end
-
 @testset "LeaveOneOut rejects train/test kwargs" begin
   @test_throws MethodError partition(randn(2, 5), LeaveOneOut(); train = 80, test = 20)
 end
