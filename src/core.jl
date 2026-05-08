@@ -45,6 +45,19 @@ To implement a custom CV strategy:
 abstract type AbstractCVStrategy <: AbstractSplitStrategy end
 
 """
+    AbstractResamplingCVStrategy <: AbstractCVStrategy
+
+Abstract supertype for *resampling* cross-validation strategies —
+strategies whose folds are independent random train/test splits sized
+by the caller, rather than fixed slices of a deterministic partition.
+
+Subtyping this routes calls to the `partition(data, alg; train, test, …)`
+method, which forwards the resolved `n_train` / `n_test` to `_partition`.
+Used by `ShuffleSplit` and `StratifiedShuffleSplit`.
+"""
+abstract type AbstractResamplingCVStrategy <: AbstractCVStrategy end
+
+"""
     AbstractSplitResult
 
 Abstract supertype for all split result types.
@@ -613,7 +626,9 @@ fold result per element of the partition.
 
 Unlike the train/test and train/val/test forms, this method does **not**
 accept `train` / `test` / `validation` keywords — fold sizes are fixed by
-the strategy (typically via `k`).
+the strategy (typically via `k`). Resampling strategies that *do* take
+caller-set cohort sizes subtype [`AbstractResamplingCVStrategy`](@ref)
+and dispatch to a separate `partition` method.
 
 # Auxiliary slots
 
@@ -649,6 +664,58 @@ function partition(
   return _partition(
     data_internal,
     alg;
+    target = _slot_for(alg, resolved_target, :target),
+    time = _slot_for(alg, resolved_time, :time),
+    groups = _slot_for(alg, resolved_groups, :groups),
+    rng = rng,
+  )
+end
+
+"""
+    partition(data, alg::AbstractResamplingCVStrategy;
+              train, test,
+              target=nothing, time=nothing, groups=nothing,
+              rng=Random.default_rng()) -> CrossValidationSplit
+
+Resampling cross-validation: each fold is an independent random
+train/test split sized by the caller, and `n_splits` independent
+resamples are produced. Used by `ShuffleSplit` and
+`StratifiedShuffleSplit`.
+
+`train` and `test` follow the same conventions as the train/test
+`partition` form (percentages, absolute counts, or `(0,1)` fractions
+summing to 1).
+
+# Examples
+```julia
+cvs = partition(X, ShuffleSplit(10); train = 0.8, test = 0.2)
+```
+"""
+function partition(
+  data,
+  alg::AbstractResamplingCVStrategy;
+  train::Real,
+  test::Real,
+  target = nothing,
+  time = nothing,
+  groups = nothing,
+  rng = Random.default_rng(),
+)
+  N = _assert_partitionable(data)
+  n_train, _, n_test = _resolve_sizes(N, train, nothing, test)
+
+  algs = (alg,)
+  resolved_target = _resolve_slot(algs, data, target, :target)
+  resolved_time = _resolve_slot(algs, data, time, :time)
+  resolved_groups = _resolve_slot(algs, data, groups, :groups)
+
+  data_internal = :data ∈ consumes(alg) ? _to_feature_matrix(data) : data
+
+  return _partition(
+    data_internal,
+    alg;
+    n_train = n_train,
+    n_test = n_test,
     target = _slot_for(alg, resolved_target, :target),
     time = _slot_for(alg, resolved_time, :time),
     groups = _slot_for(alg, resolved_groups, :groups),
