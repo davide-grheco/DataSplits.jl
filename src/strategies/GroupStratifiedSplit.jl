@@ -48,6 +48,27 @@ GroupStratifiedSplit(allocation::Symbol; n = nothing) = GroupStratifiedSplit(all
 consumes(::GroupStratifiedSplit) = (:groups,)
 fallback_from_data(::GroupStratifiedSplit) = (:groups,)
 
+"""
+    _within_group_std(data, idxs) -> Float64
+
+Compute the average per-feature standard deviation of observations at
+`idxs` within `data`, container-agnostically. Used by `:neyman`
+allocation to weight groups by within-group dispersion.
+
+Tables.jl inputs are converted to an F×N matrix; Vectors are treated as
+1D feature streams. Singleton groups return `0.0` to avoid `NaN`.
+"""
+function _within_group_std(data, idxs)
+  sub = getobs(data, idxs)
+  mat = _to_feature_matrix(sub)
+  if mat isa AbstractVector
+    length(mat) <= 1 && return 0.0
+    return std(mat)
+  end
+  size(mat, 2) <= 1 && return 0.0
+  return mean(std(mat, dims = 2))
+end
+
 function _equal_allocation(cl_ids, idxs_by_cluster, n, rng)
   isnothing(n) &&
     throw(SplitParameterError("Parameter n must be provided for equal allocation."))
@@ -72,9 +93,16 @@ function _neyman_allocation(cl_ids, idxs_by_cluster, n, data, rng)
     throw(SplitParameterError("Parameter n must be provided for Neyman allocation."))
   stds = Dict{Any,Float64}()
   for cid in cl_ids
-    cluster_data = getobs(data, idxs_by_cluster[cid])
-    stds[cid] = mean(std(cluster_data, dims = 2))
+    stds[cid] = _within_group_std(data, idxs_by_cluster[cid])
   end
+
+  numerators = Dict(cid => length(idxs_by_cluster[cid]) * stds[cid] for cid in cl_ids)
+  denom = sum(values(numerators))
+
+  if !isfinite(denom) || iszero(denom)
+    return _equal_allocation(cl_ids, idxs_by_cluster, n, rng)
+  end
+
   numerators = Dict(cid => length(idxs_by_cluster[cid]) * stds[cid] for cid in cl_ids)
   denom = sum(values(numerators))
   total = n * length(cl_ids)

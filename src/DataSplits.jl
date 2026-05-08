@@ -23,7 +23,11 @@ include("strategies/KFold.jl")
 include("strategies/LeavePOut.jl")
 include("strategies/LeavePGroupsOut.jl")
 include("strategies/StratifiedKFold.jl")
+<<<<<<< feat/cv-shuffle-split
 include("strategies/ShuffleSplit.jl")
+=======
+include("strategies/PredefinedSplit.jl")
+>>>>>>> api
 
 # Core API
 export partition
@@ -55,7 +59,11 @@ export GroupShuffleSplit, GroupStratifiedSplit
 # Cross-validation
 export GroupKFold, KFold, LeavePOut, LeaveOneOut, LeavePGroupsOut, LeaveOneGroupOut
 export StratifiedKFold
+<<<<<<< feat/cv-shuffle-split
 export ShuffleSplit
+=======
+export PredefinedSplit
+>>>>>>> api
 
 # Target / time property
 export TargetPropertySplit, TargetPropertyHigh, TargetPropertyLow
