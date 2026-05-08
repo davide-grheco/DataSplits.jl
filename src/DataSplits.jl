@@ -23,6 +23,7 @@ include("strategies/KFold.jl")
 include("strategies/LeavePOut.jl")
 include("strategies/LeavePGroupsOut.jl")
 include("strategies/StratifiedKFold.jl")
+include("strategies/PredefinedSplit.jl")
 
 # Core API
 export partition
@@ -53,6 +54,7 @@ export GroupShuffleSplit, GroupStratifiedSplit
 # Cross-validation
 export GroupKFold, KFold, LeavePOut, LeaveOneOut, LeavePGroupsOut, LeaveOneGroupOut
 export StratifiedKFold
+export PredefinedSplit
 
 # Target / time property
 export TargetPropertySplit, TargetPropertyHigh, TargetPropertyLow
