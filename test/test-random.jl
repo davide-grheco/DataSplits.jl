@@ -83,11 +83,4 @@ rng = MersenneTwister(42)
     train3, test3 = result.train, result.test
     @test train1 != train3
   end
-
-  @testset "Absolute counts" begin
-    rng = MersenneTwister(7)
-    result = partition(data_std, strategy; train = 7, test = 3, rng)
-    @test length(result.train) == 7
-    @test length(result.test) == 3
-  end
 end

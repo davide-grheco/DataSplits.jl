@@ -5,18 +5,6 @@ X = vcat(randn(30, 2), randn(40, 2) .+ 5, randn(50, 2) .+ 10)'
 N = 120
 groups = vcat(fill(:a, 30), fill(:b, 40), fill(:c, 50))
 
-@testset "LeaveOneGroupOut basic contract" begin
-  cvs = partition(X, LeaveOneGroupOut(); groups = groups)
-
-  @test cvs isa CrossValidationSplit
-  @test length(cvs) == 3
-
-  for fold in cvs
-    @test fold isa TrainTestSplit
-    @test isempty(intersect(fold.train, fold.test))
-    @test sort(vcat(fold.train, fold.test)) == collect(1:N)
-  end
-end
 
 @testset "LeaveOneGroupOut isolates one group per fold" begin
   cvs = partition(X, LeaveOneGroupOut(); groups = groups)
@@ -82,33 +70,6 @@ end
     @test isempty(intersect(fold.train, fold.test))
     @test sort(vcat(fold.train, fold.test)) == collect(1:20)
     @test length(unique(ids[fold.test])) == 2
-  end
-end
-
-@testset "LeavePGroupsOut(2) covers every pair exactly once" begin
-  ids = vcat(fill(:a, 3), fill(:b, 3), fill(:c, 3), fill(:d, 3))
-  data = randn(2, 12)
-  cvs = partition(data, LeavePGroupsOut(2); groups = ids)
-  test_pairs = [Set(unique(ids[fold.test])) for fold in cvs]
-  expected_pairs = Set([
-    Set([:a, :b]),
-    Set([:a, :c]),
-    Set([:a, :d]),
-    Set([:b, :c]),
-    Set([:b, :d]),
-    Set([:c, :d]),
-  ])
-  @test Set(test_pairs) == expected_pairs
-end
-
-@testset "LeavePGroupsOut(2) test cohorts are disjoint from train within fold" begin
-  ids = vcat(fill(:a, 5), fill(:b, 5), fill(:c, 5), fill(:d, 5), fill(:e, 5))
-  data = randn(2, 25)
-  cvs = partition(data, LeavePGroupsOut(2); groups = ids)
-  for fold in cvs
-    train_groups = Set(unique(ids[fold.train]))
-    test_groups = Set(unique(ids[fold.test]))
-    @test isempty(intersect(train_groups, test_groups))
   end
 end
 

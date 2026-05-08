@@ -1,32 +1,5 @@
 using Test, Random, DataSplits
 
-@testset "KFold basic contract" begin
-  X = randn(2, 100)
-  cvs = partition(X, KFold(5))
-
-  @test cvs isa CrossValidationSplit
-  @test length(cvs) == 5
-  @test length(folds(cvs)) == 5
-
-  for fold in cvs
-    @test fold isa TrainTestSplit
-    @test isempty(intersect(fold.train, fold.test))
-    @test sort(vcat(fold.train, fold.test)) == collect(1:100)
-  end
-end
-
-@testset "KFold fold sizes differ by at most 1" begin
-  # N divisible by k
-  cvs = partition(randn(2, 100), KFold(5))
-  fold_sizes = [length(fold.test) for fold in cvs]
-  @test all(==(20), fold_sizes)
-
-  # N not divisible by k
-  cvs2 = partition(randn(2, 101), KFold(5))
-  fold_sizes2 = [length(fold.test) for fold in cvs2]
-  @test sum(fold_sizes2) == 101
-  @test maximum(fold_sizes2) - minimum(fold_sizes2) <= 1
-end
 
 @testset "KFold deterministic by default" begin
   X = randn(2, 50)

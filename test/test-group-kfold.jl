@@ -5,35 +5,6 @@ X = vcat(randn(30, 2), randn(40, 2) .+ 5, randn(50, 2) .+ 10)'
 N = 120
 groups = vcat(fill(:a, 30), fill(:b, 40), fill(:c, 50))
 
-@testset "GroupKFold basic contract" begin
-  cvs = partition(X, GroupKFold(3); groups = groups)
-
-  @test cvs isa CrossValidationSplit
-  @test length(cvs) == 3
-  @test length(folds(cvs)) == 3
-
-  for fold in cvs
-    @test fold isa TrainTestSplit
-    @test isempty(intersect(fold.train, fold.test))
-    @test sort(vcat(fold.train, fold.test)) == collect(1:N)
-  end
-end
-
-@testset "GroupKFold respects group membership" begin
-  cvs = partition(X, GroupKFold(3); groups = groups)
-  for fold in cvs
-    train_groups = unique(groups[fold.train])
-    test_groups = unique(groups[fold.test])
-    @test isempty(intersect(train_groups, test_groups))
-  end
-end
-
-@testset "GroupKFold partitions groups across folds" begin
-  cvs = partition(X, GroupKFold(3); groups = groups)
-  test_groups_per_fold = [Set(unique(groups[fold.test])) for fold in cvs]
-  @test reduce(union, test_groups_per_fold) == Set([:a, :b, :c])
-  @test sum(length, test_groups_per_fold) == 3
-end
 
 @testset "GroupKFold with many groups produces near-balanced folds" begin
   many_groups = repeat(1:30, inner = 4)

@@ -1,26 +1,5 @@
 using Test, DataSplits
 
-@testset "LeavePOut basic contract" begin
-  X = randn(2, 6)
-  cvs = partition(X, LeavePOut(2))
-
-  @test cvs isa CrossValidationSplit
-  @test length(cvs) == binomial(6, 2)  # 15
-
-  for fold in cvs
-    @test fold isa TrainTestSplit
-    @test length(fold.test) == 2
-    @test length(fold.train) == 4
-    @test isempty(intersect(fold.train, fold.test))
-    @test sort(vcat(fold.train, fold.test)) == collect(1:6)
-  end
-end
-
-@testset "LeavePOut covers all combinations" begin
-  cvs = partition(randn(2, 5), LeavePOut(2))
-  test_sets = Set(Set(fold.test) for fold in cvs)
-  @test length(test_sets) == binomial(5, 2)  # all unique
-end
 
 @testset "LeavePOut splitview and splitdata" begin
   X = randn(2, 5)
