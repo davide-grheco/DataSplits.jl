@@ -1,20 +1,108 @@
-using Test
-using Random
-using Supposition
-using Supposition.Data
 using DataSplits:
-  partition, RandomSplit, TimeSplitOldest, TimeSplitNewest, GroupShuffleSplit
+  partition,
+  RandomSplit,
+  TimeSplitOldest,
+  TimeSplitNewest,
+  GroupShuffleSplit,
+  trainindices,
+  testindices
 
-const abs_split_sizes_gen =
-  @composed function make_abs_split_sizes(N = Data.Integers(2, 200))
+# ---------------------------------------------------------------------
+# Generators
+# ---------------------------------------------------------------------
+
+const split_abs_sizes_gen =
+  @composed function make_split_abs_sizes(N = Data.Integers(2, 200))
     n_train = Data.produce!(Data.Integers(1, N - 1))
     return (N, n_train, N - n_train)
   end
 
+const split_time_groups_case_gen =
+  @composed function make_split_time_groups_case(n_times = Data.Integers(2, 50))
+    times = Date[]
+
+    for t = 1:n_times
+      reps = Data.produce!(Data.Integers(1, 8))
+      append!(times, fill(Date(2020, 1, 1) + Day(t - 1), reps))
+    end
+
+    N = length(times)
+    n_train = Data.produce!(Data.Integers(1, N - 1))
+
+    return (times, n_train, N - n_train)
+  end
+
+const split_grouped_case_gen =
+  @composed function make_split_grouped_case(n_groups = Data.Integers(2, 30))
+    groups = Int[]
+
+    for g = 1:n_groups
+      group_size = Data.produce!(Data.Integers(1, 12))
+      append!(groups, fill(g, group_size))
+    end
+
+    return groups
+  end
+
+# ---------------------------------------------------------------------
+# Property helpers
+# ---------------------------------------------------------------------
+
+function pbt_train(result)
+  return trainindices(result)
+end
+
+function pbt_test(result)
+  return testindices(result)
+end
+
+function pbt_has_train_test_sizes(result, n_train, n_test)
+  return length(pbt_train(result)) == n_train && length(pbt_test(result)) == n_test
+end
+
+function pbt_is_full_train_test_partition(result, N)
+  train = pbt_train(result)
+  test = pbt_test(result)
+
+  return isempty(intersect(train, test)) && sort(vcat(train, test)) == collect(1:N)
+end
+
+function pbt_no_time_value_split(result, times)
+  train_times = Set(times[pbt_train(result)])
+  test_times = Set(times[pbt_test(result)])
+
+  return isempty(intersect(train_times, test_times))
+end
+
+function pbt_no_group_leakage(result, groups)
+  train_groups = Set(groups[pbt_train(result)])
+  test_groups = Set(groups[pbt_test(result)])
+
+  return isempty(intersect(train_groups, test_groups))
+end
+
+function pbt_oldest_train_before_test(result, times)
+  train = pbt_train(result)
+  test = pbt_test(result)
+
+  return all(times[i] <= times[j] for i in train, j in test)
+end
+
+function pbt_newest_train_after_test(result, times)
+  train = pbt_train(result)
+  test = pbt_test(result)
+
+  return all(times[i] >= times[j] for i in train, j in test)
+end
+
+# ---------------------------------------------------------------------
+# Properties
+# ---------------------------------------------------------------------
+
 @testset "Property tests" begin
   @testset "RandomSplit" begin
     @check max_examples = 500 rng = Xoshiro(1) function randomsplit_is_a_partition(
-      case = abs_split_sizes_gen,
+      case = split_abs_sizes_gen,
     )
       N, n_train, n_test = case
       X = reshape(collect(1:N), 1, N)
@@ -22,82 +110,107 @@ const abs_split_sizes_gen =
       result =
         partition(X, RandomSplit(); train = n_train, test = n_test, rng = Xoshiro(42))
 
-      train = result.train
-      test = result.test
-      assigned = sort(vcat(train, test))
-
-      length(train) == n_train &&
-        length(test) == n_test &&
-        isempty(intersect(train, test)) &&
-        assigned == collect(1:N)
+      pbt_has_train_test_sizes(result, n_train, n_test) &&
+        pbt_is_full_train_test_partition(result, N)
     end
   end
 
-  @testset "TimeSplit" begin
+  @testset "TimeSplit with unique timestamps" begin
     @check max_examples = 300 rng = Xoshiro(2) function oldest_puts_train_before_test(
-      case = abs_split_sizes_gen,
+      case = split_abs_sizes_gen,
     )
       N, n_train, n_test = case
-      t = Date(2020, 1, 1) .+ Day.(0:(N-1))
+      times = Date(2020, 1, 1) .+ Day.(0:(N-1))
 
-      result = partition(t, TimeSplitOldest(); train = n_train, test = n_test)
+      result = partition(times, TimeSplitOldest(); train = n_train, test = n_test)
 
-      train = result.train
-      test = result.test
-      assigned = sort(vcat(train, test))
-
-      length(train) == n_train &&
-        length(test) == n_test &&
-        isempty(intersect(train, test)) &&
-        assigned == collect(1:N) &&
-        all(t[i] <= t[j] for i in train, j in test)
+      pbt_has_train_test_sizes(result, n_train, n_test) &&
+        pbt_is_full_train_test_partition(result, N) &&
+        pbt_oldest_train_before_test(result, times)
     end
 
     @check max_examples = 300 rng = Xoshiro(3) function newest_puts_train_after_test(
-      case = abs_split_sizes_gen,
+      case = split_abs_sizes_gen,
     )
       N, n_train, n_test = case
-      t = Date(2020, 1, 1) .+ Day.(0:(N-1))
+      times = Date(2020, 1, 1) .+ Day.(0:(N-1))
 
-      result = partition(t, TimeSplitNewest(); train = n_train, test = n_test)
+      result = partition(times, TimeSplitNewest(); train = n_train, test = n_test)
 
-      train = result.train
-      test = result.test
-      assigned = sort(vcat(train, test))
-
-      length(train) == n_train &&
-        length(test) == n_test &&
-        isempty(intersect(train, test)) &&
-        assigned == collect(1:N) &&
-        all(t[i] >= t[j] for i in train, j in test)
+      pbt_has_train_test_sizes(result, n_train, n_test) &&
+        pbt_is_full_train_test_partition(result, N) &&
+        pbt_newest_train_after_test(result, times)
     end
   end
 
-  @testset "GroupShuffleSplit" begin
-    @check max_examples = 300 rng = Xoshiro(4) function group_shuffle_does_not_split_groups(
+  @testset "TimeSplit with repeated timestamps" begin
+    @check max_examples = 300 rng = Xoshiro(15) function oldest_respects_time_groups(
+      case = split_time_groups_case_gen,
+    )
+      times, n_train, n_test = case
+      N = length(times)
+
+      result = partition(times, TimeSplitOldest(); train = n_train, test = n_test)
+
+      pbt_is_full_train_test_partition(result, N) &&
+        pbt_no_time_value_split(result, times) &&
+        pbt_oldest_train_before_test(result, times)
+    end
+
+    @check max_examples = 300 rng = Xoshiro(16) function newest_respects_time_groups(
+      case = split_time_groups_case_gen,
+    )
+      times, n_train, n_test = case
+      N = length(times)
+
+      result = partition(times, TimeSplitNewest(); train = n_train, test = n_test)
+
+      pbt_is_full_train_test_partition(result, N) &&
+        pbt_no_time_value_split(result, times) &&
+        pbt_newest_train_after_test(result, times)
+    end
+  end
+
+  @testset "GroupShuffleSplit with equal-size groups" begin
+    @check max_examples = 300 rng = Xoshiro(4) function group_shuffle_does_not_split_equal_groups(
       n_groups = Data.Integers(2, 30),
       group_size = Data.Integers(1, 20),
     )
       groups = repeat(1:n_groups; inner = group_size)
+      N = length(groups)
 
+      # Use an absolute train quota of 1 so the first whole group goes to train
+      # and at least one remaining group can go to test.
       result =
-        partition(groups, GroupShuffleSplit(); train = 60, test = 40, rng = Xoshiro(42))
+        partition(groups, GroupShuffleSplit(); train = 1, test = N - 1, rng = Xoshiro(42))
 
-      train = result.train
-      test = result.test
-      assigned = sort(vcat(train, test))
+      pbt_is_full_train_test_partition(result, N) &&
+        pbt_no_group_leakage(result, groups) &&
+        !isempty(pbt_train(result)) &&
+        !isempty(pbt_test(result))
+    end
+  end
 
-      is_valid_partition =
-        isempty(intersect(train, test)) && assigned == collect(eachindex(groups))
+  @testset "GroupShuffleSplit with variable-size groups" begin
+    @check max_examples = 300 rng = Xoshiro(17) function group_shuffle_does_not_split_variable_groups(
+      groups = split_grouped_case_gen,
+    )
+      N = length(groups)
+      X = reshape(collect(1:N), 1, N)
 
-      groups_are_not_split = all(unique(groups)) do gid
-        idxs = findall(==(gid), groups)
-        in_train = any(in(train), idxs)
-        in_test = any(in(test), idxs)
-        !(in_train && in_test)
-      end
+      result = partition(
+        X,
+        GroupShuffleSplit();
+        groups = groups,
+        train = 1,
+        test = N - 1,
+        rng = Xoshiro(42),
+      )
 
-      is_valid_partition && groups_are_not_split
+      pbt_is_full_train_test_partition(result, N) &&
+        pbt_no_group_leakage(result, groups) &&
+        !isempty(pbt_train(result)) &&
+        !isempty(pbt_test(result))
     end
   end
 end
