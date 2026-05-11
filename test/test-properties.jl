@@ -60,7 +60,9 @@ const split_grouped_case_gen =
       result =
         partition(X, RandomSplit(); train = n_train, test = n_test, rng = Xoshiro(42))
 
-      has_correct_split_size(result, n_train, n_test) && is_full_partition(result, N)
+      has_correct_split_size(result, n_train, n_test) &&
+        is_full_partition(result, N) &&
+        cohorts_are_complements(result, N)
     end
   end
 
@@ -75,7 +77,8 @@ const split_grouped_case_gen =
 
       has_correct_split_size(result, n_train, n_test) &&
         is_full_partition(result, N) &&
-        oldest_train_before_test(result, times)
+        oldest_train_before_test(result, times) &&
+        cohorts_are_complements(result, N)
     end
 
     @check max_examples = 300 rng = Xoshiro(3) function newest_puts_train_after_test(
@@ -88,7 +91,8 @@ const split_grouped_case_gen =
 
       has_correct_split_size(result, n_train, n_test) &&
         is_full_partition(result, N) &&
-        newest_train_after_test(result, times)
+        newest_train_after_test(result, times) &&
+        cohorts_are_complements(result, N)
     end
   end
 
@@ -103,7 +107,8 @@ const split_grouped_case_gen =
 
       is_full_partition(result, N) &&
         no_time_value_split(result, times) &&
-        oldest_train_before_test(result, times)
+        oldest_train_before_test(result, times) &&
+        cohorts_are_complements(result, N)
     end
 
     @check max_examples = 300 rng = Xoshiro(16) function newest_respects_time_groups(
@@ -116,7 +121,8 @@ const split_grouped_case_gen =
 
       is_full_partition(result, N) &&
         no_time_value_split(result, times) &&
-        newest_train_after_test(result, times)
+        newest_train_after_test(result, times) &&
+        cohorts_are_complements(result, N)
     end
   end
 
@@ -134,6 +140,7 @@ const split_grouped_case_gen =
         partition(groups, GroupShuffleSplit(); train = 1, test = N - 1, rng = Xoshiro(42))
 
       is_full_partition(result, N) &&
+        cohorts_are_complements(result, N) &&
         no_group_leakage(result, groups) &&
         !isempty(trainindices(result)) &&
         !isempty(testindices(result))
@@ -157,6 +164,7 @@ const split_grouped_case_gen =
       )
 
       is_full_partition(result, N) &&
+        cohorts_are_complements(result, N) &&
         no_group_leakage(result, groups) &&
         !isempty(trainindices(result)) &&
         !isempty(testindices(result))
@@ -171,6 +179,7 @@ const split_grouped_case_gen =
       y = collect(1:N)
       result = partition(y, TargetPropertyHigh(); train = n_train, test = n_test)
       is_full_partition(result, N) &&
+        cohorts_are_complements(result, N) &&
         has_correct_split_size(result, n_train, n_test) &&
         minimum(y[trainindices(result)]) >= maximum(y[testindices(result)])
     end
@@ -184,6 +193,7 @@ const split_grouped_case_gen =
       y = collect(1:N)
       result = partition(y, TargetPropertyLow(); train = n_train, test = n_test)
       is_full_partition(result, N) &&
+        cohorts_are_complements(result, N) &&
         has_correct_split_size(result, n_train, n_test) &&
         maximum(y[trainindices(result)]) <= minimum(y[testindices(result)])
     end
@@ -202,7 +212,9 @@ const split_grouped_case_gen =
         test = n_test,
         rng = Xoshiro(42),
       )
-      is_full_partition(result, N) && has_correct_split_size(result, n_train, n_test)
+      is_full_partition(result, N) &&
+        has_correct_split_size(result, n_train, n_test) &&
+        cohorts_are_complements(result, N)
     end
   end
 end

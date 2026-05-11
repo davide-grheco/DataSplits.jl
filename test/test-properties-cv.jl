@@ -15,7 +15,7 @@ end
     cvs = partition(X, KFold(k))
 
     length(cvs) == k &&
-      all(fold -> is_full_partition(fold, N), cvs) &&
+      is_full_partition(cvs, N) &&
       every_observation_tests_once(cvs, N) &&
       fold_test_sizes_balanced(cvs)
   end
@@ -45,8 +45,8 @@ end
     )
 
     length(folds(cvs)) == n_splits &&
-      all(fold -> is_full_partition(fold, N), folds(cvs)) &&
-      all(fold -> has_correct_split_size(fold, n_train, n_test), folds(cvs))
+      is_full_partition(cvs, N) &&
+      has_correct_split_size(cvs, n_train, n_test)
   end
 end
 
@@ -82,8 +82,8 @@ const strat_shuffle_case_gen =
     )
 
     length(folds(cvs)) == n_splits &&
-      all(fold -> is_full_partition(fold, N), folds(cvs)) &&
-      all(fold -> has_correct_split_size(fold, n_train, n_test), folds(cvs))
+      is_full_partition(cvs, N) &&
+      has_correct_split_size(cvs, n_train, n_test)
   end
 end
 
@@ -109,7 +109,7 @@ const grouped_case_gen =
     cvs = partition(X, GroupKFold(k); groups = groups)
 
     length(cvs) == k &&
-      all(fold -> is_full_partition(fold, N), cvs) &&
+      is_full_partition(cvs, N) &&
       all(fold -> no_group_leakage(fold, groups), cvs) &&
       every_observation_tests_once(cvs, N) &&
       every_group_tests_once(cvs, groups)
@@ -139,7 +139,7 @@ const stratified_case_gen =
     cvs = partition(X, StratifiedKFold(k); target = labels)
 
     length(cvs) == k &&
-      all(fold -> is_full_partition(fold, N), cvs) &&
+      is_full_partition(cvs, N) &&
       every_observation_tests_once(cvs, N) &&
       class_counts_balanced_across_test_folds(cvs, labels)
   end
@@ -164,7 +164,7 @@ end
       length(test_sets) == binomial(N, p) &&
       all(fold -> length(testindices(fold)) == p, cvs) &&
       all(fold -> length(trainindices(fold)) == N - p, cvs) &&
-      all(fold -> is_full_partition(fold, N), cvs)
+      is_full_partition(cvs, N)
   end
 end
 
@@ -194,7 +194,7 @@ const leavepgroups_case_gen =
 
     length(cvs) == binomial(n_groups, p) &&
       length(test_group_sets) == binomial(n_groups, p) &&
-      all(fold -> is_full_partition(fold, N), cvs) &&
+      is_full_partition(cvs, N) &&
       all(fold -> no_group_leakage(fold, groups), cvs) &&
       all(fold -> length(unique(groups[testindices(fold)])) == p, cvs)
   end
@@ -221,7 +221,7 @@ const predefined_split_case_gen =
     cvs = partition(X, PredefinedSplit(test_fold))
 
     length(folds(cvs)) == n_folds &&
-      all(fold -> is_full_partition(fold, N), folds(cvs)) &&
+      is_full_partition(cvs, N) &&
       every_observation_tests_once(cvs, N)
   end
 end

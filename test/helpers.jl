@@ -9,6 +9,10 @@ using DataSplits: trainindices, valindices, testindices, TrainTestSplit, TrainVa
 # ---------------------------------------------------------------------
 
 
+function has_valid_index_set(indices, N)
+  return all(i -> 1 <= i <= N, indices) && allunique(indices)
+end
+
 """
     is_full_partition(result, N)
 
@@ -18,17 +22,53 @@ Used in `@check` blocks in property test files.
 function is_full_partition(result::TrainTestSplit, N)
   train = trainindices(result)
   test = testindices(result)
-  return isempty(intersect(train, test)) && sort(vcat(train, test)) == collect(1:N)
+
+  return has_valid_index_set(train, N) &&
+         has_valid_index_set(test, N) &&
+         isempty(intersect(train, test)) &&
+         sort(vcat(train, test)) == collect(1:N)
 end
 
 function is_full_partition(result::TrainValTestSplit, N)
   train = trainindices(result)
   val = valindices(result)
   test = testindices(result)
-  return isempty(intersect(train, val)) &&
+
+  return has_valid_index_set(train, N) &&
+         has_valid_index_set(val, N) &&
+         has_valid_index_set(test, N) &&
+         isempty(intersect(train, val)) &&
          isempty(intersect(train, test)) &&
          isempty(intersect(val, test)) &&
          sort(vcat(train, val, test)) == collect(1:N)
+end
+
+function is_full_partition(cvs::CrossValidationSplit, N)
+  return all(fold -> is_full_partition(fold, N), folds(cvs))
+end
+
+function cv_has_expected_number_of_folds(cvs::CrossValidationSplit, expected)
+  return length(folds(cvs)) == expected
+end
+
+"""
+  Check that partitions of a dataset complement each other and cover the full dataset.
+"""
+function cohorts_are_complements(result::TrainTestSplit, N)
+  train = trainindices(result)
+  test = testindices(result)
+
+  return sort(test) == setdiff(1:N, train) && sort(train) == setdiff(1:N, test)
+end
+
+function cohorts_are_complements(result::TrainValTestSplit, N)
+  train = trainindices(result)
+  val = valindices(result)
+  test = testindices(result)
+
+  return sort(train) == setdiff(1:N, vcat(val, test)) &&
+         sort(val) == setdiff(1:N, vcat(train, test)) &&
+         sort(test) == setdiff(1:N, vcat(train, val))
 end
 
 """
@@ -68,6 +108,14 @@ function has_correct_split_size(result, n_train, n_val, n_test)
   return length(trainindices(result)) == n_train &&
          length(valindices(result)) == n_val &&
          length(testindices(result)) == n_test
+end
+
+function has_correct_split_size(cvs::CrossValidationSplit, n_train, n_test)
+  return all(fold -> has_correct_split_size(fold, n_train, n_test), folds(cvs))
+end
+
+function has_correct_split_size(cvs::CrossValidationSplit, n_train, n_val, n_test)
+  return all(fold -> has_correct_split_size(fold, n_train, n_val, n_test), folds(cvs))
 end
 
 """

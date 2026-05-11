@@ -115,6 +115,7 @@ const gss_prop_case_gen =
     )
     train = trainindices(result)
     is_full_partition(result, N) &&
+      cohorts_are_complements(result, N) &&
       all(g -> any(i -> i in train, findall(==(g), groups)), unique(groups))
   end
 end

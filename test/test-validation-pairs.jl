@@ -65,6 +65,6 @@ end
       rng = Xoshiro(42),
       extra...,
     )
-    is_full_partition(result, N)
+    is_full_partition(result, N) && cohorts_are_complements(result, N)
   end
 end

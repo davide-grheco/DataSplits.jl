@@ -93,7 +93,8 @@ const comp_group_composition_case_gen =
         ) <= 1 &&
         abs(
           length(testindices(percentage_result)) - length(testindices(fraction_result)),
-        ) <= 1
+        ) <= 1 &&
+        cohorts_are_complements(percentage_result, N)
     end
   end
 
@@ -266,7 +267,8 @@ const comp_group_composition_case_gen =
 
       has_correct_split_size(result, n_train, n_val, n_test) &&
         is_full_partition(result, N) &&
-        no_group_leakage(result, groups)
+        no_group_leakage(result, groups) &&
+        cohorts_are_complements(result, N)
     end
   end
 end
