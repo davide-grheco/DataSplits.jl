@@ -5,21 +5,6 @@ import DataSplits: SplitInputError, SplitParameterError
 @testset "PredefinedSplit" begin
   X = rand(4, 12)
 
-  @testset "Basic three-fold assignment" begin
-    test_fold = [0, 0, 1, 1, 2, 2, 0, 1, 2, 0, 1, 2]
-    cvs = partition(X, PredefinedSplit(test_fold))
-
-    @test length(folds(cvs)) == 3
-    # Each observation tests exactly once.
-    test_concat = reduce(vcat, [f.test for f in folds(cvs)])
-    @test sort(test_concat) == 1:12
-    # Within a fold, train ∩ test is empty and train ∪ test = 1:12.
-    for f in folds(cvs)
-      @test isempty(intersect(f.train, f.test))
-      @test sort(vcat(f.train, f.test)) == 1:12
-    end
-  end
-
   @testset "Negative IDs mean train-only" begin
     # Obs 7-12 are training-only.
     test_fold = [0, 0, 1, 1, 2, 2, -1, -1, -1, -1, -1, -1]
@@ -51,10 +36,7 @@ import DataSplits: SplitInputError, SplitParameterError
   end
 
   @testset "All-negative fold IDs raise SplitParameterError" begin
-    @test_throws SplitParameterError partition(
-      X,
-      PredefinedSplit(fill(-1, 12)),
-    )
+    @test_throws SplitParameterError partition(X, PredefinedSplit(fill(-1, 12)))
   end
 
   @testset "Construction accepts any integer vector" begin

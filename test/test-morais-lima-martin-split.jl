@@ -15,8 +15,7 @@ using Test
     rng = rng,
   )
   train, test = result1.train, result1.test
-  @test sort(vcat(train, test)) == 1:numobs(X)
-  @test isempty(intersect(train, test))
+  @test is_full_partition(result1, numobs(X))
 
   # Determinism
   rng1 = MersenneTwister(42)

@@ -2,6 +2,8 @@ using DataSplits
 using Test
 using Dates
 
+include("helpers.jl")
+
 for (root, dirs, files) in walkdir(@__DIR__)
   for file in files
     if isnothing(match(r"^test-.*\.jl$", file))

@@ -6,33 +6,20 @@ import DataSplits: SplitInputError, SplitParameterError
   X = rand(4, 15)
   groups = vcat(fill(1, 5), fill(2, 5), fill(3, 5))
 
-  @testset "Proportional allocation" begin
-    s = GroupStratifiedSplit(:proportional)
-    result = partition(X, s; groups = groups, train = 50, test = 50)
-    train, test = result.train, result.test
-    @test length(train) + length(test) == 15
-    @test isempty(intersect(train, test))
-    # Each group contributes to both train and test
-    for gid in unique(groups)
-      idxs = findall(==(gid), groups)
-      @test any(i -> i in train, idxs)
-    end
-  end
-
   @testset "Equal allocation" begin
     s = GroupStratifiedSplit(:equal; n = 4)
     result = partition(X, s; groups = groups, train = 50, test = 50)
     train, test = result.train, result.test
-    @test length(train) + length(test) <= 12   # at most 4 per cluster × 3
-    @test isempty(intersect(train, test))
+    @test total_size(result) <= 12   # at most 4 per cluster × 3
+    @test is_disjoint(result)
   end
 
   @testset "Neyman allocation" begin
     s = GroupStratifiedSplit(:neyman; n = 4)
     result = partition(X, s; groups = groups, train = 50, test = 50)
     train, test = result.train, result.test
-    @test length(train) + length(test) <= 15
-    @test isempty(intersect(train, test))
+    @test total_size(result) <= 15
+    @test is_disjoint(result)
   end
 
   @testset "Unknown allocation raises error" begin
@@ -42,8 +29,8 @@ import DataSplits: SplitInputError, SplitParameterError
 
   @testset "Fallback: groups as both data and groups" begin
     result = partition(groups, GroupStratifiedSplit(:proportional); train = 60, test = 40)
-    @test length(result.train) + length(result.test) == 15
-    @test isempty(intersect(result.train, result.test))
+    @test total_size(result) == 15
+    @test is_disjoint(result)
   end
 
   @testset "Neyman allocation on non-matrix data (issue #21)" begin
@@ -57,8 +44,8 @@ import DataSplits: SplitInputError, SplitParameterError
       train = 50,
       test = 50,
     )
-    @test isempty(intersect(res.train, res.test))
-    @test length(res.train) + length(res.test) <= 15
+    @test is_disjoint(res)
+    @test total_size(res) <= 15
 
     # Vector input: used to crash with `InexactError: Int64(NaN)` because
     # `std(::Vector; dims=2)` returned `NaN`.
@@ -70,8 +57,8 @@ import DataSplits: SplitInputError, SplitParameterError
       train = 50,
       test = 50,
     )
-    @test isempty(intersect(res.train, res.test))
-    @test length(res.train) + length(res.test) <= 15
+    @test is_disjoint(res)
+    @test total_size(res) <= 15
 
     # Singleton group: within-group std falls back to 0 instead of NaN.
     groups_singleton = vcat(fill(1, 7), fill(2, 7), [3])
@@ -83,7 +70,7 @@ import DataSplits: SplitInputError, SplitParameterError
       train = 50,
       test = 50,
     )
-    @test isempty(intersect(res.train, res.test))
+    @test is_disjoint(res)
   end
 
   @testset "Neyman allocation handles all-zero within-group dispersion" begin
@@ -98,7 +85,36 @@ import DataSplits: SplitInputError, SplitParameterError
       test = 50,
     )
 
-    @test isempty(intersect(res.train, res.test))
-    @test length(res.train) + length(res.test) == 2 * length(unique(groups_constant))
+    @test is_disjoint(res)
+    @test total_size(res) == 2 * length(unique(groups_constant))
+  end
+end
+
+const gss_prop_case_gen =
+  @composed function make_gss_prop_case(n_groups = Data.Integers(2, 8))
+    groups = Int[]
+    for g = 1:n_groups
+      group_size = Data.produce!(Data.Integers(2, 6))
+      append!(groups, fill(g, group_size))
+    end
+    return groups
+  end
+
+@testset "GroupStratifiedSplit proportional properties" begin
+  @check max_examples = 300 rng = Xoshiro(93) function gss_proportional_full_partition(
+    groups = gss_prop_case_gen,
+  )
+    N = length(groups)
+    X = reshape(collect(1.0:N), 1, N)
+    result = partition(
+      X,
+      GroupStratifiedSplit(:proportional);
+      groups = groups,
+      train = 50,
+      test = 50,
+    )
+    train = trainindices(result)
+    is_full_partition(result, N) &&
+      all(g -> any(i -> i in train, findall(==(g), groups)), unique(groups))
   end
 end

@@ -61,3 +61,31 @@ end
   @test_throws SplitParameterError ValidFraction(-0.1)
   @test_throws SplitParameterError ValidFraction(1.5)
 end
+
+# N > 100 guarantees sum = N ≠ 100, so the absolute-count branch always fires.
+const resolve_abs_gen = @composed function make_resolve_abs(N = Data.Integers(101, 300))
+  n_train = Data.produce!(Data.Integers(1, N - 1))
+  return (N, n_train)
+end
+
+@testset "_resolve_sizes (PBT absolute two-way)" begin
+  @check max_examples = 300 rng = Xoshiro(94) function resolve_sizes_absolute_is_identity(
+    case = resolve_abs_gen,
+  )
+    N, n_train = case
+    n_test = N - n_train
+    DataSplits._resolve_sizes(N, n_train, nothing, n_test) == (n_train, 0, n_test)
+  end
+end
+
+@testset "_resolve_sizes (PBT percentage two-way)" begin
+  # N ∈ [10, 200], train_pct ∈ [10, 90] guarantees both cohorts resolve to ≥ 1.
+  @check max_examples = 300 rng = Xoshiro(95) function resolve_sizes_percentage_sums_to_N(
+    N = Data.Integers(10, 200),
+    train_pct = Data.Integers(10, 90),
+  )
+    test_pct = 100 - train_pct
+    n_train, _, n_test = DataSplits._resolve_sizes(N, train_pct, nothing, test_pct)
+    n_train + n_test == N && n_train >= 1 && n_test >= 1
+  end
+end
