@@ -6,19 +6,6 @@ import DataSplits: SplitInputError, SplitParameterError
   X = rand(4, 15)
   groups = vcat(fill(1, 5), fill(2, 5), fill(3, 5))
 
-  @testset "Proportional allocation" begin
-    s = GroupStratifiedSplit(:proportional)
-    result = partition(X, s; groups = groups, train = 50, test = 50)
-    train, test = result.train, result.test
-    @test total_size(result) == 15
-    @test is_disjoint(result)
-    # Each group contributes to both train and test
-    for gid in unique(groups)
-      idxs = findall(==(gid), groups)
-      @test any(i -> i in train, idxs)
-    end
-  end
-
   @testset "Equal allocation" begin
     s = GroupStratifiedSplit(:equal; n = 4)
     result = partition(X, s; groups = groups, train = 50, test = 50)

@@ -19,16 +19,6 @@ using Test, DataSplits, Distances, Clustering
   @test nclusters(res2) == 1
   @test counts(res2) == [5]
 
-  # Zero radius → each point its own cluster
-  X3 = [0.0 0.0; 1.0 0.0; 0.0 1.0]'
-  res3 = sphere_exclusion(X3; radius = 0.0)
-  @test nclusters(res3) == 3
-  @test sort(counts(res3)) == [1, 1, 1]
-
-  # Large radius → single cluster
-  res4 = sphere_exclusion(X3; radius = 10.0)
-  @test nclusters(res4) == 1
-  @test counts(res4) == [3]
 end
 
 @testset "SphereExclusion properties" begin

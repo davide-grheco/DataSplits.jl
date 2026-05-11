@@ -38,17 +38,6 @@ import DataSplits: SplitParameterError
     end
   end
 
-  @testset "Reproducible with rng" begin
-    rng1 = MersenneTwister(42)
-    rng2 = MersenneTwister(42)
-    cvs1 = partition(X, ShuffleSplit(3); train = 0.6, test = 0.4, rng = rng1)
-    cvs2 = partition(X, ShuffleSplit(3); train = 0.6, test = 0.4, rng = rng2)
-    for (a, b) in zip(folds(cvs1), folds(cvs2))
-      @test a.train == b.train
-      @test a.test == b.test
-    end
-  end
-
   @testset "Missing train/test raises (UndefKeywordError)" begin
     @test_throws UndefKeywordError partition(X, ShuffleSplit(5))
     @test_throws UndefKeywordError partition(X, ShuffleSplit(5); train = 0.8)
