@@ -270,3 +270,69 @@ const comp_group_composition_case_gen =
     end
   end
 end
+
+const comp_shuffle_cv_gen = @composed function make_comp_shuffle_cv(
+  N = Data.Integers(10, 50),
+  n_splits = Data.Integers(1, 5),
+)
+  n_train = Data.produce!(Data.Integers(1, N - 1))
+  return (N, n_splits, n_train, N - n_train)
+end
+
+@testset "splitview matches indices (two-way)" begin
+  @check max_examples = 300 rng = Xoshiro(96) function splitview_two_way_matches_indices(
+    case = comp_fallback_case_gen,
+  )
+    N, n_train, n_test = case
+    X = reshape(collect(1:(3*N)), 3, N)
+    result = partition(X, RandomSplit(); train = n_train, test = n_test, rng = Xoshiro(42))
+    X_train, X_test = splitview(result, X)
+    X_train == view(X, :, trainindices(result)) && X_test == view(X, :, testindices(result))
+  end
+end
+
+@testset "splitview matches indices (CrossValidationSplit)" begin
+  @check max_examples = 200 rng = Xoshiro(97) function splitview_cv_matches_fold_indices(
+    case = comp_shuffle_cv_gen,
+  )
+    N, n_splits, n_train, n_test = case
+    X = reshape(collect(1:(3*N)), 3, N)
+    cvs = partition(
+      X,
+      ShuffleSplit(n_splits);
+      train = n_train,
+      test = n_test,
+      rng = Xoshiro(42),
+    )
+    all(zip(splitview(cvs, X), folds(cvs))) do (views, fold)
+      X_train, X_test = views
+      X_train == view(X, :, trainindices(fold)) && X_test == view(X, :, testindices(fold))
+    end
+  end
+end
+
+@testset "ShuffleSplit reproducibility" begin
+  @check max_examples = 200 rng = Xoshiro(98) function shuffle_split_same_rng_same_folds(
+    case = comp_shuffle_cv_gen,
+  )
+    N, n_splits, n_train, n_test = case
+    X = reshape(collect(1:N), 1, N)
+    cvs1 = partition(
+      X,
+      ShuffleSplit(n_splits);
+      train = n_train,
+      test = n_test,
+      rng = Xoshiro(42),
+    )
+    cvs2 = partition(
+      X,
+      ShuffleSplit(n_splits);
+      train = n_train,
+      test = n_test,
+      rng = Xoshiro(42),
+    )
+    all(zip(folds(cvs1), folds(cvs2))) do (f1, f2)
+      f1.train == f2.train && f1.test == f2.test
+    end
+  end
+end

@@ -1,4 +1,4 @@
-using Test, DataSplits, Distances
+using Test, DataSplits, Distances, Clustering
 
 @testset "SphereExclusion edge cases" begin
   # Empty data
@@ -29,4 +29,34 @@ using Test, DataSplits, Distances
   res4 = sphere_exclusion(X3; radius = 10.0)
   @test nclusters(res4) == 1
   @test counts(res4) == [3]
+end
+
+@testset "SphereExclusion properties" begin
+  @check max_examples = 300 rng = Xoshiro(90) function sphere_exclusion_partition_invariant(
+    N = Data.Integers(2, 30),
+    r_int = Data.Integers(0, 10),
+  )
+    X = reshape(collect(1.0:N), 1, N)
+    radius = Float64(r_int) * 0.5
+    res = sphere_exclusion(X; radius = radius)
+    a = assignments(res)
+    length(a) == N && all(1 .<= a .<= nclusters(res)) && sum(counts(res)) == N
+  end
+
+  @check max_examples = 300 rng = Xoshiro(91) function sphere_exclusion_zero_radius_n_clusters(
+    N = Data.Integers(2, 30),
+  )
+    X = reshape(collect(1.0:N), 1, N)
+    res = sphere_exclusion(X; radius = 0.0)
+    nclusters(res) == N
+  end
+
+  @check max_examples = 300 rng = Xoshiro(92) function sphere_exclusion_large_radius_one_cluster(
+    N = Data.Integers(2, 30),
+  )
+    X = reshape(collect(1.0:N), 1, N)
+    # max pairwise distance for 1:N is N-1; using N as radius is always ≥ that
+    res = sphere_exclusion(X; radius = Float64(N))
+    nclusters(res) == 1
+  end
 end

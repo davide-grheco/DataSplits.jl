@@ -58,3 +58,18 @@ end
   @test length(sub) == 1
   @test eltype(typeof(cvs)) <: TrainTestSplit
 end
+
+@testset "CrossValidationSplit splitview" begin
+  X = rand(3, 10)
+  folds_vec = [
+    TrainTestSplit([1, 2, 3, 4, 5, 6, 7], [8, 9, 10]),
+    TrainTestSplit([1, 2, 3, 8, 9, 10], [4, 5, 6, 7]),
+  ]
+  cvs = CrossValidationSplit(folds_vec)
+  sv = splitview(cvs, X)
+  @test length(sv) == 2
+  for (i, (X_train, X_test)) in enumerate(sv)
+    @test X_train == X[:, folds_vec[i].train]
+    @test X_test == X[:, folds_vec[i].test]
+  end
+end

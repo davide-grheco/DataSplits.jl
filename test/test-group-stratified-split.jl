@@ -102,3 +102,32 @@ import DataSplits: SplitInputError, SplitParameterError
     @test total_size(res) == 2 * length(unique(groups_constant))
   end
 end
+
+const gss_prop_case_gen =
+  @composed function make_gss_prop_case(n_groups = Data.Integers(2, 8))
+    groups = Int[]
+    for g = 1:n_groups
+      group_size = Data.produce!(Data.Integers(2, 6))
+      append!(groups, fill(g, group_size))
+    end
+    return groups
+  end
+
+@testset "GroupStratifiedSplit proportional properties" begin
+  @check max_examples = 300 rng = Xoshiro(93) function gss_proportional_full_partition(
+    groups = gss_prop_case_gen,
+  )
+    N = length(groups)
+    X = reshape(collect(1.0:N), 1, N)
+    result = partition(
+      X,
+      GroupStratifiedSplit(:proportional);
+      groups = groups,
+      train = 50,
+      test = 50,
+    )
+    train = trainindices(result)
+    is_full_partition(result, N) &&
+      all(g -> any(i -> i in train, findall(==(g), groups)), unique(groups))
+  end
+end
