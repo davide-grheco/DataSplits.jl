@@ -68,7 +68,20 @@ const resolve_abs_gen = @composed function make_resolve_abs(N = Data.Integers(10
   return (N, n_train)
 end
 
-@testset "_resolve_sizes (PBT absolute two-way)" begin
+const fractional_threeway_size_case_gen =
+  @composed function make_fractional_threeway_size_case(N = Data.Integers(3, 300))
+    n_train = Data.produce!(Data.Integers(1, N - 2))
+    n_val = Data.produce!(Data.Integers(1, N - n_train - 1))
+    n_test = N - n_train - n_val
+
+    train = n_train / N
+    validation = n_val / N
+    test = n_test / N
+
+    return (N, train, validation, test)
+  end
+
+@testset "_resolve_sizes (PBT two-way)" begin
   @check max_examples = 300 rng = Xoshiro(94) function resolve_sizes_absolute_is_identity(
     case = resolve_abs_gen,
   )
@@ -76,16 +89,24 @@ end
     n_test = N - n_train
     DataSplits._resolve_sizes(N, n_train, nothing, n_test) == (n_train, 0, n_test)
   end
-end
 
-@testset "_resolve_sizes (PBT percentage two-way)" begin
-  # N ∈ [10, 200], train_pct ∈ [10, 90] guarantees both cohorts resolve to ≥ 1.
   @check max_examples = 300 rng = Xoshiro(95) function resolve_sizes_percentage_sums_to_N(
-    N = Data.Integers(10, 200),
-    train_pct = Data.Integers(10, 90),
+    N = Data.Integers(10, 2000),
+    train_pct = Data.Integers(1, 99),
   )
     test_pct = 100 - train_pct
     n_train, _, n_test = DataSplits._resolve_sizes(N, train_pct, nothing, test_pct)
     n_train + n_test == N && n_train >= 1 && n_test >= 1
+  end
+end
+
+@testset "_resolve_sizes fractional three-way properties" begin
+  @check max_examples = 300 rng = Xoshiro(95) function fractional_sizes_are_valid(
+    case = fractional_threeway_size_case_gen,
+  )
+    N, train, validation, test = case
+    n_train, n_val, n_test = DataSplits._resolve_sizes(N, train, validation, test)
+
+    return n_train + n_val + n_test == N && n_train >= 1 && n_val >= 1 && n_test >= 1
   end
 end

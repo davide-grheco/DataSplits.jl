@@ -15,7 +15,7 @@ using Test
     rng = rng,
   )
   train, test = result1.train, result1.test
-  @test is_full_partition(result1, numobs(X))
+  @test is_full_partition(result1, numobs(X)) && cohorts_are_complements(result1, numobs(X))
 
   # Determinism
   rng1 = MersenneTwister(42)
