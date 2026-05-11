@@ -1,5 +1,12 @@
 using DataSplits:
-  partition, RandomSplit, TimeSplitOldest, TimeSplitNewest, GroupShuffleSplit
+  partition,
+  RandomSplit,
+  TimeSplitOldest,
+  TimeSplitNewest,
+  GroupShuffleSplit,
+  TargetPropertyHigh,
+  TargetPropertyLow,
+  MoraisLimaMartinSplit
 
 # ---------------------------------------------------------------------
 # Generators
@@ -153,6 +160,49 @@ const split_grouped_case_gen =
         no_group_leakage(result, groups) &&
         !isempty(trainindices(result)) &&
         !isempty(testindices(result))
+    end
+  end
+
+  @testset "TargetPropertyHigh" begin
+    @check max_examples = 300 rng = Xoshiro(50) function target_high_selects_largest(
+      case = split_abs_sizes_gen,
+    )
+      N, n_train, n_test = case
+      y = collect(1:N)
+      result = partition(y, TargetPropertyHigh(); train = n_train, test = n_test)
+      is_full_partition(result, N) &&
+        has_correct_split_size(result, n_train, n_test) &&
+        minimum(y[trainindices(result)]) >= maximum(y[testindices(result)])
+    end
+  end
+
+  @testset "TargetPropertyLow" begin
+    @check max_examples = 300 rng = Xoshiro(51) function target_low_selects_smallest(
+      case = split_abs_sizes_gen,
+    )
+      N, n_train, n_test = case
+      y = collect(1:N)
+      result = partition(y, TargetPropertyLow(); train = n_train, test = n_test)
+      is_full_partition(result, N) &&
+        has_correct_split_size(result, n_train, n_test) &&
+        maximum(y[trainindices(result)]) <= minimum(y[testindices(result)])
+    end
+  end
+
+  @testset "MoraisLimaMartinSplit" begin
+    @check max_examples = 100 rng = Xoshiro(52) function morais_lima_martin_valid(
+      case = split_abs_sizes_gen,
+    )
+      N, n_train, n_test = case
+      X = reshape(collect(1.0:N), 1, N)
+      result = partition(
+        X,
+        MoraisLimaMartinSplit();
+        train = n_train,
+        test = n_test,
+        rng = Xoshiro(42),
+      )
+      is_full_partition(result, N) && has_correct_split_size(result, n_train, n_test)
     end
   end
 end

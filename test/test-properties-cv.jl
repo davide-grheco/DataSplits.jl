@@ -20,6 +20,7 @@ end
       fold_test_sizes_balanced(cvs)
   end
 end
+
 const shuffle_split_case_gen = @composed function make_shuffle_split_case(
   N = Data.Integers(2, 100),
   n_splits = Data.Integers(1, 10),
@@ -38,6 +39,43 @@ end
     cvs = partition(
       X,
       ShuffleSplit(n_splits);
+      train = n_train,
+      test = n_test,
+      rng = Xoshiro(42),
+    )
+
+    length(folds(cvs)) == n_splits &&
+      all(fold -> is_full_partition(fold, N), folds(cvs)) &&
+      all(fold -> has_correct_split_size(fold, n_train, n_test), folds(cvs))
+  end
+end
+
+const strat_shuffle_case_gen =
+  @composed function make_strat_shuffle_case(n_classes = Data.Integers(2, 4))
+    n_splits = Data.produce!(Data.Integers(1, 5))
+    labels = Symbol[]
+    for c = 1:n_classes
+      count = Data.produce!(Data.Integers(2, 10))
+      append!(labels, fill(Symbol(:c, c), count))
+    end
+    N = length(labels)
+    n_test = Data.produce!(Data.Integers(n_classes, N - n_classes))
+    n_train = N - n_test
+    return (labels, n_splits, n_train, n_test)
+  end
+
+@testset "StratifiedShuffleSplit properties" begin
+  @check max_examples = 200 rng = Xoshiro(41) function strat_shuffle_valid_resamples(
+    case = strat_shuffle_case_gen,
+  )
+    labels, n_splits, n_train, n_test = case
+    N = length(labels)
+    X = reshape(collect(1:N), 1, N)
+
+    cvs = partition(
+      X,
+      StratifiedShuffleSplit(n_splits);
+      target = labels,
       train = n_train,
       test = n_test,
       rng = Xoshiro(42),
@@ -159,5 +197,31 @@ const leavepgroups_case_gen =
       all(fold -> is_full_partition(fold, N), cvs) &&
       all(fold -> no_group_leakage(fold, groups), cvs) &&
       all(fold -> length(unique(groups[testindices(fold)])) == p, cvs)
+  end
+end
+
+const predefined_split_case_gen =
+  @composed function make_predefined_case(n_folds = Data.Integers(2, 5))
+    N = Data.produce!(Data.Integers(n_folds, 30))
+    # First n_folds observations are assigned one-per-fold to ensure all folds are present.
+    # The remaining observations get random fold assignments.
+    extra = [Data.produce!(Data.Integers(0, n_folds - 1)) for _ = (n_folds+1):N]
+    test_fold = vcat(collect(0:(n_folds-1)), extra)
+    return (test_fold, n_folds)
+  end
+
+@testset "PredefinedSplit properties" begin
+  @check max_examples = 200 rng = Xoshiro(70) function predefined_split_valid(
+    case = predefined_split_case_gen,
+  )
+    test_fold, n_folds = case
+    N = length(test_fold)
+    X = reshape(collect(1:N), 1, N)
+
+    cvs = partition(X, PredefinedSplit(test_fold))
+
+    length(folds(cvs)) == n_folds &&
+      all(fold -> is_full_partition(fold, N), folds(cvs)) &&
+      every_observation_tests_once(cvs, N)
   end
 end
