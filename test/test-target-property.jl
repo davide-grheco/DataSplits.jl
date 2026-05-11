@@ -31,7 +31,7 @@ using Test
   X = rand(3, 5)
   result2 = partition(X, TargetPropertyHigh(); target = y, train = 60, test = 40)
   @test length(trainindices(result2)) == 3
-  @test isempty(intersect(result2.train, result2.test))
+  @test is_disjoint(result2)
   # same indices as the fallback case
   @test Set(trainindices(result2)) == Set(trainindices(result_high))
 end

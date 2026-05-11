@@ -29,11 +29,11 @@ import DataSplits: SplitInputError, SplitParameterError, SplitNotImplementedErro
   )
   train_idx2, test_idx2 = result2.train, result2.test
   @test length(train_idx2) + length(test_idx2) == length(y)
-  @test isempty(intersect(train_idx2, test_idx2))
+  @test is_disjoint(result2)
 
   result_spxy = partition(X, SPXYSplit(); target = y, train = 70, test = 30)
   @test Set(train_idx) == Set(result_spxy.train)
   @test Set(test_idx) == Set(result_spxy.test)
-  @test isempty(intersect(train_idx, test_idx))
+  @test is_disjoint(result)
   @test length(train_idx) + length(test_idx) == length(y)
 end
