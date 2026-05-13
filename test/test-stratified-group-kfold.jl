@@ -61,6 +61,20 @@ import DataSplits: SplitParameterError, SplitInputError
     end
   end
 
+  @testset "Rare class covered under heavy imbalance" begin
+    # 200 obs, 50 groups of 4. Class :b is 5% of total — under count-based
+    # scoring it gets drowned by :a and may not appear in every fold.
+    # With proportion-normalised scoring (counts / class_total) it should.
+    rng = MersenneTwister(7)
+    groups = repeat(1:50, inner = 4)
+    labels = shuffle(rng, vcat(fill(:a, 190), fill(:b, 10)))
+    cvs = partition(rand(2, 200), StratifiedGroupKFold(5);
+                    target = labels, groups = groups)
+    for f in folds(cvs)
+      @test count(==(:b), labels[f.test]) >= 1
+    end
+  end
+
   @testset "Reproducible with shuffle and rng" begin
     groups = repeat(1:10, inner = 3)
     labels = vcat(fill(1, 15), fill(2, 15))

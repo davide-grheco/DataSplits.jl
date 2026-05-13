@@ -26,11 +26,11 @@ properties of the same observations).
 
 For each group, compute its per-class count vector. Process groups
 one by one (largest first by default). For each group, assign it to
-the fold that **minimises the standard deviation of class counts
-across folds** after the assignment — i.e., the fold whose class
-distribution would deviate least from balanced after absorbing this
-group's contribution. This is the same greedy heuristic used by
-sklearn.
+the fold that **minimises the variance of per-class proportions
+across folds** after the assignment — each class's fold counts are
+normalised by its global total so rare and abundant classes
+contribute on the same scale. This is the same greedy heuristic
+used by sklearn (`y_counts_per_fold / y_distr`).
 
 # Notes
 - Each class needs at least `k` members **and** must appear in at
@@ -112,6 +112,13 @@ function _partition(
     group_class_counts[g] = cnt
   end
 
+  # Global total per class — used to normalise the scoring so rare and
+  # abundant classes contribute on the same scale (sklearn's y_distr).
+  class_total = zeros(Int, C)
+  for g in unique_groups
+    class_total .+= group_class_counts[g]
+  end
+
   # Process order: shuffle, or descending by ‖class_counts‖ for deterministic balancing.
   if alg.shuffle
     Random.shuffle!(rng, unique_groups)
@@ -120,7 +127,8 @@ function _partition(
   end
 
   # fold_class_counts[f, c] tracks running totals; pick the fold minimising
-  # std across folds of the post-assignment class counts (sklearn-style).
+  # the variance across folds of class *proportions* (counts / class_total),
+  # matching sklearn's `std(y_counts_per_fold / y_distr)` heuristic.
   fold_class_counts = zeros(Int, alg.k, C)
   fold_of = Dict{eltype(unique_groups),Int}()
   for g in unique_groups
@@ -130,10 +138,12 @@ function _partition(
     for f = 1:alg.k
       score = 0.0
       for c = 1:C
-        col_sum = 0
-        col_sumsq = 0
+        class_total[c] == 0 && continue
+        inv_total = 1.0 / class_total[c]
+        col_sum = 0.0
+        col_sumsq = 0.0
         for ff = 1:alg.k
-          v = fold_class_counts[ff, c] + (ff == f ? counts[c] : 0)
+          v = (fold_class_counts[ff, c] + (ff == f ? counts[c] : 0)) * inv_total
           col_sum += v
           col_sumsq += v * v
         end
