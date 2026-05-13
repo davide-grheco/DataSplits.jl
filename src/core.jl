@@ -633,7 +633,7 @@ and dispatch to a separate `partition` method.
 # Auxiliary slots
 
 - `target`: response/property vector (e.g. for `StratifiedKFold`).
-- `time`: temporal ordering vector (e.g. for `TimeSeriesCV`).
+- `time`: temporal ordering vector (e.g. for `TimeSeriesSplit`).
 - `groups`: group-membership vector (e.g. for `GroupKFold`).
 
 # Examples
