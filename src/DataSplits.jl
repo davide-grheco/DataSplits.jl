@@ -26,6 +26,7 @@ include("strategies/StratifiedKFold.jl")
 include("strategies/ShuffleSplit.jl")
 include("strategies/StratifiedShuffleSplit.jl")
 include("strategies/PredefinedSplit.jl")
+include("strategies/BlockedCV.jl")
 
 # Core API
 export partition
@@ -59,6 +60,7 @@ export GroupKFold, KFold, LeavePOut, LeaveOneOut, LeavePGroupsOut, LeaveOneGroup
 export StratifiedKFold
 export ShuffleSplit, StratifiedShuffleSplit
 export PredefinedSplit
+export BlockedCV
 
 # Target / time property
 export TargetPropertySplit, TargetPropertyHigh, TargetPropertyLow
