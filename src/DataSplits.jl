@@ -26,6 +26,7 @@ include("strategies/StratifiedKFold.jl")
 include("strategies/ShuffleSplit.jl")
 include("strategies/StratifiedShuffleSplit.jl")
 include("strategies/PredefinedSplit.jl")
+include("strategies/BootstrapSplit.jl")
 include("strategies/BlockedCV.jl")
 include("strategies/RepeatedKFold.jl")
 include("strategies/RepeatedStratifiedKFold.jl")
@@ -67,6 +68,7 @@ export GroupKFold, KFold, LeavePOut, LeaveOneOut, LeavePGroupsOut, LeaveOneGroup
 export StratifiedKFold, StratifiedGroupKFold
 export ShuffleSplit, StratifiedShuffleSplit
 export PredefinedSplit
+export BootstrapSplit
 export BlockedCV
 export RepeatedKFold, RepeatedStratifiedKFold
 
