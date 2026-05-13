@@ -109,7 +109,18 @@ function _partition(data, alg::TimeSeriesSplit; time, kwargs...)
     ),
   )
 
-  blocks_per_chunk = B ÷ (alg.k + 1)
+  # Distribute B blocks across k+1 chunks balancing the remainder across the
+  # first `B mod (k+1)` chunks (sklearn's `np.array_split` behaviour). Chunk
+  # sizes therefore differ by at most one block, instead of dumping the entire
+  # remainder into the last fold.
+  n_chunks = alg.k + 1
+  base, rem = divrem(B, n_chunks)
+  chunk_block_end = Vector{Int}(undef, n_chunks)
+  acc = 0
+  for c = 1:n_chunks
+    acc += base + (c <= rem ? 1 : 0)
+    chunk_block_end[c] = acc
+  end
 
   # Build the chronological order vector and the block→position offsets.
   order = Int[]
@@ -123,8 +134,8 @@ function _partition(data, alg::TimeSeriesSplit; time, kwargs...)
 
   folds = Vector{TrainTestSplit{Vector{Int}}}(undef, alg.k)
   for i = 1:alg.k
-    test_block_start = i * blocks_per_chunk + 1
-    test_block_end = i == alg.k ? B : (i + 1) * blocks_per_chunk
+    test_block_start = chunk_block_end[i] + 1
+    test_block_end = chunk_block_end[i+1]
     train_block_end = test_block_start - 1
 
     test_lo = block_offset[test_block_start] + 1

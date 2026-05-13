@@ -127,6 +127,19 @@ end
   @test_throws DataSplits.SplitInputError partition(X, TimeSeriesSplit(3); time = short)
 end
 
+@testset "TimeSeriesSplit balances remainder across chunks" begin
+  # 23 distinct timestamps, k=4 → 5 chunks. 23÷5 = 4 r 3, so the first 3
+  # chunks get 5 blocks and the last 2 get 4. Test cohorts should not differ
+  # by more than one block in size (sklearn's np.array_split behaviour).
+  ts = collect(1:23)
+  data = randn(2, length(ts))
+  cvs = partition(data, TimeSeriesSplit(4); time = ts)
+  test_sizes = [length(fold.test) for fold in cvs]
+  @test maximum(test_sizes) - minimum(test_sizes) <= 1
+  # And concretely: chunks 2..5 of sizes 5,5,4,4.
+  @test test_sizes == [5, 5, 4, 4]
+end
+
 @testset "TimeSeriesSplit gap may trim a block but never leaks across train/test" begin
   ts = repeat(1:12, inner = 3)
   data = randn(2, length(ts))
