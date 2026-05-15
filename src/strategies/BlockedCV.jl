@@ -56,19 +56,12 @@ consumes(::BlockedCV) = (:time,)
 fallback_from_data(::BlockedCV) = (:time,)
 
 function _partition(data, alg::BlockedCV; time, kwargs...)
-  alg.k >= 2 ||
-    throw(SplitParameterError("BlockedCV requires k ≥ 2, got k=$(alg.k)."))
+  alg.k >= 2 || throw(SplitParameterError("BlockedCV requires k ≥ 2, got k=$(alg.k)."))
   alg.gap >= 0 ||
     throw(SplitParameterError("BlockedCV requires gap ≥ 0, got gap=$(alg.gap)."))
 
   N = numobs(data)
-
-  # Group observations by identical timestamp (atomic time blocks).
-  date_to_indices = Dict{eltype(time),Vector{Int}}()
-  for (i, t) in enumerate(time)
-    push!(get!(date_to_indices, t, Int[]), i)
-  end
-  sorted_dates = sort!(collect(keys(date_to_indices)))
+  sorted_dates, order = groupsortperm(time)
   B = length(sorted_dates)
 
   alg.k <= B || throw(
@@ -77,25 +70,8 @@ function _partition(data, alg::BlockedCV; time, kwargs...)
     ),
   )
 
-  # Distribute the B blocks across k chunks balancing the remainder across
-  # the first `B mod k` chunks (np.array_split behaviour).
-  base, rem = divrem(B, alg.k)
-  chunk_block_end = Vector{Int}(undef, alg.k)
-  acc = 0
-  for c = 1:alg.k
-    acc += base + (c <= rem ? 1 : 0)
-    chunk_block_end[c] = acc
-  end
-
-  # Chronological order vector and block→position offsets.
-  order = Int[]
-  block_offset = Vector{Int}(undef, B + 1)
-  block_offset[1] = 0
-  for (b, d) in enumerate(sorted_dates)
-    inds = date_to_indices[d]
-    append!(order, inds)
-    block_offset[b+1] = block_offset[b] + length(inds)
-  end
+  chunk_block_end = distribute_blocks(B, alg.k)
+  block_offset = group_offsets(sorted_dates, order, time)
 
   result = Vector{TrainTestSplit{Vector{Int}}}(undef, alg.k)
   for i = 1:alg.k

@@ -118,3 +118,57 @@ Error thrown when a required split method or feature is not implemented.
 struct SplitNotImplementedError <: Exception
   msg::String
 end
+
+"""
+    groupsortperm(v) -> (sorted_keys, perm)
+
+Return the sorted unique values of `v` and a stable sort permutation of `v`.
+
+`perm` is a permutation of `1:length(v)` such that `v[perm]` is non-decreasing.
+`sorted_keys == unique(v[perm])`. Together, `sorted_keys` and `perm` partition
+every index in `1:length(v)` with no duplicates.
+"""
+function groupsortperm(v)
+  perm = sortperm(v, alg = MergeSort)
+  return unique(view(v, perm)), perm
+end
+
+"""
+    group_offsets(sorted_keys, perm, v) -> block_offset
+
+Compute block-boundary offsets for a grouped, sorted permutation.
+
+`block_offset[b]+1 : block_offset[b+1]` are the positions in `perm` (equivalently
+the slice of `v[perm]`) whose value equals `sorted_keys[b]`.
+`block_offset[1] == 0` and `block_offset[end] == length(perm)`.
+"""
+function group_offsets(sorted_keys, perm, v)
+  sorted_v = view(v, perm)
+  B = length(sorted_keys)
+  block_offset = Vector{Int}(undef, B + 1)
+  block_offset[1] = 0
+  for (b, k) in enumerate(sorted_keys)
+    block_offset[b+1] = searchsortedlast(sorted_v, k)
+  end
+  return block_offset
+end
+
+"""
+    distribute_blocks(B::Int, n_chunks::Int) -> chunk_block_end
+
+Distribute `B` contiguous blocks across `n_chunks` as evenly as possible
+(matching `numpy.array_split` semantics: the remainder is spread over the
+first `B mod n_chunks` chunks). Returns a vector of length `n_chunks` where
+`chunk_block_end[c]` is the index of the last block in chunk `c`.
+Chunk sizes differ by at most 1.
+"""
+function distribute_blocks(B::Int, n_chunks::Int)
+  base, rem = divrem(B, n_chunks)
+  chunk_block_end = Vector{Int}(undef, n_chunks)
+  acc = 0
+  for c = 1:n_chunks
+    acc += base + (c <= rem ? 1 : 0)
+    chunk_block_end[c] = acc
+  end
+  return chunk_block_end
+end

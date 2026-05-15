@@ -110,3 +110,247 @@ end
     return n_train + n_val + n_test == N && n_train >= 1 && n_val >= 1 && n_test >= 1
   end
 end
+# -----------------------------------------------------------------------
+# Helpers: groupsortperm, group_offsets, distribute_blocks
+# -----------------------------------------------------------------------
+
+import DataSplits: groupsortperm, group_offsets, distribute_blocks
+
+@testset "groupsortperm" begin
+  @testset "basic" begin
+    time = [3, 1, 2, 1, 3]
+    sorted_keys, perm = groupsortperm(time)
+
+    @test sorted_keys == [1, 2, 3]
+    @test issorted(time[perm])
+    @test sort(perm) == [1, 2, 3, 4, 5]
+    # stable: equal keys appear in original relative order
+    @test perm[1:2] == [2, 4]   # both obs with value 1, left-to-right
+    @test perm[3:3] == [3]
+    @test perm[4:5] == [1, 5]
+  end
+
+  @testset "all identical" begin
+    time = [:a, :a, :a]
+    sorted_keys, perm = groupsortperm(time)
+    @test sorted_keys == [:a]
+    @test sort(perm) == [1, 2, 3]
+  end
+
+  @testset "all unique" begin
+    time = [10, 20, 30]
+    sorted_keys, perm = groupsortperm(time)
+    @test sorted_keys == [10, 20, 30]
+    @test perm == [1, 2, 3]
+  end
+
+  @testset "reverse input" begin
+    time = [3, 2, 1]
+    sorted_keys, perm = groupsortperm(time)
+    @test sorted_keys == [1, 2, 3]
+    @test perm == [3, 2, 1]
+  end
+end
+
+const time_vec_gen = @composed function make_time_vec(n_distinct = Data.Integers(1, 30))
+  times = Int[]
+  for t = 1:n_distinct
+    reps = Data.produce!(Data.Integers(1, 6))
+    append!(times, fill(t, reps))
+  end
+  shuffle!(Xoshiro(42), times)
+  return times
+end
+
+@testset "groupsortperm (PBT)" begin
+  @check max_examples = 500 rng = Xoshiro(10) function groupsortperm_perm_is_permutation(
+    v = time_vec_gen,
+  )
+    N = length(v)
+    _, perm = groupsortperm(v)
+    sort(perm) == collect(1:N)
+  end
+
+  @check max_examples = 500 rng = Xoshiro(11) function groupsortperm_perm_sorts_v(
+    v = time_vec_gen,
+  )
+    _, perm = groupsortperm(v)
+    issorted(view(v, perm))
+  end
+
+  @check max_examples = 500 rng = Xoshiro(12) function groupsortperm_keys_are_sorted(
+    v = time_vec_gen,
+  )
+    sorted_keys, _ = groupsortperm(v)
+    issorted(sorted_keys)
+  end
+
+  @check max_examples = 500 rng = Xoshiro(13) function groupsortperm_key_count_equals_unique(
+    v = time_vec_gen,
+  )
+    sorted_keys, _ = groupsortperm(v)
+    length(sorted_keys) == length(unique(v))
+  end
+
+  @check max_examples = 500 rng = Xoshiro(14) function groupsortperm_keys_equal_sorted_unique(
+    v = time_vec_gen,
+  )
+    sorted_keys, _ = groupsortperm(v)
+    sorted_keys == sort(unique(v))
+  end
+end
+
+@testset "group_offsets" begin
+  @testset "basic" begin
+    time = [3, 1, 2, 1, 3]
+    sorted_keys, perm = groupsortperm(time)
+    off = group_offsets(sorted_keys, perm, time)
+
+    @test off == [0, 2, 3, 5]
+    @test off[1] == 0
+    @test off[end] == length(time)
+    @test issorted(off)
+    @test Set(perm[(off[1]+1):off[2]]) == Set([2, 4])   # key = 1
+    @test Set(perm[(off[2]+1):off[3]]) == Set([3])       # key = 2
+    @test Set(perm[(off[3]+1):off[4]]) == Set([1, 5])    # key = 3
+  end
+
+  @testset "single group" begin
+    time = [7, 7, 7]
+    sorted_keys, perm = groupsortperm(time)
+    off = group_offsets(sorted_keys, perm, time)
+    @test off == [0, 3]
+  end
+
+  @testset "all unique" begin
+    time = [5, 3, 1]
+    sorted_keys, perm = groupsortperm(time)
+    off = group_offsets(sorted_keys, perm, time)
+    @test off == [0, 1, 2, 3]
+    @test perm[1] == 3   # value 1 at original index 3
+    @test perm[2] == 2   # value 3 at original index 2
+    @test perm[3] == 1   # value 5 at original index 1
+  end
+end
+
+@testset "group_offsets (PBT)" begin
+  @check max_examples = 500 rng = Xoshiro(20) function group_offsets_start_zero_end_N(
+    v = time_vec_gen,
+  )
+    N = length(v)
+    sk, perm = groupsortperm(v)
+    off = group_offsets(sk, perm, v)
+    off[1] == 0 && off[end] == N
+  end
+
+  @check max_examples = 500 rng = Xoshiro(21) function group_offsets_are_sorted(
+    v = time_vec_gen,
+  )
+    sk, perm = groupsortperm(v)
+    off = group_offsets(sk, perm, v)
+    issorted(off)
+  end
+
+  @check max_examples = 500 rng = Xoshiro(22) function group_offsets_length_is_B_plus_1(
+    v = time_vec_gen,
+  )
+    sk, perm = groupsortperm(v)
+    off = group_offsets(sk, perm, v)
+    length(off) == length(sk) + 1
+  end
+
+  @check max_examples = 500 rng = Xoshiro(23) function group_offsets_each_block_has_correct_key(
+    v = time_vec_gen,
+  )
+    sk, perm = groupsortperm(v)
+    off = group_offsets(sk, perm, v)
+    all(enumerate(sk)) do (b, k)
+      all((off[b]+1):off[b+1]) do pos
+        v[perm[pos]] == k
+      end
+    end
+  end
+
+  @check max_examples = 500 rng = Xoshiro(24) function group_offsets_block_sizes_match_counts(
+    v = time_vec_gen,
+  )
+    sk, perm = groupsortperm(v)
+    off = group_offsets(sk, perm, v)
+    all(enumerate(sk)) do (b, k)
+      off[b+1] - off[b] == count(==(k), v)
+    end
+  end
+end
+
+# PBT generators for distribute_blocks
+const distribute_gen =
+  @composed function make_distribute_case(n_chunks = Data.Integers(1, 20))
+    B = Data.produce!(Data.Integers(n_chunks, n_chunks + 40))
+    return (B, n_chunks)
+  end
+
+@testset "distribute_blocks" begin
+  @testset "exact division" begin
+    ends = distribute_blocks(12, 4)
+    @test ends == [3, 6, 9, 12]
+  end
+
+  @testset "remainder distributed to early chunks" begin
+    ends = distribute_blocks(10, 3)
+    sizes = diff([0; ends])
+    @test sizes == [4, 3, 3]
+  end
+
+  @testset "single chunk" begin
+    @test distribute_blocks(7, 1) == [7]
+  end
+
+  @testset "B equals n_chunks" begin
+    ends = distribute_blocks(5, 5)
+    @test ends == [1, 2, 3, 4, 5]
+  end
+end
+
+@testset "distribute_blocks (PBT)" begin
+  @check max_examples = 500 rng = Xoshiro(30) function distribute_ends_at_B(
+    case = distribute_gen,
+  )
+    B, n_chunks = case
+    distribute_blocks(B, n_chunks)[end] == B
+  end
+
+  @check max_examples = 500 rng = Xoshiro(31) function distribute_is_strictly_increasing(
+    case = distribute_gen,
+  )
+    B, n_chunks = case
+    ends = distribute_blocks(B, n_chunks)
+    all(i -> ends[i] < ends[i+1], 1:(length(ends)-1))
+  end
+
+  @check max_examples = 500 rng = Xoshiro(32) function distribute_sizes_differ_by_at_most_one(
+    case = distribute_gen,
+  )
+    B, n_chunks = case
+    ends = distribute_blocks(B, n_chunks)
+    sizes = diff([0; ends])
+    maximum(sizes) - minimum(sizes) <= 1
+  end
+
+  @check max_examples = 500 rng = Xoshiro(33) function distribute_larger_chunks_come_first(
+    case = distribute_gen,
+  )
+    B, n_chunks = case
+    ends = distribute_blocks(B, n_chunks)
+    sizes = diff([0; ends])
+    issorted(sizes; rev = true)
+  end
+
+  @check max_examples = 500 rng = Xoshiro(34) function distribute_total_equals_B(
+    case = distribute_gen,
+  )
+    B, n_chunks = case
+    ends = distribute_blocks(B, n_chunks)
+    sizes = diff([0; ends])
+    sum(sizes) == B
+  end
+end
