@@ -78,15 +78,17 @@ function _partition(
     throw(SplitParameterError("StratifiedKFold requires bins ≥ 2, got bins=$(alg.bins)."))
 
   N = numobs(data)
-
   classes = _stratification_classes(target, alg.bins)
 
+  sorted_classes, class_perm = groupsortperm(classes)
+  class_off = group_offsets(sorted_classes, class_perm, classes)
+
   fold_test = [Int[] for _ = 1:alg.k]
-  for c in unique(classes)
-    members = findall(==(c), classes)
+  for b in eachindex(sorted_classes)
+    members = class_perm[(class_off[b]+1):class_off[b+1]]
     length(members) >= alg.k || throw(
       SplitParameterError(
-        "StratifiedKFold(k=$(alg.k)): class/bin $(repr(c)) has only $(length(members)) members; reduce k or bins.",
+        "StratifiedKFold(k=$(alg.k)): class/bin $(repr(sorted_classes[b])) has only $(length(members)) members; reduce k or bins.",
       ),
     )
     alg.shuffle && shuffle!(rng, members)

@@ -43,12 +43,14 @@ function _partition(
   rng = Random.default_rng(),
   kwargs...,
 )
-  cl_ids = unique(groups)
-  shuffle!(rng, cl_ids)
+  sorted_keys, perm = groupsortperm(groups)
+  off = group_offsets(sorted_keys, perm, groups)
+  n_groups = length(sorted_keys)
+  block_order = shuffle(rng, collect(1:n_groups))
   train_pos = Int[]
   test_pos = Int[]
-  for cid in cl_ids
-    idxs = findall(==(cid), groups)
+  for b in block_order
+    idxs = perm[(off[b]+1):off[b+1]]
     if length(train_pos) < n_train
       append!(train_pos, idxs)
     else

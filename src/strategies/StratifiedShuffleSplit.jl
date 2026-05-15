@@ -71,20 +71,21 @@ function _partition(
     ),
   )
   alg.bins >= 2 || throw(
-    SplitParameterError(
-      "StratifiedShuffleSplit requires bins ≥ 2, got bins=$(alg.bins).",
-    ),
+    SplitParameterError("StratifiedShuffleSplit requires bins ≥ 2, got bins=$(alg.bins)."),
   )
 
   N = numobs(data)
   classes = _stratification_classes(target, alg.bins)
 
-  unique_classes = unique(classes)
-  members_by_class = Dict(c => findall(==(c), classes) for c in unique_classes)
-  for (c, m) in members_by_class
-    length(m) >= 2 || throw(
+  sorted_classes, class_perm = groupsortperm(classes)
+  class_off = group_offsets(sorted_classes, class_perm, classes)
+  n_classes = length(sorted_classes)
+
+  for b = 1:n_classes
+    m_count = class_off[b+1] - class_off[b]
+    m_count >= 2 || throw(
       SplitParameterError(
-        "StratifiedShuffleSplit: class/bin $(repr(c)) has only $(length(m)) member(s); reduce `bins` or use a different target.",
+        "StratifiedShuffleSplit: class/bin $(repr(sorted_classes[b])) has only $m_count member(s); reduce `bins` or use a different target.",
       ),
     )
   end
@@ -97,11 +98,9 @@ function _partition(
     # can absorb rounding remainder and totals match n_train / n_test exactly.
     allocated_train = 0
     allocated_test = 0
-    classes_ordered = collect(unique_classes)
-    for (j, c) in enumerate(classes_ordered)
-      members = copy(members_by_class[c])
-      shuffle!(rng, members)
-      if j == length(classes_ordered)
+    for (j, b) in enumerate(1:n_classes)
+      members = shuffle(rng, class_perm[(class_off[b]+1):class_off[b+1]])
+      if j == n_classes
         n_train_c = n_train - allocated_train
         n_test_c = n_test - allocated_test
       else

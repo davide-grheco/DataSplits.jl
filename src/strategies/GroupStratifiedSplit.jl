@@ -127,8 +127,11 @@ function _partition(
 )
   N = numobs(data)
   frac = n_train / N
-  cl_ids = unique(groups)
-  idxs_by_cluster = Dict(cid => findall(==(cid), groups) for cid in cl_ids)
+  sorted_keys, perm = groupsortperm(groups)
+  off = group_offsets(sorted_keys, perm, groups)
+  n_groups = length(sorted_keys)
+  cl_ids = sorted_keys
+  idxs_by_cluster = Dict(sorted_keys[b] => perm[(off[b]+1):off[b+1]] for b = 1:n_groups)
   selected = if s.allocation == :equal
     _equal_allocation(cl_ids, idxs_by_cluster, s.n, rng)
   elseif s.allocation == :proportional
