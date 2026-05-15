@@ -62,9 +62,7 @@ function _partition(data, alg::KFold; rng = Random.default_rng(), kwargs...)
 
   result = Vector{TrainTestSplit{Vector{Int}}}(undef, alg.k)
   for f = 1:alg.k
-    test_set = Set(fold_test[f])
-    train_idx = [i for i in indices if !(i in test_set)]
-    result[f] = TrainTestSplit(train_idx, fold_test[f])
+    result[f] = TrainTestSplit(setdiff(indices, fold_test[f]), fold_test[f])
   end
   return CrossValidationSplit(result)
 end

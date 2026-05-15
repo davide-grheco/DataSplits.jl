@@ -75,9 +75,8 @@ function _partition(
   rng = Random.default_rng(),
   kwargs...,
 )
-  alg.k >= 2 || throw(
-    SplitParameterError("StratifiedGroupKFold requires k ≥ 2, got k=$(alg.k)."),
-  )
+  alg.k >= 2 ||
+    throw(SplitParameterError("StratifiedGroupKFold requires k ≥ 2, got k=$(alg.k)."))
   alg.bins >= 2 || throw(
     SplitParameterError("StratifiedGroupKFold requires bins ≥ 2, got bins=$(alg.bins)."),
   )
@@ -90,49 +89,46 @@ function _partition(
   C = length(unique_classes)
   class_index = Dict(c => i for (i, c) in enumerate(unique_classes))
 
-  # Per-group: indices and class counts.
-  group_to_indices = Dict{eltype(groups),Vector{Int}}()
-  for (i, g) in enumerate(groups)
-    push!(get!(group_to_indices, g, Int[]), i)
-  end
-  unique_groups = collect(keys(group_to_indices))
-  n_groups = length(unique_groups)
+  sorted_keys, perm = groupsortperm(groups)
+  off = group_offsets(sorted_keys, perm, groups)
+  n_groups = length(sorted_keys)
   alg.k <= n_groups || throw(
     SplitParameterError(
       "StratifiedGroupKFold(k=$(alg.k)) requires at least k unique groups; got $n_groups.",
     ),
   )
 
-  group_class_counts = Dict{eltype(unique_groups),Vector{Int}}()
-  for g in unique_groups
-    cnt = zeros(Int, C)
-    for i in group_to_indices[g]
-      cnt[class_index[classes[i]]] += 1
+  # Per-group class counts, indexed by block position b.
+  group_class_counts = [zeros(Int, C) for _ = 1:n_groups]
+  for b = 1:n_groups
+    cnt = group_class_counts[b]
+    for pos = (off[b]+1):off[b+1]
+      cnt[class_index[classes[perm[pos]]]] += 1
     end
-    group_class_counts[g] = cnt
   end
 
   # Global total per class — used to normalise the scoring so rare and
   # abundant classes contribute on the same scale (sklearn's y_distr).
   class_total = zeros(Int, C)
-  for g in unique_groups
-    class_total .+= group_class_counts[g]
+  for b = 1:n_groups
+    class_total .+= group_class_counts[b]
   end
 
   # Process order: shuffle, or descending by ‖class_counts‖ for deterministic balancing.
+  block_order = collect(1:n_groups)
   if alg.shuffle
-    Random.shuffle!(rng, unique_groups)
+    Random.shuffle!(rng, block_order)
   else
-    sort!(unique_groups; by = g -> -sum(abs2, group_class_counts[g]))
+    sort!(block_order; by = b -> -sum(abs2, group_class_counts[b]))
   end
 
   # fold_class_counts[f, c] tracks running totals; pick the fold minimising
   # the variance across folds of class *proportions* (counts / class_total),
   # matching sklearn's `std(y_counts_per_fold / y_distr)` heuristic.
   fold_class_counts = zeros(Int, alg.k, C)
-  fold_of = Dict{eltype(unique_groups),Int}()
-  for g in unique_groups
-    counts = group_class_counts[g]
+  fold_of_block = Vector{Int}(undef, n_groups)
+  for b in block_order
+    counts = group_class_counts[b]
     best_f = 1
     best_score = Inf
     for f = 1:alg.k
@@ -155,20 +151,18 @@ function _partition(
         best_f = f
       end
     end
-    fold_of[g] = best_f
+    fold_of_block[b] = best_f
     @views fold_class_counts[best_f, :] .+= counts
   end
 
   fold_test = [Int[] for _ = 1:alg.k]
-  for i = 1:N
-    push!(fold_test[fold_of[groups[i]]], i)
+  for b = 1:n_groups
+    append!(fold_test[fold_of_block[b]], perm[(off[b]+1):off[b+1]])
   end
 
   folds_out = Vector{TrainTestSplit{Vector{Int}}}(undef, alg.k)
   for f = 1:alg.k
-    test_set = Set(fold_test[f])
-    train_idx = [i for i = 1:N if !(i in test_set)]
-    folds_out[f] = TrainTestSplit(train_idx, fold_test[f])
+    folds_out[f] = TrainTestSplit(setdiff(1:N, fold_test[f]), fold_test[f])
   end
   return CrossValidationSplit(folds_out)
 end
