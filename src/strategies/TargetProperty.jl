@@ -47,7 +47,7 @@ function _partition(
   target,
   n_train,
   n_test,
-  rng = Random.GLOBAL_RNG,
+  rng = Random.default_rng(),
   kwargs...,
 )
   descending = s.order in (:desc, :high, :largest, :max, :maximum)

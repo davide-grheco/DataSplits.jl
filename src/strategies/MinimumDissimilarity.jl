@@ -46,7 +46,7 @@ function _partition(
   s::LazyMinimumDissimilaritySplit;
   n_train,
   n_test,
-  rng = Random.GLOBAL_RNG,
+  rng = Random.default_rng(),
   kwargs...,
 )
   _partition(

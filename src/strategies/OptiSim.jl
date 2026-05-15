@@ -37,7 +37,14 @@ end
 consumes(::OptiSimSplit) = (:data,)
 fallback_from_data(::OptiSimSplit) = ()
 
-function _partition(X, s::OptiSimSplit; n_train, n_test, rng = Random.GLOBAL_RNG, kwargs...)
+function _partition(
+  X,
+  s::OptiSimSplit;
+  n_train,
+  n_test,
+  rng = Random.default_rng(),
+  kwargs...,
+)
   N = numobs(X)
   D = distance_matrix(X, s.metric)
   selected_positions =
@@ -52,7 +59,7 @@ function optisim(
   selected_samples::Int = 10,
   max_subsample_size::Int = 0,
   distance_cutoff::Real = 0.35;
-  rng = Random.GLOBAL_RNG,
+  rng = Random.default_rng(),
 )
   N = size(D, 1)
   M = min(selected_samples, N)

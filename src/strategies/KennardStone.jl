@@ -35,7 +35,7 @@ function _partition(
   s::KennardStoneSplit;
   n_train,
   n_test,
-  rng = Random.GLOBAL_RNG,
+  rng = Random.default_rng(),
   kwargs...,
 )
   D = distance_matrix(data, s.metric)
@@ -48,7 +48,7 @@ function _partition(
   s::KennardStoneSplit;
   n_train,
   n_test,
-  rng = Random.GLOBAL_RNG,
+  rng = Random.default_rng(),
   kwargs...,
 )
   _partition(stack(data), s; n_train, n_test, rng)
