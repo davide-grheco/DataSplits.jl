@@ -74,7 +74,7 @@ function _partition(
   target,
   n_train,
   n_test,
-  rng = Random.GLOBAL_RNG,
+  rng = Random.default_rng(),
   kwargs...,
 )
   DX = _norm_pairwise(X, s.metric_X)
@@ -90,7 +90,7 @@ function _partition(
   target,
   n_train,
   n_test,
-  rng = Random.GLOBAL_RNG,
+  rng = Random.default_rng(),
   kwargs...,
 )
   metric_X = s.metric === nothing ? Mahalanobis(cov(X; dims = 2)) : s.metric

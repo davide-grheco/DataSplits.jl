@@ -113,7 +113,7 @@ function _partition(
   target,
   n_train,
   n_test,
-  rng = Random.GLOBAL_RNG,
+  rng = Random.default_rng(),
   kwargs...,
 )
   max_X, max_y = _find_max_distance_XY(X, target, s.metric_X, s.metric_y)
@@ -136,7 +136,7 @@ function _partition(
   target,
   n_train,
   n_test,
-  rng = Random.GLOBAL_RNG,
+  rng = Random.default_rng(),
   kwargs...,
 )
   metric_X = s.metric_X === nothing ? Mahalanobis(cov(X; dims = 2)) : s.metric_X

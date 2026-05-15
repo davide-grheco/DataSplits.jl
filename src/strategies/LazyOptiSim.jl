@@ -38,7 +38,7 @@ function _partition(
   s::LazyOptiSimSplit;
   n_train,
   n_test,
-  rng = Random.GLOBAL_RNG,
+  rng = Random.default_rng(),
   kwargs...,
 )
   N = numobs(X)

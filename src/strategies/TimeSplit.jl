@@ -51,7 +51,7 @@ function _partition(
   time,
   n_train,
   n_test,
-  rng = Random.GLOBAL_RNG,
+  rng = Random.default_rng(),
   kwargs...,
 )
   sorted_keys, order = groupsortperm(time)

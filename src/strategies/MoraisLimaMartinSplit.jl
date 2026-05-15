@@ -33,7 +33,7 @@ function _partition(
   s::MoraisLimaMartinSplit;
   n_train,
   n_test,
-  rng = Random.GLOBAL_RNG,
+  rng = Random.default_rng(),
   kwargs...,
 )
   ks = KennardStoneSplit(s.metric)

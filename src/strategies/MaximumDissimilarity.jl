@@ -34,7 +34,7 @@ function _partition(
   s::MaximumDissimilaritySplit;
   n_train,
   n_test,
-  rng = Random.GLOBAL_RNG,
+  rng = Random.default_rng(),
   kwargs...,
 )
   N = numobs(X)
@@ -79,7 +79,7 @@ function _partition(
   s::LazyMaximumDissimilaritySplit;
   n_train,
   n_test,
-  rng = Random.GLOBAL_RNG,
+  rng = Random.default_rng(),
   kwargs...,
 )
   N = numobs(X)
