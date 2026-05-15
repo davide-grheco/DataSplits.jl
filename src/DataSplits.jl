@@ -39,7 +39,7 @@ export partition
 export AbstractSplitResult, AbstractSplitStrategy, AbstractCVStrategy
 export AbstractResamplingCVStrategy
 export splitdata, splitview
-export trainindices, testindices, valindices, folds
+export trainindices, testindices, valindices, folds, rowpairs
 
 # Trait interface (for custom strategy authors)
 export consumes, fallback_from_data
@@ -62,7 +62,8 @@ export RandomSplit
 export GroupShuffleSplit, GroupStratifiedSplit
 
 # Cross-validation
-export GroupKFold, KFold, LeavePOut, LeaveOneOut, LeavePGroupsOut, LeaveOneGroupOut, TimeSeriesSplit
+export GroupKFold,
+  KFold, LeavePOut, LeaveOneOut, LeavePGroupsOut, LeaveOneGroupOut, TimeSeriesSplit
 export StratifiedKFold
 export GroupKFold, KFold, LeavePOut, LeaveOneOut, LeavePGroupsOut, LeaveOneGroupOut
 export StratifiedKFold, StratifiedGroupKFold

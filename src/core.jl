@@ -159,6 +159,22 @@ Return the individual fold results from a cross-validation split.
 """
 folds(res::CrossValidationSplit) = res.folds
 
+"""
+    rowpairs(res::CrossValidationSplit) -> Vector{Tuple{Vector{Int}, Vector{Int}}}
+
+Convert a cross-validation split into the `(train_indices, test_indices)` pair
+format accepted by MLJ's `evaluate!` `resampling=` keyword.
+
+# Example
+```julia
+cvs = partition(X, StratifiedKFold(5); target = y)
+mach = machine(model, X, y)
+evaluate!(mach; resampling = rowpairs(cvs), measure = accuracy)
+```
+"""
+rowpairs(res::CrossValidationSplit) =
+  [(trainindices(fold), testindices(fold)) for fold in folds(res)]
+
 
 # ---------------------------------------------------------------------------
 # Data extraction
