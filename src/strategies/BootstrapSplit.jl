@@ -56,11 +56,7 @@ function _partition(data, alg::BootstrapSplit; rng = Random.default_rng(), kwarg
   result = Vector{TrainTestSplit{Vector{Int}}}(undef, alg.n_splits)
   for i = 1:alg.n_splits
     train_idx = rand(rng, 1:N, N)
-    in_bag = falses(N)
-    for j in train_idx
-      in_bag[j] = true
-    end
-    test_idx = findall(!, in_bag)
+    test_idx = setdiff(1:N, train_idx)
     !isempty(test_idx) || throw(
       SplitParameterError(
         "BootstrapSplit: resample $i drew every observation; out-of-bag test cohort is empty. Try a different rng or a larger N.",
