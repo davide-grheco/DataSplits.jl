@@ -39,6 +39,8 @@ export partition
 export AbstractSplitResult, AbstractSplitStrategy, AbstractCVStrategy
 export AbstractResamplingCVStrategy
 export splitdata, splitview
+export trainview, testview, valview
+export traindata, testdata, valdata
 export trainindices, testindices, valindices, folds, rowpairs
 
 # Trait interface (for custom strategy authors)
