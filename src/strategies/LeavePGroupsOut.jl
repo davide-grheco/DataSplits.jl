@@ -56,36 +56,20 @@ function _partition(data, alg::LeavePGroupsOut; groups, kwargs...)
     throw(SplitParameterError("LeavePGroupsOut requires p ≥ 1, got p=$(alg.p)."))
 
   N = numobs(data)
-
-  group_to_indices = Dict{eltype(groups),Vector{Int}}()
-  group_order = eltype(groups)[]
-  for (i, g) in enumerate(groups)
-    if !haskey(group_to_indices, g)
-      push!(group_order, g)
-      group_to_indices[g] = Int[]
-    end
-    push!(group_to_indices[g], i)
-  end
-
-  n_groups = length(group_order)
+  sorted_keys, perm = groupsortperm(groups)
+  off = group_offsets(sorted_keys, perm, groups)
+  n_groups = length(sorted_keys)
   alg.p < n_groups || throw(
     SplitParameterError(
       "LeavePGroupsOut(p=$(alg.p)) requires p < n_groups; got n_groups=$n_groups (would leave the train cohort empty).",
     ),
   )
 
-  folds = map(combinations(group_order, alg.p)) do test_groups_combo
-    test_groups = Set(test_groups_combo)
-    test_idx = Int[]
-    train_idx = Int[]
-    for i = 1:N
-      if groups[i] in test_groups
-        push!(test_idx, i)
-      else
-        push!(train_idx, i)
-      end
-    end
-    TrainTestSplit(train_idx, test_idx)
+  block_order = [searchsortedfirst(sorted_keys, g) for g in unique(groups)]
+
+  folds = map(combinations(block_order, alg.p)) do test_blocks
+    test_idx = mapreduce(b -> perm[(off[b]+1):off[b+1]], vcat, test_blocks)
+    TrainTestSplit(setdiff(1:N, test_idx), test_idx)
   end
   return CrossValidationSplit(folds)
 end

@@ -41,9 +41,8 @@ function _partition(data, alg::LeavePOut; kwargs...)
     SplitParameterError("LeavePOut(p=$(alg.p)) requires p < n observations; got n=$N."),
   )
 
-  all_indices = collect(1:N)
-  result = map(combinations(all_indices, alg.p)) do test_idx
-    TrainTestSplit(setdiff(all_indices, test_idx), collect(test_idx))
+  result = map(combinations(1:N, alg.p)) do test_idx
+    TrainTestSplit(setdiff(1:N, test_idx), test_idx)
   end
 
   return CrossValidationSplit(result)
