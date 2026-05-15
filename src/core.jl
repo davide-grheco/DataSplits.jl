@@ -177,6 +177,87 @@ rowpairs(res::CrossValidationSplit) =
 
 
 # ---------------------------------------------------------------------------
+# Single-cohort, multi-source extraction
+# ---------------------------------------------------------------------------
+
+_co_views(idxs, data) = obsview(data, idxs)
+_co_views(idxs, d1, d2, rest...) = map(d -> obsview(d, idxs), (d1, d2, rest...))
+
+_co_data(idxs, data) = getobs(data, idxs)
+_co_data(idxs, d1, d2, rest...) = map(d -> getobs(d, idxs), (d1, d2, rest...))
+
+"""
+    trainview(res, data...)
+    testview(res, data...)
+    valview(res, data...)
+
+Return lazy views of the requested cohort for one or more data sources.
+
+When called with a **single** data source, returns the view directly.
+When called with **two or more**, returns a `Tuple` of views — suitable for
+passing directly to `Flux.DataLoader` or similar.
+
+`valview` is only defined for `TrainValTestSplit`.
+
+For `CrossValidationSplit`, each function returns a `Vector` (one element per fold).
+
+# Examples
+```julia
+# Single source
+X_train = trainview(split, X)
+X_test  = testview(split, X)
+
+# Multiple sources — tuple destructures naturally
+X_train, y_train = trainview(split, X, y)
+X_test,  y_test  = testview(split, X, y)
+
+# Flux DataLoader — tuple passed directly
+loader = Flux.DataLoader(trainview(split, X, y); batchsize = 64, shuffle = true)
+
+# Train/val/test
+X_train, y_train = trainview(split3, X, y)
+X_val,   y_val   = valview(split3,   X, y)
+X_test,  y_test  = testview(split3,  X, y)
+
+# Cross-validation
+for (X_tr, y_tr) in trainview(cvs, X, y)
+    loader = Flux.DataLoader((X_tr, y_tr); batchsize = 64)
+    # ...
+end
+```
+"""
+trainview(r::TrainTestSplit, data...) = _co_views(r.train, data...)
+testview(r::TrainTestSplit, data...) = _co_views(r.test, data...)
+
+trainview(r::TrainValTestSplit, data...) = _co_views(r.train, data...)
+valview(r::TrainValTestSplit, data...) = _co_views(r.val, data...)
+testview(r::TrainValTestSplit, data...) = _co_views(r.test, data...)
+
+trainview(r::CrossValidationSplit, data...) =
+  [trainview(fold, data...) for fold in folds(r)]
+testview(r::CrossValidationSplit, data...) = [testview(fold, data...) for fold in folds(r)]
+
+"""
+    traindata(res, data...)
+    testdata(res, data...)
+    valdata(res, data...)
+
+Like [`trainview`](@ref) / [`testview`](@ref) / [`valview`](@ref) but materialises
+copies via `getobs` rather than returning lazy views.
+"""
+traindata(r::TrainTestSplit, data...) = _co_data(r.train, data...)
+testdata(r::TrainTestSplit, data...) = _co_data(r.test, data...)
+
+traindata(r::TrainValTestSplit, data...) = _co_data(r.train, data...)
+valdata(r::TrainValTestSplit, data...) = _co_data(r.val, data...)
+testdata(r::TrainValTestSplit, data...) = _co_data(r.test, data...)
+
+traindata(r::CrossValidationSplit, data...) =
+  [traindata(fold, data...) for fold in folds(r)]
+testdata(r::CrossValidationSplit, data...) = [testdata(fold, data...) for fold in folds(r)]
+
+
+# ---------------------------------------------------------------------------
 # Data extraction
 # ---------------------------------------------------------------------------
 
