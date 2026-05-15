@@ -73,3 +73,20 @@ end
     @test X_test == X[:, folds_vec[i].test]
   end
 end
+@testset "rowpairs" begin
+  folds_vec = [
+    TrainTestSplit([1, 2, 3], [4, 5]),
+    TrainTestSplit([4, 5, 1], [2, 3]),
+    TrainTestSplit([2, 3, 4], [1, 5]),
+  ]
+  cvs = CrossValidationSplit(folds_vec)
+  pairs = rowpairs(cvs)
+
+  @test pairs isa Vector
+  @test length(pairs) == 3
+  @test all(p -> p isa Tuple{Vector{Int},Vector{Int}}, pairs)
+  for (i, (tr, te)) in enumerate(pairs)
+    @test tr == folds_vec[i].train
+    @test te == folds_vec[i].test
+  end
+end
