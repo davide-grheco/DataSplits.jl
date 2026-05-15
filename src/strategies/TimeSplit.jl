@@ -54,18 +54,15 @@ function _partition(
   rng = Random.GLOBAL_RNG,
   kwargs...,
 )
-  date_to_indices = Dict{eltype(time),Vector{Int}}()
-  for (i, d) in enumerate(time)
-    push!(get!(date_to_indices, d, Int[]), i)
-  end
-  dates = collect(keys(date_to_indices))
+  sorted_keys, order = groupsortperm(time)
+  block_offset = group_offsets(sorted_keys, order, time)
   descending = s.order in (:desc, :newest, :latest, :max, :maximum)
-  sorted_dates = sort(dates; rev = descending)
+  block_range = descending ? (length(sorted_keys):-1:1) : (1:length(sorted_keys))
   total = 0
   train_idx = Int[]
   test_idx = Int[]
-  for d in sorted_dates
-    inds = date_to_indices[d]
+  for b in block_range
+    inds = order[(block_offset[b]+1):block_offset[b+1]]
     if total < n_train
       append!(train_idx, inds)
       total += length(inds)

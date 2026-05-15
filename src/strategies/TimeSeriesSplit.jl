@@ -95,12 +95,7 @@ function _partition(data, alg::TimeSeriesSplit; time, kwargs...)
     ),
   )
 
-  # Group observations by identical timestamp (atomic time blocks).
-  date_to_indices = Dict{eltype(time),Vector{Int}}()
-  for (i, t) in enumerate(time)
-    push!(get!(date_to_indices, t, Int[]), i)
-  end
-  sorted_dates = sort!(collect(keys(date_to_indices)))
+  sorted_dates, order = groupsortperm(time)
   B = length(sorted_dates)
 
   alg.k + 1 <= B || throw(
@@ -109,28 +104,9 @@ function _partition(data, alg::TimeSeriesSplit; time, kwargs...)
     ),
   )
 
-  # Distribute B blocks across k+1 chunks balancing the remainder across the
-  # first `B mod (k+1)` chunks (sklearn's `np.array_split` behaviour). Chunk
-  # sizes therefore differ by at most one block, instead of dumping the entire
-  # remainder into the last fold.
   n_chunks = alg.k + 1
-  base, rem = divrem(B, n_chunks)
-  chunk_block_end = Vector{Int}(undef, n_chunks)
-  acc = 0
-  for c = 1:n_chunks
-    acc += base + (c <= rem ? 1 : 0)
-    chunk_block_end[c] = acc
-  end
-
-  # Build the chronological order vector and the block→position offsets.
-  order = Int[]
-  block_offset = Vector{Int}(undef, B + 1)
-  block_offset[1] = 0
-  for (b, d) in enumerate(sorted_dates)
-    inds = date_to_indices[d]
-    append!(order, inds)
-    block_offset[b+1] = block_offset[b] + length(inds)
-  end
+  chunk_block_end = distribute_blocks(B, n_chunks)
+  block_offset = group_offsets(sorted_dates, order, time)
 
   folds = Vector{TrainTestSplit{Vector{Int}}}(undef, alg.k)
   for i = 1:alg.k
