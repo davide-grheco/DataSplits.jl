@@ -160,10 +160,12 @@ Return the individual fold results from a cross-validation split.
 folds(res::CrossValidationSplit) = res.folds
 
 """
-    rowpairs(res::CrossValidationSplit) -> Vector{Tuple{Vector{Int}, Vector{Int}}}
+    rowpairs(res) -> Vector{Tuple{Vector{Int}, Vector{Int}}}
 
 Convert a cross-validation split into the `(train_indices, test_indices)` pair
 format accepted by MLJ's `evaluate!` `resampling=` keyword.
+
+When used on TrainValTestSplit it returns (train, val)
 
 # Example
 ```julia
@@ -174,6 +176,20 @@ evaluate!(mach; resampling = rowpairs(cvs), measure = accuracy)
 """
 rowpairs(res::CrossValidationSplit) =
   [(trainindices(fold), testindices(fold)) for fold in folds(res)]
+
+rowpairs(res::TrainTestSplit) = [(trainindices(res), testindices(res))]
+
+rowpairs(res::TrainValTestSplit) = [(trainindices(res), valindices(res))]
+
+"""
+    rowpairs(data, alg::AbstractSplitStrategy; kwargs...)
+
+Convenience wrapper equivalent to:
+
+    rowpairs(partition(data, alg; kwargs...))
+"""
+rowpairs(data, alg::AbstractSplitStrategy; kwargs...) =
+  rowpairs(partition(data, alg; kwargs...))
 
 
 # ---------------------------------------------------------------------------
