@@ -55,43 +55,38 @@ function _partition(data, alg::GroupKFold; groups, rng = Random.default_rng(), k
   alg.k >= 2 || throw(SplitParameterError("GroupKFold requires k ≥ 2, got k=$(alg.k)."))
 
   N = numobs(data)
-
-  group_to_indices = Dict{eltype(groups),Vector{Int}}()
-  for (i, g) in enumerate(groups)
-    push!(get!(group_to_indices, g, Int[]), i)
-  end
-  unique_groups = collect(keys(group_to_indices))
-  n_groups = length(unique_groups)
+  sorted_keys, perm = groupsortperm(groups)
+  off = group_offsets(sorted_keys, perm, groups)
+  n_groups = length(sorted_keys)
   alg.k <= n_groups || throw(
     SplitParameterError(
       "GroupKFold(k=$(alg.k)) requires at least k unique groups; got $n_groups.",
     ),
   )
 
+  block_order = collect(1:n_groups)
   if alg.shuffle
-    Random.shuffle!(rng, unique_groups)
+    Random.shuffle!(rng, block_order)
   else
-    sort!(unique_groups; by = g -> -length(group_to_indices[g]))
+    sort!(block_order; by = b -> -(off[b+1] - off[b]))
   end
 
-  fold_of = Dict{eltype(unique_groups),Int}()
+  fold_of_block = Vector{Int}(undef, n_groups)
   fold_counts = zeros(Int, alg.k)
-  for g in unique_groups
+  for b in block_order
     f = argmin(fold_counts)
-    fold_of[g] = f
-    fold_counts[f] += length(group_to_indices[g])
+    fold_of_block[b] = f
+    fold_counts[f] += off[b+1] - off[b]
   end
 
   fold_test = [Int[] for _ = 1:alg.k]
-  for i = 1:N
-    push!(fold_test[fold_of[groups[i]]], i)
+  for b = 1:n_groups
+    append!(fold_test[fold_of_block[b]], perm[(off[b]+1):off[b+1]])
   end
 
   folds = Vector{TrainTestSplit{Vector{Int}}}(undef, alg.k)
   for f = 1:alg.k
-    test_set = Set(fold_test[f])
-    train_idx = [i for i = 1:N if !(i in test_set)]
-    folds[f] = TrainTestSplit(train_idx, fold_test[f])
+    folds[f] = TrainTestSplit(setdiff(1:N, fold_test[f]), fold_test[f])
   end
   return CrossValidationSplit(folds)
 end

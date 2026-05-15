@@ -65,7 +65,13 @@ StratifiedKFold(k::Integer; bins::Integer = 10, shuffle::Bool = false) =
 consumes(::StratifiedKFold) = (:target,)
 fallback_from_data(::StratifiedKFold) = (:target,)
 
-function _partition(data, alg::StratifiedKFold; target, rng = Random.default_rng(), kwargs...)
+function _partition(
+  data,
+  alg::StratifiedKFold;
+  target,
+  rng = Random.default_rng(),
+  kwargs...,
+)
   alg.k >= 2 ||
     throw(SplitParameterError("StratifiedKFold requires k ≥ 2, got k=$(alg.k)."))
   alg.bins >= 2 ||
@@ -92,9 +98,7 @@ function _partition(data, alg::StratifiedKFold; target, rng = Random.default_rng
 
   result = Vector{TrainTestSplit{Vector{Int}}}(undef, alg.k)
   for f = 1:alg.k
-    test_set = Set(fold_test[f])
-    train_idx = [i for i = 1:N if !(i in test_set)]
-    result[f] = TrainTestSplit(train_idx, fold_test[f])
+    result[f] = TrainTestSplit(setdiff(1:N, fold_test[f]), fold_test[f])
   end
   return CrossValidationSplit(result)
 end
