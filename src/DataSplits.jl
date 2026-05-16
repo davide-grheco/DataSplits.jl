@@ -32,6 +32,7 @@ include("strategies/RepeatedKFold.jl")
 include("strategies/RepeatedStratifiedKFold.jl")
 include("strategies/TimeSeriesSplit.jl")
 include("strategies/StratifiedGroupKFold.jl")
+include("strategies/GroupShuffleSplitCV.jl")
 
 
 # Core API
@@ -69,7 +70,7 @@ export GroupKFold,
 export StratifiedKFold
 export GroupKFold, KFold, LeavePOut, LeaveOneOut, LeavePGroupsOut, LeaveOneGroupOut
 export StratifiedKFold, StratifiedGroupKFold
-export ShuffleSplit, StratifiedShuffleSplit
+export ShuffleSplit, StratifiedShuffleSplit, GroupShuffleSplitCV
 export PredefinedSplit
 export BootstrapSplit
 export BlockedCV
