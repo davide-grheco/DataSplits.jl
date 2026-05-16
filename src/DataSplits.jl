@@ -32,6 +32,7 @@ include("strategies/RepeatedKFold.jl")
 include("strategies/RepeatedStratifiedKFold.jl")
 include("strategies/TimeSeriesSplit.jl")
 include("strategies/StratifiedGroupKFold.jl")
+include("strategies/NestedCV.jl")
 
 
 # Core API
@@ -73,6 +74,7 @@ export ShuffleSplit, StratifiedShuffleSplit
 export PredefinedSplit
 export BootstrapSplit
 export BlockedCV
+export NestedCV, NestedFold, innerfolds
 export RepeatedKFold, RepeatedStratifiedKFold
 
 # Target / time property
