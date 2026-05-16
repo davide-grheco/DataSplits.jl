@@ -4,130 +4,143 @@ CurrentModule = DataSplits
 
 # Core API Reference
 
-**Note:** DataSplits expects data matrices to follow the Julia ML convention: **columns are samples, rows are features**. All examples and API references below assume this convention. If you have data with samples as rows, transpose it before splitting (e.g., use `X'`).
+DataSplits expects matrices to follow the Julia ML convention: **columns are samples, rows are features**. Transpose row-major data before passing it in. For Tables.jl inputs rows are samples — the conversion to F×N is handled internally where required.
 
-For custom data types, implement `Base.length` (number of samples) and `Base.getindex(data, i)` (returning the i-th sample) as described in the [MLUtils documentation](https://juliaml.github.io/MLUtils.jl/). This ensures compatibility with all DataSplits algorithms and utilities.
+All split strategies return indices in `1:N`. Materialise subsets through [`splitdata`](@ref) / [`splitview`](@ref) (or the cohort-specific accessors below) rather than indexing directly.
 
-All split strategies in DataSplits return indices in the range `1:N` (where `N` is the number of samples). For non-standard arrays or custom containers, always use `getobs(X, indices)` to access the split data, as this will correctly handle any custom indexing or axes.
-
-## split
+## `partition`
 
 ```julia
-split(data, strategy; rng)
+partition(data, alg::AbstractSplitStrategy;
+          train, test,
+          target=nothing, time=nothing, groups=nothing,
+          rng=Random.default_rng()) -> TrainTestSplit
+
+partition(data, test_alg, val_alg;
+          train, validation, test,
+          target=nothing, time=nothing, groups=nothing,
+          rng=Random.default_rng()) -> TrainValTestSplit
+
+partition(data, alg::AbstractCVStrategy;
+          target=nothing, time=nothing, groups=nothing,
+          rng=Random.default_rng()) -> CrossValidationSplit
+
+partition(data, alg::AbstractResamplingCVStrategy;
+          train, test,
+          target=nothing, time=nothing, groups=nothing,
+          rng=Random.default_rng()) -> CrossValidationSplit
 ```
 
-Dispatches to `strategy._split`. Returns a `SplitResult` object representing the split.
+The 2-cohort form returns a [`TrainTestSplit`](@ref). The 3-cohort form uses `test_alg` to separate the test cohort from the rest, then `val_alg` to separate the validation cohort from the remaining train pool, and returns a [`TrainValTestSplit`](@ref). The CV forms return a [`CrossValidationSplit`](@ref) wrapping one fold per element.
 
-## SplitResult API
+Cohort sizes accept either positive integers (summing to `N` or to `100` as percentages) or `(0, 1)` fractions summing to `1.0`.
 
-The result of a split is always a subtype of the abstract type `SplitResult`. This API provides a structured, type-safe way to represent train/test (and validation) splits, as well as cross-validation folds.
-
-### Abstract Type
+## Strategy types
 
 ```julia
-abstract type SplitResult end
+abstract type AbstractSplitStrategy end
+abstract type AbstractCVStrategy <: AbstractSplitStrategy end
+abstract type AbstractResamplingCVStrategy <: AbstractCVStrategy end
 ```
 
-### Concrete Subtypes
+Dispatch on these governs the `partition` method called:
 
-#### TrainTestSplit
+- [`AbstractSplitStrategy`](@ref) — single-pass strategies, called with `train`/`test` (or `train`/`validation`/`test` in the 3-cohort form).
+- [`AbstractCVStrategy`](@ref) — CV strategies whose fold sizes are fixed by the strategy itself (`k`, `n_splits`). Called without `train`/`test`.
+- [`AbstractResamplingCVStrategy`](@ref) — CV strategies whose folds are independent random splits sized by the caller. Called with `train`/`test`.
+
+## Result types
 
 ```julia
-struct TrainTestSplit{I} <: SplitResult
+struct TrainTestSplit{I} <: AbstractSplitResult
     train::I
     test::I
 end
-```
 
-- `train`: indices of training samples
-- `test`: indices of test samples
-
-#### TrainValTestSplit
-
-```julia
-struct TrainValTestSplit{I} <: SplitResult
+struct TrainValTestSplit{I} <: AbstractSplitResult
     train::I
     val::I
     test::I
 end
-```
 
-- `train`: indices of training samples
-- `val`: indices of validation samples
-- `test`: indices of test samples
-
-#### CrossValidationSplit
-
-```julia
-struct CrossValidationSplit{T<:SplitResult} <: SplitResult
+struct CrossValidationSplit{T<:AbstractSplitResult} <: AbstractSplitResult
     folds::Vector{T}
 end
 ```
 
-- `folds`: a vector of `TrainTestSplit` or `TrainValTestSplit` objects, one per fold
+All three iterate naturally — `train, test = res`, `train, val, test = res3`, `for fold in cvs`. `CrossValidationSplit` additionally supports `cvs[i]`, `cvs[range]`, `first(cvs)`, `last(cvs)`, `length(cvs)`.
 
-## splitdata
+Strategies should never expose these fields directly — read indices via the accessors below.
 
-```julia
-splitdata(result::SplitResult, X)
-```
-
-Given a `SplitResult` and data `X`, returns the corresponding splits as a tuple. For example:
-
-- For `TrainTestSplit`, returns `(X_train, X_test)`
-- For `TrainValTestSplit`, returns `(X_train, X_val, X_test)`
-- For `CrossValidationSplit`, returns a vector of tuples, one per fold
-
-## Example Usage
+## Result accessors
 
 ```julia
-using DataSplits
-
-result = split(X, KennardStoneSplit(0.8))
-X_train, X_test = splitdata(result, X)
-
-result = split(X, ClusterStratifiedSplit(clusters, :equal; n=4, frac=0.7))
-X_train, X_test = splitdata(result, X)
-
-# Cross-validation
-cv_result = split(X, SomeCVSplit(...))
-for (X_train, X_test) in splitdata(cv_result, X)
-    # ...
-end
+trainindices(res) -> indices
+testindices(res)  -> indices
+valindices(res::TrainValTestSplit) -> indices
+folds(res::CrossValidationSplit)   -> Vector{<:AbstractSplitResult}
+rowpairs(res)                       -> Vector{Tuple{Vector{Int}, Vector{Int}}}
 ```
 
-## Indices returned by split strategies
+[`rowpairs`](@ref) returns the `(train, test)` tuple format accepted by MLJ's `evaluate!` `resampling=` keyword.
 
-All split strategies in DataSplits return indices in the range `1:N` (where `N` is the number of samples). For non-standard arrays or custom containers, always use `getobs(X, indices)` to access the split data, as this will correctly handle any custom indexing or axes. This approach is fully compatible with the MLUtils interface and ensures robust, generic code for all data types.
+## Materialising splits
 
-## SplitStrategy Interface
-
-To add a new strategy, subtype `SplitStrategy` and implement:
+[`splitdata`](@ref) and [`splitview`](@ref) take a result and the original `data`, returning the corresponding subsets:
 
 ```julia
-_split(data, s::YourStrategy; rng)
+splitdata(res::TrainTestSplit, data)      # (X_train, X_test) via getobs
+splitview(res::TrainTestSplit, data)      # (X_train, X_test) via obsview (lazy)
+
+splitdata(res::TrainValTestSplit, data)   # (X_train, X_val, X_test)
+splitdata(res::CrossValidationSplit, data) # Vector of per-fold tuples
 ```
 
-## Utility Functions
-
-- `sample_indices(data)`: returns iterable indices of samples (default: `1:size(data,1)`, but now robust to any AbstractArray axes).
-- `ValidFraction`: bounds-checked fraction type for split ratios.
-
-## Example: Custom Splitter (new pattern)
+For per-cohort access, possibly over multiple data sources at once:
 
 ```julia
-struct MySplit <: SplitStrategy; frac; end
+trainview(res, data...)  # lazy
+testview(res, data...)
+valview(res, data...)    # TrainValTestSplit only
 
-function mysplit(N, s, rng, data)
-    cut = floor(Int, s.frac * N)
-    train_pos = 1:cut
-    test_pos = (cut+1):N
-    return train_pos, test_pos
-end
-
-function _split(data, s::MySplit; rng=Random.default_rng())
-    N = numobs(data)
-    train_pos, test_pos = mysplit(N, s, rng, data)
-    return TrainTestSplit(train_pos, test_pos)
-end
+traindata(res, data...)  # materialised via getobs
+testdata(res, data...)
+valdata(res, data...)
 ```
+
+When called with a single data source the result is the view (or copy) directly; with two or more it is a `Tuple` — convenient for `Flux.DataLoader` and similar.
+
+## Trait surface
+
+Strategy authors declare which auxiliary slots a strategy reads, and which of those can fall back to `data` itself when the corresponding keyword is omitted:
+
+```julia
+consumes(alg)            -> NTuple{N,Symbol}   # subset of (:data, :target, :time, :groups)
+fallback_from_data(alg)  -> NTuple{N,Symbol}   # subset of consumes(alg)
+```
+
+Examples:
+
+```julia
+consumes(::SPXYSplit)          = (:data, :target)
+fallback_from_data(::SPXYSplit) = ()           # target must be supplied
+
+consumes(::TimeSplit)          = (:time,)
+fallback_from_data(::TimeSplit) = (:time,)     # data can be the time vector itself
+```
+
+`fallback_from_data(alg) ⊆ consumes(alg)` is required. See [Extending DataSplits](05-extending-data-splits.md) for how these traits feed into `partition`'s slot resolution.
+
+## Exceptions
+
+```julia
+SplitInputError           # malformed inputs (wrong shape, missing required slot)
+SplitParameterError       # invalid parameters (cohort sizes, k, fraction out of range)
+SplitNotImplementedError  # a method (e.g. splitdata) is missing for a custom result type
+```
+
+## See also
+
+- [Extending DataSplits](05-extending-data-splits.md) — adding a custom strategy.
+- [Algorithms](04-algorithms-overview.md) — the catalogue of built-in strategies.
+- [Reference](95-reference.md) — auto-generated docstring index.
