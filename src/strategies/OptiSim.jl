@@ -10,6 +10,24 @@ OptiSim (Clark 1997) K-dissimilarity selection strategy for train/test splitting
 - `distance_cutoff::Real`: Two points are "similar" if their distance < `distance_cutoff`
 - `metric::Distances.SemiMetric`: Distance metric (default: `Euclidean()`)
 
+# Notes
+When `distance_cutoff` is restrictive relative to the data, the candidate pool may
+exhaust before `n_train` samples have been selected. The train cohort is then
+returned smaller than requested and a `@warn` is emitted with
+`_id = :datasplits_optisim_undershoot` and `_group = :datasplits`.
+
+To silence this warning for a batch of splits, filter by id (e.g. with
+`LoggingExtras.EarlyFilteredLogger`):
+
+```julia
+using Logging, LoggingExtras
+silent = EarlyFilteredLogger(log -> log.id !== :datasplits_optisim_undershoot,
+                             current_logger())
+with_logger(silent) do
+    # repeated partition(...) calls here emit no undershoot warnings
+end
+```
+
 # References
 - Clark, R. D. (1997). OptiSim: An Extended Dissimilarity Selection Method for Finding
   Diverse Representative Subsets. *J. Chem. Inf. Comput. Sci.*, 37(6), 1181–1188.
@@ -51,7 +69,16 @@ function _partition(
     optisim(D, n_train, s.max_subsample_size, s.distance_cutoff; rng = rng)
   train_pos = collect(selected_positions)
   test_pos = setdiff(1:N, train_pos)
+  _warn_optisim_undershoot(length(train_pos), n_train, s.distance_cutoff)
   return TrainTestSplit(train_pos, test_pos)
+end
+
+function _warn_optisim_undershoot(n_selected, n_requested, distance_cutoff)
+  n_selected < n_requested || return
+  @warn "OptiSim: selected $n_selected/$n_requested training samples; \
+distance_cutoff=$distance_cutoff exhausted the candidate pool. \
+Lower `distance_cutoff`, reduce `train`, or silence this warning by its \
+`_id` (see `?OptiSimSplit`)." _id = :datasplits_optisim_undershoot _group = :datasplits
 end
 
 function optisim(
