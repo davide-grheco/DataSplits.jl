@@ -4,6 +4,10 @@
 Full OptiSim strategy (Clark 1997). Alias for `OptiSimSplit` with
 `max_subsample_size = N` — considers all remaining candidates each iteration.
 
+# Fields
+- `distance_cutoff::Float64`: Similarity threshold (default: `0.35`).
+- `metric::Distances.SemiMetric`: Distance metric (default: `Euclidean()`).
+
 # Notes
 - Greedily includes outliers; remove them before splitting if not desired.
 
@@ -55,13 +59,20 @@ function _partition(
 end
 
 """
-    LazyMaximumDissimilaritySplit <: AbstractSplitStrategy
+    LazyMaximumDissimilaritySplit(; distance_cutoff=0.35, metric=Euclidean()) <: AbstractSplitStrategy
 
-Lazy (on-the-fly distances) variant of `MaximumDissimilaritySplit`.
+Lazy (on-the-fly distances) variant of [`MaximumDissimilaritySplit`](@ref).
+Computes distances on-the-fly (O(N) storage) rather than precomputing the
+full distance matrix. Prefer this over `MaximumDissimilaritySplit` for large
+datasets.
+
+# Fields
+- `distance_cutoff::Float64`: Similarity threshold (default: `0.35`).
+- `metric::Distances.SemiMetric`: Distance metric (default: `Euclidean()`).
 
 # Examples
 ```julia
-res = partition(X, LazyMaximumDissimilaritySplit(); train=70, test=30)
+res = partition(X, LazyMaximumDissimilaritySplit(); train = 70, test = 30)
 X_train, X_test = splitdata(res, X)
 ```
 """

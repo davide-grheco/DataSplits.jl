@@ -25,6 +25,11 @@ end
 
 KennardStoneSplit() = KennardStoneSplit(Euclidean())
 
+"""
+    CADEXSplit
+
+Alias for [`KennardStoneSplit`](@ref).
+"""
 const CADEXSplit = KennardStoneSplit
 
 consumes(::KennardStoneSplit) = (:data,)
