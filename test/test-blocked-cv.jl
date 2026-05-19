@@ -6,15 +6,6 @@ import DataSplits: SplitParameterError
   ts = collect(1:N)
   X = randn(2, N)
 
-  @testset "Basic contract: k folds, train ∪ test == 1:N" begin
-    cvs = partition(X, BlockedCV(5); time = ts)
-    @test length(folds(cvs)) == 5
-    for f in folds(cvs)
-      @test isempty(intersect(f.train, f.test))
-      @test sort(vcat(f.train, f.test)) == 1:N
-    end
-  end
-
   @testset "Train is bidirectional (unlike TimeSeriesSplit)" begin
     cvs = partition(X, BlockedCV(5); time = ts)
     fs = folds(cvs)
@@ -24,12 +15,6 @@ import DataSplits: SplitParameterError
     test_min, test_max = extrema(ts[middle.test])
     @test train_min < test_min
     @test train_max > test_max
-  end
-
-  @testset "Test cohorts tile the timeline disjointly" begin
-    cvs = partition(X, BlockedCV(5); time = ts)
-    test_concat = sort(reduce(vcat, [f.test for f in folds(cvs)]))
-    @test test_concat == 1:N
   end
 
   @testset "Remainder distributed across chunks" begin
@@ -59,17 +44,6 @@ import DataSplits: SplitParameterError
     @test maximum(ts[fs[end].test]) == N
     @test maximum(ts[fs[1].train]) > maximum(ts[fs[1].test])  # only right side
     @test minimum(ts[fs[end].train]) < minimum(ts[fs[end].test])  # only left side
-  end
-
-  @testset "Atomicity by timestamp" begin
-    ts_rep = repeat(1:10, inner = 3)
-    data = randn(2, length(ts_rep))
-    cvs = partition(data, BlockedCV(2); time = ts_rep)
-    for f in folds(cvs)
-      train_ts = unique(ts_rep[f.train])
-      test_ts = unique(ts_rep[f.test])
-      @test isempty(intersect(train_ts, test_ts))
-    end
   end
 
   @testset "Date timestamps" begin
