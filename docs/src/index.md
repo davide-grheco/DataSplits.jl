@@ -2,72 +2,75 @@
 CurrentModule = DataSplits
 ```
 
-# DataSplits
+# DataSplits.jl
 
-DataSplits is a Julia library of **rational train/test/CV splitting strategies**, intended for cases where random selection overestimates model performance — small datasets, structured data, regression with non-uniform targets, grouped observations, time series.
+DataSplits is a Julia library of train/test and cross-validation splitting strategies
+for cases where random selection misleads — small datasets, regression over continuous
+targets, grouped observations, time series, molecular or geospatial data.
 
-The package exposes a single entry point, [`partition`](@ref), and a catalogue of strategies covering distance-based, group-aware, target-property, temporal, random / resampling, and cross-validation splits.
+One entry point covers everything: [`partition`](@ref).
+
+## Installation
+
+```julia
+using Pkg
+Pkg.add("DataSplits")
+```
 
 ## Quick start
 
 ```julia
 using DataSplits
 
-# Single train/test split (Kennard–Stone).
+# Diversity-based split — training set that covers the full feature space.
 res = partition(X, KennardStoneSplit(); train = 0.8, test = 0.2)
 X_train, X_test = splitdata(res, X)
 
-# Joint X / y diversity (SPXY).
+# Cover features and target jointly (SPXY).
 res = partition(X, SPXYSplit(); target = y, train = 80, test = 20)
-X_train, X_test = splitdata(res, X)
 
 # Train / validation / test in one call.
 res = partition(X, RandomSplit(), KennardStoneSplit();
                 train = 70, validation = 10, test = 20)
 X_tr, X_val, X_te = splitdata(res, X)
 
-# Group-aware cross-validation.
+# Group-aware k-fold: no patient, scaffold, or batch spans two folds.
 cvs = partition(X, GroupKFold(5); groups = patient_ids)
 for (X_tr, X_te) in splitview(cvs, X)
-    # train and evaluate
+    fit!(model, X_tr)
+    evaluate(model, X_te)
 end
 ```
 
-See [Getting Started](02-getting-started.md) for the full API.
+## Strategy catalogue
 
-## Cheat sheet
-
-| Task                                | Strategy                                         |
-|-------------------------------------|--------------------------------------------------|
-| Maximin on *X*                      | [`KennardStoneSplit`](@ref) (alias `CADEXSplit`) |
-| Maximin on *X* + *y*                | [`SPXYSplit`](@ref), [`MDKSSplit`](@ref)         |
-| Diversity selection                 | [`OptiSimSplit`](@ref), [`MinimumDissimilaritySplit`](@ref), [`MaximumDissimilaritySplit`](@ref) |
-| Kennard–Stone with swap             | [`MoraisLimaMartinSplit`](@ref)                  |
-| Group-aware split                   | [`GroupShuffleSplit`](@ref), [`GroupStratifiedSplit`](@ref) |
-| Time-based split                    | [`TimeSplit`](@ref) (`TimeSplitOldest`, `TimeSplitNewest`) |
-| Target-property split               | [`TargetPropertySplit`](@ref) (`TargetPropertyHigh`, `TargetPropertyLow`) |
-| Random baseline                     | [`RandomSplit`](@ref)                            |
-| Plain k-fold                        | [`KFold`](@ref)                                  |
-| Group k-fold                        | [`GroupKFold`](@ref), [`LeaveOneGroupOut`](@ref), [`LeavePGroupsOut`](@ref) |
-| Stratified k-fold                   | [`StratifiedKFold`](@ref), [`StratifiedGroupKFold`](@ref) |
-| Time-series CV                      | [`TimeSeriesSplit`](@ref), [`BlockedCV`](@ref), [`PurgedKFold`](@ref) |
-| Resampling CV                       | [`ShuffleSplit`](@ref), [`StratifiedShuffleSplit`](@ref), [`GroupShuffleSplitCV`](@ref), [`BootstrapSplit`](@ref) |
-| Repeated CV                         | [`RepeatedKFold`](@ref), [`RepeatedStratifiedKFold`](@ref) |
-| Nested CV                           | [`NestedCV`](@ref)                               |
-| Predefined fold assignments         | [`PredefinedSplit`](@ref)                        |
-| Leave-p-out                         | [`LeavePOut`](@ref), [`LeaveOneOut`](@ref)       |
-| Clustering helper                   | [`sphere_exclusion`](@ref)                       |
+| Task | Strategy |
+| --- | --- |
+| Cover feature space (maximin) | [`KennardStoneSplit`](@ref) / [`LazyKennardStoneSplit`](@ref) |
+| Cover features + target jointly | [`SPXYSplit`](@ref), [`MDKSSplit`](@ref) |
+| Diversity selection (subsample) | [`OptiSimSplit`](@ref), [`MinimumDissimilaritySplit`](@ref), [`MaximumDissimilaritySplit`](@ref) |
+| Kennard–Stone + random swap | [`MoraisLimaMartinSplit`](@ref) |
+| Group-aware train/test | [`GroupShuffleSplit`](@ref), [`GroupStratifiedSplit`](@ref) |
+| Time-ordered train/test | [`TimeSplit`](@ref) (`TimeSplitOldest`, `TimeSplitNewest`) |
+| Train on extreme target values | [`TargetPropertySplit`](@ref) (`TargetPropertyHigh`, `TargetPropertyLow`) |
+| Random baseline | [`RandomSplit`](@ref) |
+| Plain k-fold | [`KFold`](@ref) |
+| Stratified k-fold | [`StratifiedKFold`](@ref) |
+| Group k-fold | [`GroupKFold`](@ref), [`StratifiedGroupKFold`](@ref) |
+| Leave-group-out | [`LeaveOneGroupOut`](@ref), [`LeavePGroupsOut`](@ref) |
+| Time-series CV | [`TimeSeriesSplit`](@ref), [`BlockedCV`](@ref), [`PurgedKFold`](@ref) |
+| Resampling CV | [`ShuffleSplit`](@ref), [`StratifiedShuffleSplit`](@ref), [`GroupShuffleSplitCV`](@ref), [`BootstrapSplit`](@ref) |
+| Repeated CV | [`RepeatedKFold`](@ref), [`RepeatedStratifiedKFold`](@ref) |
+| Nested CV | [`NestedCV`](@ref) |
+| Predefined fold assignments | [`PredefinedSplit`](@ref) |
+| Leave-p-out | [`LeavePOut`](@ref), [`LeaveOneOut`](@ref) |
+| Cluster assignment | [`sphere_exclusion`](@ref) |
 
 ## Conventions
 
-- Matrices follow the Julia ML convention: **columns are samples, rows are features**. Tables.jl inputs (e.g. `DataFrame`) use rows as samples and are converted internally.
+- Matrices follow the Julia ML convention: **columns are samples, rows are features**.
+  Tables.jl inputs (e.g. `DataFrame`) use rows as samples and are converted internally.
 - Custom containers must implement `MLUtils.numobs` and `MLUtils.getobs`.
-- Cohort sizes (`train`, `validation`, `test`) live on `partition`, not on the strategy. They accept integer counts, integer percentages summing to 100, or `(0, 1)` fractions summing to 1.
-
-## Navigation
-
-- [Getting Started](02-getting-started.md) — `partition` in three forms, slot resolution, materialising splits.
-- [Core API Reference](03-core-api-reference.md) — full signatures, result types, accessors, traits, exceptions.
-- [Algorithms](04-algorithms-overview.md) — the catalogue of built-in strategies.
-- [Extending DataSplits](05-extending-data-splits.md) — adding a custom strategy.
-- [Reference](95-reference.md) — auto-generated docstring index.
+- Cohort sizes (`train`, `validation`, `test`) are set on `partition`, not on the strategy.
+  They accept integer counts, integer percentages summing to 100, or `(0,1)` fractions
+  summing to 1.

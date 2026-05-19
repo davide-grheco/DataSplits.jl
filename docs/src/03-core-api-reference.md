@@ -33,8 +33,6 @@ partition(data, alg::AbstractResamplingCVStrategy;
 
 The 2-cohort form returns a [`TrainTestSplit`](@ref). The 3-cohort form uses `test_alg` to separate the test cohort from the rest, then `val_alg` to separate the validation cohort from the remaining train pool, and returns a [`TrainValTestSplit`](@ref). The CV forms return a [`CrossValidationSplit`](@ref) wrapping one fold per element.
 
-Cohort sizes accept either positive integers (summing to `N` or to `100` as percentages) or `(0, 1)` fractions summing to `1.0`.
-
 ## Strategy types
 
 ```julia
@@ -129,7 +127,7 @@ consumes(::TimeSplit)          = (:time,)
 fallback_from_data(::TimeSplit) = (:time,)     # data can be the time vector itself
 ```
 
-`fallback_from_data(alg) ⊆ consumes(alg)` is required. See [Extending DataSplits](05-extending-data-splits.md) for how these traits feed into `partition`'s slot resolution.
+`fallback_from_data(alg) ⊆ consumes(alg)` is required. See [Extending DataSplits](80-extending.md) for how these traits feed into `partition`'s slot resolution.
 
 ## Exceptions
 
@@ -138,9 +136,3 @@ SplitInputError           # malformed inputs (wrong shape, missing required slot
 SplitParameterError       # invalid parameters (cohort sizes, k, fraction out of range)
 SplitNotImplementedError  # a method (e.g. splitdata) is missing for a custom result type
 ```
-
-## See also
-
-- [Extending DataSplits](05-extending-data-splits.md) — adding a custom strategy.
-- [Algorithms](04-algorithms-overview.md) — the catalogue of built-in strategies.
-- [Reference](95-reference.md) — auto-generated docstring index.
