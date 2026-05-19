@@ -6,8 +6,8 @@ using Distances, Random
 OptiSim (Clark 1997) K-dissimilarity selection strategy for train/test splitting.
 
 # Fields
-- `max_subsample_size::Integer`: Size of the temporary candidate subsample
-- `distance_cutoff::Real`: Two points are "similar" if their distance < `distance_cutoff`
+- `max_subsample_size::Int`: Size of the temporary candidate subsample
+- `distance_cutoff::Float64`: Two points are "similar" if their distance < `distance_cutoff`
 - `metric::Distances.SemiMetric`: Distance metric (default: `Euclidean()`)
 
 # Notes
@@ -39,8 +39,8 @@ X_train, X_test = splitdata(res, X)
 ```
 """
 struct OptiSimSplit <: AbstractSplitStrategy
-  max_subsample_size::Integer
-  distance_cutoff::Real
+  max_subsample_size::Int
+  distance_cutoff::Float64
   metric::Distances.SemiMetric
 end
 
@@ -57,7 +57,7 @@ function OptiSimSplit(;
   distance_cutoff >= 0 || throw(
     SplitParameterError("`distance_cutoff` must be non-negative, got $distance_cutoff."),
   )
-  OptiSimSplit(max_subsample_size, distance_cutoff, metric)
+  OptiSimSplit(Int(max_subsample_size), Float64(distance_cutoff), metric)
 end
 
 consumes(::OptiSimSplit) = (:data,)
@@ -93,7 +93,7 @@ function optisim(
   D::AbstractMatrix,
   selected_samples::Int = 10,
   max_subsample_size::Int = 0,
-  distance_cutoff::Real = 0.35;
+  distance_cutoff::Float64 = 0.35;
   rng = Random.default_rng(),
 )
   N = size(D, 1)
