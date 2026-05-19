@@ -173,3 +173,58 @@ function distribute_blocks(B::Int, n_chunks::Int)
   return chunk_block_end
 end
 
+"""
+    _blocked_cv_partition(data, k, pre_gap, post_gap; time, name) -> CrossValidationSplit
+
+Shared implementation for contiguous-block k-fold CV strategies. Sorts
+observations by `time`, distributes the `k` blocks, and for each fold
+uses everything outside `[test_lo - pre_gap, test_hi + post_gap]` as
+the train cohort.
+
+`name` is used only in error messages to identify the calling strategy.
+"""
+function _blocked_cv_partition(
+  data,
+  k::Int,
+  pre_gap::Int,
+  post_gap::Int;
+  time,
+  name::String,
+)
+  N = numobs(data)
+  sorted_dates, order = groupsortperm(time)
+  B = length(sorted_dates)
+
+  k <= B || throw(
+    SplitParameterError("$name(k=$k) requires at least k distinct time values; got $B."),
+  )
+
+  chunk_block_end = distribute_blocks(B, k)
+  block_offset = group_offsets(sorted_dates, order, time)
+
+  result = Vector{TrainTestSplit{Vector{Int}}}(undef, k)
+  for i = 1:k
+    test_block_start = i == 1 ? 1 : chunk_block_end[i-1] + 1
+    test_block_end = chunk_block_end[i]
+
+    test_lo = block_offset[test_block_start] + 1
+    test_hi = block_offset[test_block_end+1]
+
+    train_left_hi = test_lo - 1 - pre_gap
+    train_right_lo = test_hi + 1 + post_gap
+
+    train_left = train_left_hi >= 1 ? order[1:train_left_hi] : Int[]
+    train_right = train_right_lo <= N ? order[train_right_lo:N] : Int[]
+    train_idx = vcat(train_left, train_right)
+
+    !isempty(train_idx) || throw(
+      SplitParameterError(
+        "$name: fold $i has empty train cohort " *
+        "(pre_gap=$pre_gap, post_gap=$post_gap too large for the surrounding blocks).",
+      ),
+    )
+
+    result[i] = TrainTestSplit(train_idx, order[test_lo:test_hi])
+  end
+  return CrossValidationSplit(result)
+end
