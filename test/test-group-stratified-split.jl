@@ -23,8 +23,7 @@ import DataSplits: SplitInputError, SplitParameterError
   end
 
   @testset "Unknown allocation raises error" begin
-    s = GroupStratifiedSplit(:bogus)
-    @test_throws SplitParameterError partition(X, s; groups = groups, train = 50, test = 50)
+    @test_throws SplitParameterError GroupStratifiedSplit(:bogus)
   end
 
   @testset "Fallback: groups as both data and groups" begin
