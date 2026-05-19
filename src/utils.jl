@@ -119,6 +119,11 @@ struct SplitNotImplementedError <: Exception
   msg::String
 end
 
+Base.showerror(io::IO, e::SplitInputError) = print(io, "SplitInputError: ", e.msg)
+Base.showerror(io::IO, e::SplitParameterError) = print(io, "SplitParameterError: ", e.msg)
+Base.showerror(io::IO, e::SplitNotImplementedError) =
+  print(io, "SplitNotImplementedError: ", e.msg)
+
 """
     groupsortperm(v) -> (sorted_keys, perm)
 
