@@ -69,8 +69,6 @@ export GroupShuffleSplit, GroupStratifiedSplit
 # Cross-validation
 export GroupKFold,
   KFold, LeavePOut, LeaveOneOut, LeavePGroupsOut, LeaveOneGroupOut, TimeSeriesSplit
-export StratifiedKFold
-export GroupKFold, KFold, LeavePOut, LeaveOneOut, LeavePGroupsOut, LeaveOneGroupOut
 export StratifiedKFold, StratifiedGroupKFold
 export ShuffleSplit, StratifiedShuffleSplit, GroupShuffleSplitCV
 export PredefinedSplit
