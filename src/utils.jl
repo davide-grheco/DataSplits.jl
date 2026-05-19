@@ -174,6 +174,23 @@ function distribute_blocks(B::Int, n_chunks::Int)
 end
 
 """
+    _warn_undershoot(n_selected, n_requested, msg; id)
+
+Emit a `@warn` when fewer samples were selected than requested.
+`id` is used as the log record `_id` for selective filtering with
+`LoggingExtras.EarlyFilteredLogger`.
+"""
+function _warn_undershoot(
+  n_selected::Int,
+  n_requested::Int,
+  msg::String;
+  id::Symbol = :datasplits_undershoot,
+)
+  n_selected < n_requested || return
+  @warn msg _id = id _group = :datasplits
+end
+
+"""
     _blocked_cv_partition(data, k, pre_gap, post_gap; time, name) -> CrossValidationSplit
 
 Shared implementation for contiguous-block k-fold CV strategies. Sorts
