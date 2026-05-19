@@ -50,8 +50,7 @@ end
 innerfolds(f::NestedFold) = f.inner
 
 splitdata(res::NestedFold, data) = (getobs(data, res.train), getobs(data, res.test))
-splitview(res::NestedFold, data) =
-  (obsview(data, res.train), obsview(data, res.test))
+splitview(res::NestedFold, data) = (obsview(data, res.train), obsview(data, res.test))
 
 trainview(r::NestedFold, data...) = _co_views(r.train, data...)
 testview(r::NestedFold, data...) = _co_views(r.test, data...)
@@ -123,6 +122,16 @@ struct NestedCV{O<:AbstractCVStrategy,I<:AbstractCVStrategy} <: AbstractCVStrate
   inner::I
 end
 
+function NestedCV(outer::AbstractCVStrategy, inner::AbstractCVStrategy)
+  inner isa AbstractResamplingCVStrategy && throw(
+    SplitParameterError(
+      "NestedCV: inner strategy must be a non-resampling AbstractCVStrategy (got $(typeof(inner))). " *
+      "Resampling strategies require caller-set cohort sizes which NestedCV does not propagate.",
+    ),
+  )
+  NestedCV{typeof(outer),typeof(inner)}(outer, inner)
+end
+
 function consumes(nc::NestedCV)
   seen = Symbol[]
   for s in consumes(nc.outer)
@@ -161,12 +170,6 @@ function _partition(
   rng = Random.default_rng(),
   kwargs...,
 )
-  alg.inner isa AbstractResamplingCVStrategy && throw(
-    SplitParameterError(
-      "NestedCV: inner strategy must be a non-resampling AbstractCVStrategy (got $(typeof(alg.inner))). Resampling strategies require caller-set cohort sizes which NestedCV does not propagate.",
-    ),
-  )
-
   outer_cv = _partition(
     data,
     alg.outer;
@@ -176,18 +179,16 @@ function _partition(
     rng = rng,
   )
 
-  outer_cv isa CrossValidationSplit ||
-    throw(
-      SplitNotImplementedError(
-        "NestedCV: outer strategy must return a CrossValidationSplit, got $(typeof(outer_cv)).",
-      ),
-    )
-  all(f -> f isa TrainTestSplit, folds(outer_cv)) ||
-    throw(
-      SplitNotImplementedError(
-        "NestedCV: outer strategy must produce TrainTestSplit folds (no further nesting).",
-      ),
-    )
+  outer_cv isa CrossValidationSplit || throw(
+    SplitNotImplementedError(
+      "NestedCV: outer strategy must return a CrossValidationSplit, got $(typeof(outer_cv)).",
+    ),
+  )
+  all(f -> f isa TrainTestSplit, folds(outer_cv)) || throw(
+    SplitNotImplementedError(
+      "NestedCV: outer strategy must produce TrainTestSplit folds (no further nesting).",
+    ),
+  )
 
   nested = Vector{NestedFold{Vector{Int}}}(undef, length(folds(outer_cv)))
   for (i, fold) in enumerate(folds(outer_cv))
@@ -208,16 +209,14 @@ function _partition(
       rng = rng,
     )
 
-    inner_cv isa CrossValidationSplit ||
-      throw(
-        SplitNotImplementedError(
-          "NestedCV: inner strategy must return a CrossValidationSplit, got $(typeof(inner_cv)).",
-        ),
-      )
+    inner_cv isa CrossValidationSplit || throw(
+      SplitNotImplementedError(
+        "NestedCV: inner strategy must return a CrossValidationSplit, got $(typeof(inner_cv)).",
+      ),
+    )
 
-    remapped = [
-      TrainTestSplit(train_pool[f.train], train_pool[f.test]) for f in folds(inner_cv)
-    ]
+    remapped =
+      [TrainTestSplit(train_pool[f.train], train_pool[f.test]) for f in folds(inner_cv)]
     nested[i] = NestedFold(train_pool, test_idx, CrossValidationSplit(remapped))
   end
 

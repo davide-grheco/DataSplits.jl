@@ -20,8 +20,7 @@ import DataSplits: SplitParameterError, SplitNotImplementedError
         @test issubset(Set(innerfold.train), Set(trainindices(outerfold)))
         @test issubset(Set(innerfold.test), Set(trainindices(outerfold)))
         # Inner train ∪ test == outer train (KFold partitions the pool).
-        @test sort(vcat(innerfold.train, innerfold.test)) ==
-              sort(trainindices(outerfold))
+        @test sort(vcat(innerfold.train, innerfold.test)) == sort(trainindices(outerfold))
       end
     end
   end
@@ -63,9 +62,7 @@ import DataSplits: SplitParameterError, SplitNotImplementedError
         ),
       )
       for innerfold in folds(innerfolds(outerfold))
-        @test isempty(
-          intersect(Set(groups[innerfold.train]), Set(groups[innerfold.test])),
-        )
+        @test isempty(intersect(Set(groups[innerfold.train]), Set(groups[innerfold.test])))
       end
     end
   end
@@ -86,7 +83,7 @@ import DataSplits: SplitParameterError, SplitNotImplementedError
   end
 
   @testset "Inner resampling strategy rejected" begin
-    @test_throws SplitParameterError partition(X, NestedCV(KFold(5), ShuffleSplit(3)))
+    @test_throws SplitParameterError NestedCV(KFold(5), ShuffleSplit(3))
   end
 
   @testset "Reproducibility with seeded rng" begin
