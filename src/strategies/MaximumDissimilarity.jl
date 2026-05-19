@@ -19,10 +19,13 @@ X_train, X_test = splitdata(res, X)
 """
 struct MaximumDissimilaritySplit <: AbstractSplitStrategy
   distance_cutoff::Float64
-  metric::PreMetric
+  metric::Distances.SemiMetric
 end
 
 function MaximumDissimilaritySplit(; distance_cutoff = 0.35, metric = Euclidean())
+  distance_cutoff >= 0 || throw(
+    SplitParameterError("`distance_cutoff` must be non-negative, got $distance_cutoff."),
+  )
   MaximumDissimilaritySplit(distance_cutoff, metric)
 end
 
@@ -68,6 +71,9 @@ struct LazyMaximumDissimilaritySplit <: AbstractSplitStrategy
 end
 
 function LazyMaximumDissimilaritySplit(; distance_cutoff = 0.35, metric = Euclidean())
+  distance_cutoff >= 0 || throw(
+    SplitParameterError("`distance_cutoff` must be non-negative, got $distance_cutoff."),
+  )
   LazyMaximumDissimilaritySplit(distance_cutoff, metric)
 end
 

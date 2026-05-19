@@ -35,6 +35,9 @@ struct LazyMinimumDissimilaritySplit <: AbstractSplitStrategy
 end
 
 function LazyMinimumDissimilaritySplit(; distance_cutoff = 0.35, metric = Euclidean())
+  distance_cutoff >= 0 || throw(
+    SplitParameterError("`distance_cutoff` must be non-negative, got $distance_cutoff."),
+  )
   LazyMinimumDissimilaritySplit(distance_cutoff, metric)
 end
 

@@ -33,6 +33,14 @@ function LazyOptiSimSplit(;
   distance_cutoff = 0.35,
   metric = Euclidean(),
 )
+  max_subsample_size >= 0 || throw(
+    SplitParameterError(
+      "`max_subsample_size` must be non-negative, got $max_subsample_size.",
+    ),
+  )
+  distance_cutoff >= 0 || throw(
+    SplitParameterError("`distance_cutoff` must be non-negative, got $distance_cutoff."),
+  )
   LazyOptiSimSplit(max_subsample_size, distance_cutoff, metric)
 end
 
