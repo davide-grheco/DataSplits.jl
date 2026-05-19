@@ -154,3 +154,21 @@ end
   @test_throws SplitParameterError LazyOptiSimSplit(; distance_cutoff = -0.1)
   @test_throws SplitParameterError LazyOptiSimSplit(; max_subsample_size = -1)
 end
+
+@testset "OptiSim Float32 input" begin
+  X32 = rand(MersenneTwister(1), Float32, 4, 20)
+  @test partition(X32, OptiSimSplit(; distance_cutoff = 0.0); train = 16, test = 4) isa
+        TrainTestSplit
+  @test partition(
+    X32,
+    MinimumDissimilaritySplit(; distance_cutoff = 0.0);
+    train = 16,
+    test = 4,
+  ) isa TrainTestSplit
+  @test partition(
+    X32,
+    MaximumDissimilaritySplit(; distance_cutoff = 0.0);
+    train = 16,
+    test = 4,
+  ) isa TrainTestSplit
+end

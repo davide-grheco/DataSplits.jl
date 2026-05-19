@@ -120,7 +120,7 @@ function optisim(
 end
 
 function _build_optisim_subsample!(
-  D::Matrix{Float64},
+  D::AbstractMatrix,
   selected::Set{Int},
   candidates::Set{Int},
   subset_size::Int,
