@@ -9,13 +9,16 @@ bottom slice as the training set.
 
 # Examples
 ```julia
-# y is both data and the property to sort by
-res = partition(y, TargetPropertyHigh(); train=80, test=20)
-y_train, y_test = splitdata(res, y)
-
-# X is the data to split; y is the property
-res = partition(X, TargetPropertyHigh(); target=y, train=80, test=20)
+# Highest values go to train; y provides the ordering.
+res = partition(X, TargetPropertySplit(:high); target = y, train = 80, test = 20)
 X_train, X_test = splitdata(res, X)
+
+# Convenience aliases.
+res = partition(X, TargetPropertyHigh(); target = y, train = 80, test = 20)
+res = partition(X, TargetPropertyLow();  target = y, train = 80, test = 20)
+
+# When y is both data and property.
+res = partition(y, TargetPropertyHigh(); train = 80, test = 20)
 ```
 """
 struct TargetPropertySplit <: AbstractSplitStrategy

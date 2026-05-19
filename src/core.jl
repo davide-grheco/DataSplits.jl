@@ -162,10 +162,12 @@ folds(res::CrossValidationSplit) = res.folds
 """
     rowpairs(res) -> Vector{Tuple{Vector{Int}, Vector{Int}}}
 
-Convert a cross-validation split into the `(train_indices, test_indices)` pair
-format accepted by MLJ's `evaluate!` `resampling=` keyword.
+Convert a split result into the index-pair format accepted by MLJ's
+`evaluate!` `resampling=` keyword.
 
-When used on TrainValTestSplit it returns (train, val)
+- `CrossValidationSplit` → one `(train, test)` pair per fold.
+- `TrainTestSplit` → a single-element vector `[(train, test)]`.
+- `TrainValTestSplit` → `[(train, val)]` (validation cohort, not test).
 
 # Example
 ```julia
@@ -792,8 +794,8 @@ end
 
 Resampling cross-validation: each fold is an independent random
 train/test split sized by the caller, and `n_splits` independent
-resamples are produced. Used by `ShuffleSplit` and
-`StratifiedShuffleSplit`.
+resamples are produced. Used by `ShuffleSplit`, `StratifiedShuffleSplit`,
+and `GroupShuffleSplitCV`.
 
 `train` and `test` follow the same conventions as the train/test
 `partition` form (percentages, absolute counts, or `(0,1)` fractions

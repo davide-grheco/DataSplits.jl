@@ -21,6 +21,12 @@ silencing recipe.
 # References
 - Clark, R. D. (1997). OptiSim: An Extended Dissimilarity Selection Method for Finding
   Diverse Representative Subsets. *J. Chem. Inf. Comput. Sci.*, 37(6), 1181–1188.
+
+# Examples
+```julia
+res = partition(X, LazyOptiSimSplit(); train = 70, test = 30)
+X_train, X_test = splitdata(res, X)
+```
 """
 struct LazyOptiSimSplit <: AbstractSplitStrategy
   max_subsample_size::Int
