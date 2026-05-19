@@ -43,7 +43,24 @@ struct GroupStratifiedSplit <: AbstractSplitStrategy
   n::Union{Nothing,Int}
 end
 
-GroupStratifiedSplit(allocation::Symbol; n = nothing) = GroupStratifiedSplit(allocation, n)
+const _VALID_ALLOCATIONS = (:equal, :proportional, :neyman)
+
+function GroupStratifiedSplit(allocation::Symbol; n = nothing)
+  allocation in _VALID_ALLOCATIONS || throw(
+    SplitParameterError(
+      "Unknown allocation `$allocation`. Choose one of $_VALID_ALLOCATIONS.",
+    ),
+  )
+  if allocation in (:equal, :neyman)
+    n === nothing && throw(
+      SplitParameterError(
+        "Allocation `$allocation` requires `n` (samples per group) to be specified.",
+      ),
+    )
+    _assert_positive_integer(:n, n)
+  end
+  GroupStratifiedSplit(allocation, n)
+end
 
 consumes(::GroupStratifiedSplit) = (:groups,)
 fallback_from_data(::GroupStratifiedSplit) = (:groups,)
