@@ -53,7 +53,7 @@ by the caller, rather than fixed slices of a deterministic partition.
 
 Subtyping this routes calls to the `partition(data, alg; train, test, …)`
 method, which forwards the resolved `n_train` / `n_test` to `_partition`.
-Used by `ShuffleSplit` and `StratifiedShuffleSplit`.
+Used by `ShuffleSplit`, `StratifiedShuffleSplit`, and `GroupShuffleSplitCV`.
 """
 abstract type AbstractResamplingCVStrategy <: AbstractCVStrategy end
 

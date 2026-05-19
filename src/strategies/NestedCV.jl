@@ -92,7 +92,7 @@ absolute `1:N` index space.
   itself).
 - `inner` must be a non-resampling [`AbstractCVStrategy`](@ref) — strategies
   subtyping [`AbstractResamplingCVStrategy`](@ref) (e.g. `ShuffleSplit`,
-  `StratifiedShuffleSplit`, `GroupShuffleSplitCV`, `BootstrapSplit`) require
+  `StratifiedShuffleSplit`, `GroupShuffleSplitCV`) require
   caller-set cohort sizes which `NestedCV` does not currently propagate.
 
 # Slot resolution

@@ -1,5 +1,5 @@
 """
-    ShuffleSplit(n_splits::Integer) <: AbstractCVStrategy
+    ShuffleSplit(n_splits::Integer) <: AbstractResamplingCVStrategy
 
 Random permutation cross-validation. For each of the `n_splits`
 iterations, observations are randomly shuffled and the requested
@@ -51,7 +51,9 @@ function _partition(
   kwargs...,
 )
   alg.n_splits >= 1 || throw(
-    SplitParameterError("ShuffleSplit requires n_splits ≥ 1, got n_splits=$(alg.n_splits)."),
+    SplitParameterError(
+      "ShuffleSplit requires n_splits ≥ 1, got n_splits=$(alg.n_splits).",
+    ),
   )
 
   N = numobs(data)
