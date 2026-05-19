@@ -12,6 +12,12 @@ selection strategy. Computes distances on-the-fly; avoids the full N×N matrix.
 - `distance_cutoff::Float64`: Similarity threshold (default: 0.35)
 - `metric::Distances.SemiMetric`: Distance metric (default: `Euclidean()`)
 
+# Notes
+Emits the same undershoot warning as [`OptiSimSplit`](@ref) under
+`_id = :datasplits_optisim_undershoot` when `distance_cutoff` exhausts the
+candidate pool before reaching `n_train`. See `?OptiSimSplit` for the
+silencing recipe.
+
 # References
 - Clark, R. D. (1997). OptiSim: An Extended Dissimilarity Selection Method for Finding
   Diverse Representative Subsets. *J. Chem. Inf. Comput. Sci.*, 37(6), 1181–1188.
@@ -73,5 +79,6 @@ function _partition(
   end
   train_pos = collect(selected)
   test_pos = setdiff(1:N, train_pos)
+  _warn_optisim_undershoot(length(train_pos), n_train, s.distance_cutoff)
   return TrainTestSplit(train_pos, test_pos)
 end
