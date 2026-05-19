@@ -21,17 +21,17 @@ end
 
 # ╔═╡ f1e2d3c4-b5a6-4890-1234-abcdef012345
 md"""
-# DataSplits.jl — Integration with MLJ and Flux
+# DataSplits.jl — Tutorial Notebook
 
 **DataSplits.jl** provides data-splitting and cross-validation strategies that return plain
 index vectors, composable with any Julia ML framework.
 
-| Section | Strategy | Framework | Task |
-|---------|----------|-----------|------|
-| 1 — Cross-validation | `StratifiedKFold` | **MLJ** | Classification |
-| 2 — Train / test split | `RandomSplit` | **Flux** | Regression |
-
-Swap any strategy without touching the training code.
+| Section | Strategy | Task |
+|---------|----------|------|
+| 1 — Cross-validation | `StratifiedKFold` | Classification with MLJ |
+| 2 — Train / test split | `RandomSplit` | Regression with Flux |
+| 3 — Feature-space coverage | `KennardStoneSplit` vs `RandomSplit` | Why random splits mislead |
+| 4 — Joint coverage | `SPXYSplit` | Covering features and target together |
 
 > **Run this notebook** by opening it with [Pluto.jl](https://plutojl.org/).
 > Pluto will install all required packages automatically.
@@ -138,7 +138,6 @@ begin
   mse(m, x, y) = Flux.mse(vec(m(x)), y)
 
   opt_state = Flux.setup(Adam(1.0f-3), model)
-  # trainview returns a tuple — pass it directly without unpacking.
   loader =
     Flux.DataLoader(trainview(split_reg, X_reg, y_reg); batchsize = 64, shuffle = true)
 
@@ -165,6 +164,131 @@ md"""
 | Test   | $(round(test_mse;  digits = 4)) |
 """
 
+# ╔═╡ 1a2b3c4d-5e6f-4701-8234-aabbccddeeff
+md"""
+---
+## 3 — Kennard–Stone: covering the feature space
+
+Random splitting is blind to where points sit in feature space. By chance, test points
+may land close to training points — a model only needs to interpolate, and the error
+looks artificially low.
+
+`KennardStoneSplit` uses the **maximin criterion**: each new training point is the one
+furthest from all already-selected training points. The result is a training set that
+spans the convex hull of the data, pushing test points into genuine gaps.
+
+**Key metric:** average minimum distance from each test point to its nearest training
+neighbour. Larger → test points are further from training → the error estimate reflects
+extrapolation, not interpolation.
+"""
+
+# ╔═╡ 2b3c4d5e-6f70-4812-9345-bbccddeeff00
+begin
+  rng_ks = Xoshiro(7)
+  n_ks = 300
+
+  # 4-dimensional feature matrix (features × samples)
+  X_ks = rand(rng_ks, Float32, 4, n_ks) .* Float32(2π)
+  y_ks = sin.(X_ks[1, :]) .* cos.(X_ks[2, :]) .+ 0.05f0 .* randn(rng_ks, Float32, n_ks)
+
+  "$(n_ks) samples  |  4 features  |  target: sin(x₁)·cos(x₂) + noise"
+end
+
+# ╔═╡ 3c4d5e6f-7081-4923-a456-ccddeeff0011
+begin
+  split_rand_ks = partition(X_ks, RandomSplit(); train = 80, test = 20, rng = rng_ks)
+  split_ks = partition(X_ks, KennardStoneSplit(); train = 80, test = 20)
+
+  # Average minimum distance from each test point to its nearest training point.
+  function avg_min_dist(X, tr_idx, te_idx)
+    X_tr = X[:, tr_idx]
+    X_te = X[:, te_idx]
+    mean(
+      minimum(sqrt(sum((X_te[:, i] .- X_tr[:, j]) .^ 2)) for j = 1:size(X_tr, 2)) for
+      i = 1:size(X_te, 2)
+    )
+  end
+
+  d_rand = avg_min_dist(X_ks, trainindices(split_rand_ks), testindices(split_rand_ks))
+  d_ks = avg_min_dist(X_ks, trainindices(split_ks), testindices(split_ks))
+
+  (;
+    random_avg_min_dist = round(d_rand; digits = 3),
+    ks_avg_min_dist = round(d_ks; digits = 3),
+    ratio = round(d_ks / d_rand; digits = 2),
+  )
+end
+
+# ╔═╡ 4d5e6f70-8192-4034-b567-ddeeff001122
+md"""
+| Split | Avg min distance (test → train) |
+|-------|--------------------------------|
+| `RandomSplit` | $(round(d_rand; digits = 3)) |
+| `KennardStoneSplit` | $(round(d_ks; digits = 3)) |
+
+Kennard–Stone test points are **$(round(d_ks / d_rand; digits = 1))× further** from
+their nearest training neighbour. A model evaluated on this split must genuinely
+generalise — it cannot rely on nearby training examples for easy interpolation.
+
+Use `LazyKennardStoneSplit` for datasets with tens of thousands of samples to avoid
+the O(N²) memory cost of precomputing the full distance matrix.
+"""
+
+# ╔═╡ 5e6f7081-9203-4145-c678-eeff00112233
+md"""
+---
+## 4 — SPXY: covering features and target jointly
+
+`KennardStoneSplit` maximises diversity in feature space only. When the target variable
+has a wide range or skewed distribution, feature-space coverage alone may leave part of
+the response range under-represented in training. A model trained on a narrow target
+range will extrapolate — and fail — at inference time for values outside that range.
+
+`SPXYSplit` standardises X and y into a single combined distance, so the maximin
+criterion operates on features **and** target simultaneously. The training set covers
+both the feature space and the full response range.
+"""
+
+# ╔═╡ 6f708192-0314-4256-d789-ff0011223344
+begin
+  split_spxy = partition(X_ks, SPXYSplit(); target = y_ks, train = 80, test = 20)
+
+  function target_stats(y, tr_idx)
+    y_tr = y[tr_idx]
+    lo, hi = extrema(y)
+    lo_tr, hi_tr = extrema(y_tr)
+    coverage = (hi_tr - lo_tr) / (hi - lo) * 100
+    (;
+      min = round(lo_tr; digits = 3),
+      max = round(hi_tr; digits = 3),
+      coverage_pct = round(coverage; digits = 1),
+    )
+  end
+
+  stats_rand = target_stats(y_ks, trainindices(split_rand_ks))
+  stats_ks = target_stats(y_ks, trainindices(split_ks))
+  stats_spxy = target_stats(y_ks, trainindices(split_spxy))
+
+  (; random = stats_rand, kennard_stone = stats_ks, spxy = stats_spxy)
+end
+
+# ╔═╡ 7081920a-1425-4367-e890-001122334455
+md"""
+| Split | Train y range | Coverage of full y range |
+|-------|--------------|--------------------------|
+| `RandomSplit` | [$(stats_rand.min), $(stats_rand.max)] | $(stats_rand.coverage_pct)% |
+| `KennardStoneSplit` | [$(stats_ks.min), $(stats_ks.max)] | $(stats_ks.coverage_pct)% |
+| `SPXYSplit` | [$(stats_spxy.min), $(stats_spxy.max)] | $(stats_spxy.coverage_pct)% |
+
+`SPXYSplit` achieves the broadest target coverage by design. Use it — rather than
+`KennardStoneSplit` — whenever the response range matters for calibration quality:
+NIR spectroscopy, physical property prediction, or any regression task where a
+narrow training y-range would produce a poorly calibrated model.
+
+`MDKSSplit` is a variant that uses Mahalanobis distance for features (accounting for
+inter-feature correlations) while keeping Euclidean distance for the target.
+"""
+
 # ╔═╡ Cell order:
 # ╟─f1e2d3c4-b5a6-4890-1234-abcdef012345
 # ╠═a2b3c4d5-e6f7-4901-2345-bcdef0123456
@@ -177,3 +301,10 @@ md"""
 # ╠═d1e2f3a4-b5c6-4890-bcde-456789012345
 # ╠═e2f3a4b5-c6d7-4901-cdef-567890123456
 # ╟─f3a4b5c6-d7e8-4012-def0-678901234567
+# ╟─1a2b3c4d-5e6f-4701-8234-aabbccddeeff
+# ╠═2b3c4d5e-6f70-4812-9345-bbccddeeff00
+# ╠═3c4d5e6f-7081-4923-a456-ccddeeff0011
+# ╟─4d5e6f70-8192-4034-b567-ddeeff001122
+# ╟─5e6f7081-9203-4145-c678-eeff00112233
+# ╠═6f708192-0314-4256-d789-ff0011223344
+# ╟─7081920a-1425-4367-e890-001122334455
