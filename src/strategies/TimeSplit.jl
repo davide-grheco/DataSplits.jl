@@ -13,13 +13,16 @@ fall below it.
 
 # Examples
 ```julia
-# dates is both data and the ordering variable
-res = partition(dates, TimeSplitOldest(); train=70, test=30)
-train_idx, test_idx = trainindices(res), testindices(res)
-
-# X is the data to split; dates provides the ordering
-res = partition(X, TimeSplitOldest(); time=dates, train=70, test=30)
+# Oldest observations go to train (asc order).
+res = partition(X, TimeSplit(:asc); time = dates, train = 70, test = 30)
 X_train, X_test = splitdata(res, X)
+
+# Convenience aliases.
+res = partition(X, TimeSplitOldest(); time = dates, train = 70, test = 30)  # same as :asc
+res = partition(X, TimeSplitNewest(); time = dates, train = 70, test = 30) # same as :desc
+
+# When dates are the data themselves.
+res = partition(dates, TimeSplitOldest(); train = 70, test = 30)
 ```
 """
 struct TimeSplit <: AbstractSplitStrategy

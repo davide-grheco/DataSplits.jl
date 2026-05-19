@@ -21,6 +21,11 @@ end
 
 LazyKennardStoneSplit() = LazyKennardStoneSplit(Euclidean())
 
+"""
+    LazyCADEXSplit
+
+Alias for [`LazyKennardStoneSplit`](@ref).
+"""
 const LazyCADEXSplit = LazyKennardStoneSplit
 
 consumes(::LazyKennardStoneSplit) = (:data,)

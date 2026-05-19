@@ -40,8 +40,9 @@ fallback_from_data(::SPXYSplit) = ()
 Minimum Dissimilarity Kennard–Stone (MDKS) split using Mahalanobis distance for `X`
 and Euclidean distance for `y`.
 
-If `metric` is not provided, the Mahalanobis distance is computed from the covariance
-matrix of `X` at split time.
+# Fields
+- `metric::Union{Nothing,Distances.PreMetric}`: Distance metric for `X`. When `nothing`
+  (default), Mahalanobis distance is computed from the covariance of `X` at split time.
 
 # Examples
 ```julia
