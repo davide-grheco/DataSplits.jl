@@ -121,10 +121,6 @@ import DataSplits: SplitParameterError
   end
 
   @testset "Missing train/test raises (UndefKeywordError)" begin
-    @test_throws UndefKeywordError partition(
-      X,
-      GroupShuffleSplitCV(5);
-      groups = groups,
-    )
+    @test_throws UndefKeywordError partition(X, GroupShuffleSplitCV(5); groups = groups)
   end
 end
