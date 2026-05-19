@@ -26,6 +26,13 @@ import DataSplits: SplitInputError, SplitParameterError
     @test_throws SplitParameterError GroupStratifiedSplit(:bogus)
   end
 
+  @testset "Equal and Neyman require n" begin
+    @test_throws SplitParameterError GroupStratifiedSplit(:equal)
+    @test_throws SplitParameterError GroupStratifiedSplit(:neyman)
+    @test_throws SplitParameterError GroupStratifiedSplit(:equal; n = 0)
+    @test_throws SplitParameterError GroupStratifiedSplit(:neyman; n = -1)
+  end
+
   @testset "Fallback: groups as both data and groups" begin
     result = partition(groups, GroupStratifiedSplit(:proportional); train = 60, test = 40)
     @test total_size(result) == 15

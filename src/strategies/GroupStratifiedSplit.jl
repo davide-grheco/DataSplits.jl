@@ -51,6 +51,10 @@ function GroupStratifiedSplit(allocation::Symbol; n = nothing)
       "Unknown allocation `$allocation`. Choose one of $_VALID_ALLOCATIONS.",
     ),
   )
+  if allocation === :proportional && n !== nothing
+    @warn "`:proportional` allocation ignores `n`; the entire group is used." _group =
+      :datasplits
+  end
   if allocation in (:equal, :neyman)
     n === nothing && throw(
       SplitParameterError(

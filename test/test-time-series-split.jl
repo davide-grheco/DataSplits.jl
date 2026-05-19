@@ -89,22 +89,10 @@ end
 end
 
 @testset "TimeSeriesSplit parameter validation" begin
-  @test_throws DataSplits.SplitParameterError partition(
-    X,
-    TimeSeriesSplit(1);
-    time = timestamps,
-  )
-  @test_throws DataSplits.SplitParameterError partition(
-    X,
-    TimeSeriesSplit(5; gap = -1);
-    time = timestamps,
-  )
-  @test_throws DataSplits.SplitParameterError partition(
-    X,
-    TimeSeriesSplit(5; max_train_size = 0);
-    time = timestamps,
-  )
-  # k+1 > N
+  @test_throws DataSplits.SplitParameterError TimeSeriesSplit(1)
+  @test_throws DataSplits.SplitParameterError TimeSeriesSplit(5; gap = -1)
+  @test_throws DataSplits.SplitParameterError TimeSeriesSplit(5; max_train_size = 0)
+  # k+1 > N (data-dependent, still caught in _partition)
   small_data = randn(2, 3)
   small_ts = [1, 2, 3]
   @test_throws DataSplits.SplitParameterError partition(

@@ -147,3 +147,10 @@ end
   @test !has_undershoot(logs)
   @test length(result_ok.train) == 15
 end
+@testset "OptiSim constructor validation" begin
+  import DataSplits: SplitParameterError
+  @test_throws SplitParameterError OptiSimSplit(; distance_cutoff = -0.1)
+  @test_throws SplitParameterError OptiSimSplit(; max_subsample_size = -1)
+  @test_throws SplitParameterError LazyOptiSimSplit(; distance_cutoff = -0.1)
+  @test_throws SplitParameterError LazyOptiSimSplit(; max_subsample_size = -1)
+end
