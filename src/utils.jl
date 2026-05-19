@@ -58,13 +58,13 @@ function find_maximin_element_lazy(X, metric, source_set, reference_set)
 end
 
 """
-    distance_matrix(X, metric::PreMetric)
+    distance_matrix(X, metric::Distances.SemiMetric)
 
 Computes the full symmetric pairwise distance matrix for the dataset `X` using the given `metric`.
 
 # Arguments
 - `X`: Data matrix or container. Columns are samples (features × samples).
-- `metric::PreMetric`: Distance metric from Distances.jl.
+- `metric::Distances.SemiMetric`: Distance metric from Distances.jl.
 
 # Returns
 - `D::Matrix{Float64}`: Matrix where `D[i, j] = metric(xᵢ, xⱼ)` and `D[i, j] == D[j, i]`.
@@ -73,7 +73,7 @@ Computes the full symmetric pairwise distance matrix for the dataset `X` using t
 - For custom containers, `getobs(X, i)` is used to access samples.
 - The matrix is symmetric and not normalized.
 """
-function distance_matrix(X, metric::PreMetric)
+function distance_matrix(X, metric::Distances.SemiMetric)
   N = numobs(X)
   D = zeros(Float64, N, N)
 
@@ -88,7 +88,7 @@ function distance_matrix(X, metric::PreMetric)
   return D
 end
 
-function distance_matrix(X::AbstractMatrix, metric::PreMetric)
+function distance_matrix(X::AbstractMatrix, metric::Distances.SemiMetric)
   return pairwise(metric, X, X; dims = 2)
 end
 
