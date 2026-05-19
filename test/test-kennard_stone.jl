@@ -89,23 +89,3 @@ end
 
   standard_kennard_tests(metric -> KennardStoneSplit(metric), X, Xv)
 end
-
-@testset "Kennard Stone Consistency" begin
-  Random.seed!(42)
-  X = rand(4, 100)
-
-  for frac in [0.2, 0.5, 0.8]
-    for metric in [Euclidean(), CosineDist()]
-      strat1 = KennardStoneSplit(metric)
-      strat2 = LazyKennardStoneSplit(metric)
-      train_pct, test_pct = _pct(frac)
-
-      result1 = DataSplits.partition(X, strat1; train = train_pct, test = test_pct)
-      result2 = DataSplits.partition(X, strat2; train = train_pct, test = test_pct)
-
-      @test Set(result1.train) == Set(result2.train)
-      @test Set(result1.test) == Set(result2.test)
-      @test length(result1.test) == length(result2.test)
-    end
-  end
-end

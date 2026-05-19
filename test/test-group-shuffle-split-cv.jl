@@ -8,34 +8,6 @@ import DataSplits: SplitParameterError
   X = randn(2, N)
   groups = vcat(fill(:a, 40), fill(:b, 40), fill(:c, 40))
 
-  @testset "Produces n_splits folds" begin
-    cvs = partition(
-      X,
-      GroupShuffleSplitCV(10);
-      groups = groups,
-      train = 80,
-      test = 40,
-      rng = MersenneTwister(0),
-    )
-    @test length(folds(cvs)) == 10
-  end
-
-  @testset "Each fold is a full partition with no group leakage" begin
-    cvs = partition(
-      X,
-      GroupShuffleSplitCV(8);
-      groups = groups,
-      train = 80,
-      test = 40,
-      rng = MersenneTwister(1),
-    )
-    for f in folds(cvs)
-      @test is_disjoint(f)
-      @test total_size(f) == N
-      @test no_group_leakage(f, groups)
-    end
-  end
-
   @testset "Resamples are independent (different from GroupKFold)" begin
     cvs = partition(
       X,

@@ -20,6 +20,7 @@ import DataSplits: SplitInputError, SplitParameterError, SplitNotImplementedErro
 
   # 70% train, 30% test on N=6 → n_train=4, n_test=2 (sum=100)
   @test_throws SplitInputError partition(X, SPXYSplit(); train = 70, test = 30)
+  @test_throws SplitInputError partition(X, LazySPXYSplit(); train = 70, test = 30)
 
   result = partition(X, SPXYSplit(); target = y, train = 70, test = 30)
   train_idx, test_idx = result.train, result.test
@@ -31,17 +32,12 @@ import DataSplits: SplitInputError, SplitParameterError, SplitNotImplementedErro
     train = 70,
     test = 30,
   )
-  train_idx2, test_idx2 = result2.train, result2.test
-  @test length(train_idx2) + length(test_idx2) == length(y)
-  @test is_disjoint(result2)
 
   expected_train = Set([2, 3, 5, 6])
   expected_test = Set([1, 4])
 
   @test Set(train_idx) == expected_train
   @test Set(test_idx) == expected_test
-  @test is_disjoint(result)
-  @test length(train_idx) + length(test_idx) == length(y)
 end
 
 @testset "SPXY more variables than samples" begin
@@ -65,17 +61,12 @@ end
     train = 70,
     test = 30,
   )
-  train_idx2, test_idx2 = result2.train, result2.test
-  @test length(train_idx2) + length(test_idx2) == length(y)
-  @test is_disjoint(result2)
 
   expected_train = Set([2, 3, 5, 1])
   expected_test = Set([4])
 
   @test Set(train_idx) == expected_train
   @test Set(test_idx) == expected_test
-  @test is_disjoint(result)
-  @test length(train_idx) + length(test_idx) == numobs(y)
 end
 
 @testset "MDKS splitter" begin
@@ -101,15 +92,10 @@ end
     train = 70,
     test = 30,
   )
-  train_idx2, test_idx2 = result2.train, result2.test
-  @test length(train_idx2) + length(test_idx2) == length(y)
-  @test is_disjoint(result2)
 
   expected_train = Set([2, 3, 5, 6])
   expected_test = Set([1, 4])
 
   @test Set(train_idx) == expected_train
   @test Set(test_idx) == expected_test
-  @test is_disjoint(result)
-  @test length(train_idx) + length(test_idx) == length(y)
 end

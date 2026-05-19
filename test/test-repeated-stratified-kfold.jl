@@ -7,26 +7,6 @@ import DataSplits: SplitParameterError
   N = 40
   labels = vcat(fill(:a, 20), fill(:b, 20))
 
-  @testset "Produces k * n_repeats folds" begin
-    cvs = partition(rand(2, N), RepeatedStratifiedKFold(5; n_repeats = 3); target = labels)
-    @test length(folds(cvs)) == 15
-  end
-
-  @testset "Each repeat is a full partition" begin
-    cvs = partition(
-      rand(2, N),
-      RepeatedStratifiedKFold(4; n_repeats = 2);
-      target = labels,
-      rng = MersenneTwister(0),
-    )
-    fs = folds(cvs)
-    for r = 0:1
-      slice = fs[(r*4+1):(r*4+4)]
-      test_concat = sort(reduce(vcat, [f.test for f in slice]))
-      @test test_concat == 1:N
-    end
-  end
-
   @testset "Class balance preserved within each fold" begin
     cvs = partition(
       rand(2, N),

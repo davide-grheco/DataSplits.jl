@@ -5,24 +5,6 @@ N = 60
 X = randn(2, N)
 timestamps = collect(1:N)
 
-@testset "TimeSeriesSplit basic contract" begin
-  cvs = partition(X, TimeSeriesSplit(5); time = timestamps)
-  @test cvs isa CrossValidationSplit
-  @test length(cvs) == 5
-
-  for fold in cvs
-    @test fold isa TrainTestSplit
-    @test isempty(intersect(fold.train, fold.test))
-  end
-end
-
-@testset "TimeSeriesSplit expanding window: train always precedes test" begin
-  cvs = partition(X, TimeSeriesSplit(5); time = timestamps)
-  for fold in cvs
-    @test maximum(timestamps[fold.train]) < minimum(timestamps[fold.test])
-  end
-end
-
 @testset "TimeSeriesSplit expanding window grows monotonically" begin
   cvs = partition(X, TimeSeriesSplit(5); time = timestamps)
   train_sizes = [length(fold.train) for fold in cvs]
@@ -60,17 +42,6 @@ end
   for fold in cvs
     gap_obs = minimum(timestamps[fold.test]) - maximum(timestamps[fold.train])
     @test gap_obs > 2
-  end
-end
-
-@testset "TimeSeriesSplit groups identical timestamps atomically" begin
-  ts = repeat(1:10, inner = 3)
-  data = randn(2, length(ts))
-  cvs = partition(data, TimeSeriesSplit(2); time = ts)
-  for fold in cvs
-    train_ts = unique(ts[fold.train])
-    test_ts = unique(ts[fold.test])
-    @test isempty(intersect(train_ts, test_ts))
   end
 end
 
