@@ -32,6 +32,7 @@ include("strategies/RepeatedKFold.jl")
 include("strategies/RepeatedStratifiedKFold.jl")
 include("strategies/TimeSeriesSplit.jl")
 include("strategies/StratifiedGroupKFold.jl")
+include("strategies/NestedCV.jl")
 include("strategies/PurgedKFold.jl")
 include("strategies/GroupShuffleSplitCV.jl")
 
@@ -74,6 +75,7 @@ export StratifiedKFold, StratifiedGroupKFold
 export ShuffleSplit, StratifiedShuffleSplit, GroupShuffleSplitCV
 export PredefinedSplit
 export BootstrapSplit
+export NestedCV, NestedFold, innerfolds
 export BlockedCV, PurgedKFold
 export RepeatedKFold, RepeatedStratifiedKFold
 
