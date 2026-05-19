@@ -84,8 +84,8 @@ import DataSplits: SplitParameterError
   end
 
   @testset "Parameter validation" begin
-    @test_throws SplitParameterError partition(X, BlockedCV(1); time = ts)
-    @test_throws SplitParameterError partition(X, BlockedCV(5; gap = -1); time = ts)
+    @test_throws SplitParameterError BlockedCV(1)
+    @test_throws SplitParameterError BlockedCV(5; gap = -1)
     @test_throws SplitParameterError partition(randn(2, 3), BlockedCV(5); time = [1, 2, 3])
   end
 

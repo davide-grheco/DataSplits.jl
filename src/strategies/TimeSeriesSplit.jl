@@ -62,32 +62,31 @@ struct TimeSeriesSplit <: AbstractCVStrategy
   max_train_size::Union{Nothing,Int}
 end
 
-TimeSeriesSplit(
+function TimeSeriesSplit(
   k::Integer;
   gap::Integer = 0,
   max_train_size::Union{Nothing,Integer} = nothing,
-) = TimeSeriesSplit(
-  Int(k),
-  Int(gap),
-  max_train_size === nothing ? nothing : Int(max_train_size),
 )
+  k >= 2 || throw(SplitParameterError("TimeSeriesSplit requires k ≥ 2, got k=$k."))
+  gap >= 0 || throw(SplitParameterError("TimeSeriesSplit requires gap ≥ 0, got gap=$gap."))
+  if max_train_size !== nothing && max_train_size < 1
+    throw(
+      SplitParameterError(
+        "TimeSeriesSplit requires max_train_size ≥ 1 when set, got $max_train_size.",
+      ),
+    )
+  end
+  TimeSeriesSplit(
+    Int(k),
+    Int(gap),
+    max_train_size === nothing ? nothing : Int(max_train_size),
+  )
+end
 
 consumes(::TimeSeriesSplit) = (:time,)
 fallback_from_data(::TimeSeriesSplit) = (:time,)
 
 function _partition(data, alg::TimeSeriesSplit; time, kwargs...)
-  alg.k >= 2 ||
-    throw(SplitParameterError("TimeSeriesSplit requires k ≥ 2, got k=$(alg.k)."))
-  alg.gap >= 0 ||
-    throw(SplitParameterError("TimeSeriesSplit requires gap ≥ 0, got gap=$(alg.gap)."))
-  if alg.max_train_size !== nothing && alg.max_train_size < 1
-    throw(
-      SplitParameterError(
-        "TimeSeriesSplit requires max_train_size ≥ 1 when set, got $(alg.max_train_size).",
-      ),
-    )
-  end
-
   N = numobs(data)
   length(time) == N || throw(
     SplitInputError(
