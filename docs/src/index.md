@@ -4,62 +4,70 @@ CurrentModule = DataSplits
 
 # DataSplits
 
-DataSplits is a Julia library for rational train/test splitting algorithms. It provides a variety of strategies for splitting datasets. In several applications random selection is not an appropriate choice and may lead to overestimating model performance.
+DataSplits is a Julia library of **rational train/test/CV splitting strategies**, intended for cases where random selection overestimates model performance — small datasets, structured data, regression with non-uniform targets, grouped observations, time series.
 
-## Quick Start
+The package exposes a single entry point, [`partition`](@ref), and a catalogue of strategies covering distance-based, group-aware, target-property, temporal, random / resampling, and cross-validation splits.
+
+## Quick start
 
 ```julia
-using DataSplits, Distances
+using DataSplits
 
-# Kennard–Stone split (maximin)
-splitter = KennardStoneSplit(0.8)
-result = split(X, splitter)
-X_train, X_test = splitdata(result, X)
+# Single train/test split (Kennard–Stone).
+res = partition(X, KennardStoneSplit(); train = 0.8, test = 0.2)
+X_train, X_test = splitdata(res, X)
 
-# SPXY split (joint X–y diversity)
-splitter = SPXYSplit(0.7; metric=Cityblock())
-result = split((X, y), splitter)
-X_train, X_test = splitdata(result, X)
+# Joint X / y diversity (SPXY).
+res = partition(X, SPXYSplit(); target = y, train = 80, test = 20)
+X_train, X_test = splitdata(res, X)
 
-# Cluster-based split
-using Clustering
-clusters = sphere_exclusion(X; radius=0.3)
-splitter = ClusterShuffleSplit(clusters, 0.8)
-result = split(X, splitter)
-X_train, X_test = splitdata(result, X)
+# Train / validation / test in one call.
+res = partition(X, RandomSplit(), KennardStoneSplit();
+                train = 70, validation = 10, test = 20)
+X_tr, X_val, X_te = splitdata(res, X)
+
+# Group-aware cross-validation.
+cvs = partition(X, GroupKFold(5); groups = patient_ids)
+for (X_tr, X_te) in splitview(cvs, X)
+    # train and evaluate
+end
 ```
 
-## Cheat Sheet
+See [Getting Started](02-getting-started.md) for the full API.
 
-| Task | Strategy | Example |
-|------|----------|---------|
-| Maximin split | `KennardStoneSplit` | `split(X, KennardStoneSplit(0.8))` |
-| Joint X–y split | `SPXYSplit` | `split((X, y), SPXYSplit(0.7))` |
-| Cluster shuffle | `ClusterShuffleSplit` | `split(X, ClusterShuffleSplit(clusters, 0.8))` |
-| Cluster stratified | `ClusterStratifiedSplit` | `split(X, ClusterStratifiedSplit(clusters, :proportional; frac=0.7))` |
-| Time-based split | `TimeSplit` | `split(dates, TimeSplit(0.7))` |
-| Property-based split | `TargetPropertySplit` | `split(y, TargetPropertyHigh(0.8))` |
-| Random split | `RandomSplit` | `split(X, RandomSplit(0.7))` |
-| Randomized Kennard Stone | `MoraisLimaMartinSplit` | `split(X, MoraisLimaMartinSplit(0.8; swap_frac=0.1))` |
+## Cheat sheet
 
-## Supported Strategies
+| Task                                | Strategy                                         |
+|-------------------------------------|--------------------------------------------------|
+| Maximin on *X*                      | [`KennardStoneSplit`](@ref) (alias `CADEXSplit`) |
+| Maximin on *X* + *y*                | [`SPXYSplit`](@ref), [`MDKSSplit`](@ref)         |
+| Diversity selection                 | [`OptiSimSplit`](@ref), [`MinimumDissimilaritySplit`](@ref), [`MaximumDissimilaritySplit`](@ref) |
+| Kennard–Stone with swap             | [`MoraisLimaMartinSplit`](@ref)                  |
+| Group-aware split                   | [`GroupShuffleSplit`](@ref), [`GroupStratifiedSplit`](@ref) |
+| Time-based split                    | [`TimeSplit`](@ref) (`TimeSplitOldest`, `TimeSplitNewest`) |
+| Target-property split               | [`TargetPropertySplit`](@ref) (`TargetPropertyHigh`, `TargetPropertyLow`) |
+| Random baseline                     | [`RandomSplit`](@ref)                            |
+| Plain k-fold                        | [`KFold`](@ref)                                  |
+| Group k-fold                        | [`GroupKFold`](@ref), [`LeaveOneGroupOut`](@ref), [`LeavePGroupsOut`](@ref) |
+| Stratified k-fold                   | [`StratifiedKFold`](@ref), [`StratifiedGroupKFold`](@ref) |
+| Time-series CV                      | [`TimeSeriesSplit`](@ref), [`BlockedCV`](@ref), [`PurgedKFold`](@ref) |
+| Resampling CV                       | [`ShuffleSplit`](@ref), [`StratifiedShuffleSplit`](@ref), [`GroupShuffleSplitCV`](@ref), [`BootstrapSplit`](@ref) |
+| Repeated CV                         | [`RepeatedKFold`](@ref), [`RepeatedStratifiedKFold`](@ref) |
+| Nested CV                           | [`NestedCV`](@ref)                               |
+| Predefined fold assignments         | [`PredefinedSplit`](@ref)                        |
+| Leave-p-out                         | [`LeavePOut`](@ref), [`LeaveOneOut`](@ref)       |
+| Clustering helper                   | [`sphere_exclusion`](@ref)                       |
 
-| Strategy | Purpose | Complexity |
-|----------|---------|------------|
-| `KennardStoneSplit` | Maximin split on *X* | `O(N²)` time, `O(N²)` memory |
-| `LazyKennardStoneSplit` | Same, streamed | `O(N²)` time, `O(N)` mem |
-| `SPXYSplit` | Joint *X–y* maximin (SPXY) | `O(N²)` time, `O(N²)` mem |
-| `LazySPXYSplit` | Joint *X–y* maximin (SPXY), streamed | `O(N²)` time, `O(N)` mem |
-| `LazyMDKSSplit` | Minimum Dissimilarity Kennard–Stone (MDKS), lazy | `O(N²)` time, `O(N)` mem |
-| `MoraisLimaMartinSplit` | Kennard–Stone + random swap | `O(N²)` time, `O(N²)` memory |
-| `OptiSimSplit`         | Optimisable dissimilarity-based splitting       | `O(N²)` time, `O(N²)` memory |
-| `MinimumDissimilaritySplit`|  Greedy dissimilarity with one candidate | O(N²) time, O(N²) memory |
-| `MaximumDissimilaritySplit`|  Greedy dissimilarity with full pool | O(N²) time, O(N²) memory |
-| `ClusterShuffleSplit`|  Cluster-based shuffle split | O(N²) time, O(N²) memory |
-| `ClusterStratifiedSplit`|  Cluster-based stratified split (equal, proportional, Neyman). Selects a quota per cluster, then splits into train/test according to user fraction. | O(N²) time, O(N²) memory |
+## Conventions
 
-All splitting strategies in DataSplits are designed to work with any AbstractArray, including those with non-standard axes.
+- Matrices follow the Julia ML convention: **columns are samples, rows are features**. Tables.jl inputs (e.g. `DataFrame`) use rows as samples and are converted internally.
+- Custom containers must implement `MLUtils.numobs` and `MLUtils.getobs`.
+- Cohort sizes (`train`, `validation`, `test`) live on `partition`, not on the strategy. They accept integer counts, integer percentages summing to 100, or `(0, 1)` fractions summing to 1.
 
-**DataSplits expects data matrices to follow the Julia ML convention: columns are samples, rows are features.** If your data uses rows as samples, transpose it before splitting (e.g., use `X'`).
+## Navigation
 
-For custom data types, implement `Base.length` (number of samples) and `Base.getindex(data, i)` (returning the i-th sample) as described in the [MLUtils documentation](https://juliaml.github.io/MLUtils.jl/stable/api/). This ensures compatibility with all DataSplits algorithms and utilities.
+- [Getting Started](02-getting-started.md) — `partition` in three forms, slot resolution, materialising splits.
+- [Core API Reference](03-core-api-reference.md) — full signatures, result types, accessors, traits, exceptions.
+- [Algorithms](04-algorithms-overview.md) — the catalogue of built-in strategies.
+- [Extending DataSplits](05-extending-data-splits.md) — adding a custom strategy.
+- [Reference](95-reference.md) — auto-generated docstring index.
