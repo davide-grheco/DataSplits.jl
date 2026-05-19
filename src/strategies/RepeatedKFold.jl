@@ -25,8 +25,7 @@ struct RepeatedKFold <: AbstractCVStrategy
   n_repeats::Int
 end
 
-RepeatedKFold(k::Integer; n_repeats::Integer = 10) =
-  RepeatedKFold(Int(k), Int(n_repeats))
+RepeatedKFold(k::Integer; n_repeats::Integer = 10) = RepeatedKFold(Int(k), Int(n_repeats))
 
 consumes(::RepeatedKFold) = ()
 fallback_from_data(::RepeatedKFold) = ()
