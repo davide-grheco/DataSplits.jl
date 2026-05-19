@@ -77,17 +77,19 @@ function _partition(
     optisim(D, n_train, s.max_subsample_size, s.distance_cutoff; rng = rng)
   train_pos = collect(selected_positions)
   test_pos = setdiff(1:N, train_pos)
-  _warn_optisim_undershoot(length(train_pos), n_train, s.distance_cutoff)
+  _warn_undershoot(
+    length(train_pos),
+    n_train,
+    "OptiSim: selected $(length(train_pos))/$n_train training samples; " *
+    "distance_cutoff=$(s.distance_cutoff) exhausted the candidate pool. " *
+    "Lower `distance_cutoff`, reduce `train`, or silence this warning by its " *
+    "`_id` (see `?OptiSimSplit`).";
+    id = :datasplits_optisim_undershoot,
+  )
   return TrainTestSplit(train_pos, test_pos)
 end
 
-function _warn_optisim_undershoot(n_selected, n_requested, distance_cutoff)
-  n_selected < n_requested || return
-  @warn "OptiSim: selected $n_selected/$n_requested training samples; \
-distance_cutoff=$distance_cutoff exhausted the candidate pool. \
-Lower `distance_cutoff`, reduce `train`, or silence this warning by its \
-`_id` (see `?OptiSimSplit`)." _id = :datasplits_optisim_undershoot _group = :datasplits
-end
+
 
 function optisim(
   D::AbstractMatrix,
