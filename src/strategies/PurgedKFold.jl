@@ -74,42 +74,12 @@ consumes(::PurgedKFold) = (:time,)
 fallback_from_data(::PurgedKFold) = (:time,)
 
 function _partition(data, alg::PurgedKFold; time, kwargs...)
-  N = numobs(data)
-  sorted_dates, order = groupsortperm(time)
-  B = length(sorted_dates)
-
-  alg.k <= B || throw(
-    SplitParameterError(
-      "PurgedKFold(k=$(alg.k)) requires at least k distinct time values; got $B.",
-    ),
+  _blocked_cv_partition(
+    data,
+    alg.k,
+    alg.purge,
+    alg.embargo;
+    time = time,
+    name = "PurgedKFold",
   )
-
-  chunk_block_end = distribute_blocks(B, alg.k)
-  block_offset = group_offsets(sorted_dates, order, time)
-
-  result = Vector{TrainTestSplit{Vector{Int}}}(undef, alg.k)
-  for i = 1:alg.k
-    test_block_start = i == 1 ? 1 : chunk_block_end[i-1] + 1
-    test_block_end = chunk_block_end[i]
-
-    test_lo = block_offset[test_block_start] + 1
-    test_hi = block_offset[test_block_end+1]
-
-    # Asymmetric exclusion: purge before the test block, embargo after.
-    train_left_hi = test_lo - 1 - alg.purge
-    train_right_lo = test_hi + 1 + alg.embargo
-
-    train_left = train_left_hi >= 1 ? order[1:train_left_hi] : Int[]
-    train_right = train_right_lo <= N ? order[train_right_lo:N] : Int[]
-    train_idx = vcat(train_left, train_right)
-
-    !isempty(train_idx) || throw(
-      SplitParameterError(
-        "PurgedKFold: fold $i has empty train cohort (purge=$(alg.purge), embargo=$(alg.embargo) too large for the surrounding blocks).",
-      ),
-    )
-
-    result[i] = TrainTestSplit(train_idx, order[test_lo:test_hi])
-  end
-  return CrossValidationSplit(result)
 end
