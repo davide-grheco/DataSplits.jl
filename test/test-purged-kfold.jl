@@ -82,10 +82,10 @@ import DataSplits: SplitParameterError
   end
 
   @testset "Parameter validation" begin
-    @test_throws SplitParameterError partition(X, PurgedKFold(1); time = ts)
-    @test_throws SplitParameterError partition(X, PurgedKFold(5; purge = -1); time = ts)
-    @test_throws SplitParameterError partition(X, PurgedKFold(5; embargo = -1); time = ts)
-    # k > number of distinct timestamps:
+    @test_throws SplitParameterError PurgedKFold(1)
+    @test_throws SplitParameterError PurgedKFold(5; purge = -1)
+    @test_throws SplitParameterError PurgedKFold(5; embargo = -1)
+    # k > number of distinct timestamps (data-dependent, still caught in _partition):
     @test_throws SplitParameterError partition(X, PurgedKFold(51); time = ts)
     # Empty train cohort:
     @test_throws SplitParameterError partition(

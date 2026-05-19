@@ -61,24 +61,19 @@ struct PurgedKFold <: AbstractCVStrategy
   embargo::Int
 end
 
-PurgedKFold(k::Integer; purge::Integer = 0, embargo::Integer = 0) =
+function PurgedKFold(k::Integer; purge::Integer = 0, embargo::Integer = 0)
+  k >= 2 || throw(SplitParameterError("PurgedKFold requires k ≥ 2, got k=$k."))
+  purge >= 0 ||
+    throw(SplitParameterError("PurgedKFold requires purge ≥ 0, got purge=$purge."))
+  embargo >= 0 ||
+    throw(SplitParameterError("PurgedKFold requires embargo ≥ 0, got embargo=$embargo."))
   PurgedKFold(Int(k), Int(purge), Int(embargo))
+end
 
 consumes(::PurgedKFold) = (:time,)
 fallback_from_data(::PurgedKFold) = (:time,)
 
 function _partition(data, alg::PurgedKFold; time, kwargs...)
-  alg.k >= 2 ||
-    throw(SplitParameterError("PurgedKFold requires k ≥ 2, got k=$(alg.k)."))
-  alg.purge >= 0 || throw(
-    SplitParameterError("PurgedKFold requires purge ≥ 0, got purge=$(alg.purge)."),
-  )
-  alg.embargo >= 0 || throw(
-    SplitParameterError(
-      "PurgedKFold requires embargo ≥ 0, got embargo=$(alg.embargo).",
-    ),
-  )
-
   N = numobs(data)
   sorted_dates, order = groupsortperm(time)
   B = length(sorted_dates)

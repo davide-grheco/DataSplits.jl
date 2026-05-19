@@ -50,16 +50,16 @@ struct BlockedCV <: AbstractCVStrategy
   gap::Int
 end
 
-BlockedCV(k::Integer; gap::Integer = 0) = BlockedCV(Int(k), Int(gap))
+function BlockedCV(k::Integer; gap::Integer = 0)
+  k >= 2 || throw(SplitParameterError("BlockedCV requires k ≥ 2, got k=$k."))
+  gap >= 0 || throw(SplitParameterError("BlockedCV requires gap ≥ 0, got gap=$gap."))
+  BlockedCV(Int(k), Int(gap))
+end
 
 consumes(::BlockedCV) = (:time,)
 fallback_from_data(::BlockedCV) = (:time,)
 
 function _partition(data, alg::BlockedCV; time, kwargs...)
-  alg.k >= 2 || throw(SplitParameterError("BlockedCV requires k ≥ 2, got k=$(alg.k)."))
-  alg.gap >= 0 ||
-    throw(SplitParameterError("BlockedCV requires gap ≥ 0, got gap=$(alg.gap)."))
-
   N = numobs(data)
   sorted_dates, order = groupsortperm(time)
   B = length(sorted_dates)
