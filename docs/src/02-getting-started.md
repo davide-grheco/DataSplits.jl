@@ -23,11 +23,11 @@ cvs = partition(data, cv_alg; kwargs...)
 
 ## Cohort sizes
 
-`train`, `validation`, and `test` accept either absolute integer counts (summing to `numobs(data)`), integer percentages (summing to `100`), or `(0, 1)` fractions (summing to `1.0`). Mixing is allowed as long as the resolved counts are each ≥ 1 and sum to `N`.
+`train`, `validation`, and `test` accept either absolute integer counts (summing to `numobs(data)`), integer percentages (summing to `100`), or `(0, 1)` fractions (summing to `1.0`).
 
 ```julia
-partition(X, RandomSplit(); train = 80, test = 20)        # absolute
-partition(X, RandomSplit(); train = 80, test = 20)        # percentages (when N != 100)
+partition(X, RandomSplit(); train = 80, test = 20)        # percentages
+partition(X, RandomSplit(); train = 150, test = 40)       # absolute
 partition(X, RandomSplit(); train = 0.8, test = 0.2)      # fractions
 ```
 
@@ -86,7 +86,7 @@ partition(X, RandomSplit(); train = 0.8, test = 0.2, rng = MersenneTwister(42))
 res = partition(X, KennardStoneSplit(); train = 0.8, test = 0.2)
 X_train, X_test = splitdata(res, X)
 X_train_view, X_test_view = splitview(res, X)
-X_train, y_train = trainview(res, X, y)   # multi-source tuple
+X_train, y_train = trainview(res, X, y)
 ```
 
 For a `CrossValidationSplit`, `splitdata` / `splitview` return one element per fold:

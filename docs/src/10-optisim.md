@@ -2,48 +2,110 @@
 CurrentModule = DataSplits
 ```
 
-# OptiSim Split
+# OptiSim and the Dissimilarity Family
 
-## Overview
-
-OptiSim is an iterative, optimisable splitting algorithm that aims to maximize the diversity of the training set by minimizing within-set similarity. At each step, it generates a temporary subsample of candidates and selects the one most dissimilar to the current training set, repeating until the desired fraction is reached. The algorithm is flexible and can be tuned for speed or quality by adjusting the subsample size and distance cutoff.
+OptiSim (Clark 1997) is a **tunable diversity-selection** algorithm. Where
+Kennard–Stone always evaluates all remaining candidates at each step (expensive but
+optimal), OptiSim samples a random subsample of candidates and picks the most
+dissimilar one — trading some optimality for speed.
 
 ## How it works
 
-1. Compute the pairwise distance matrix for all samples.
-2. Start with a random sample in the training set.
-3. At each iteration, generate a candidate subsample.
-4. Select the candidate most dissimilar to the current training set.
-5. Repeat until the desired number of training samples is reached.
+1. Maintain a pool of unselected candidates (initially all N points).
+2. At each step, draw a random subsample of `max_subsample_size` candidates from the
+   pool. Remove any candidate whose distance to the closest already-selected point
+   falls below `distance_cutoff` (these are "too similar" to what is already selected).
+3. From the remaining subsample, add the candidate most dissimilar to the current
+   training set.
+4. Repeat until `n_train` samples have been selected.
 
-## Arguments
+The `distance_cutoff` parameter filters out candidates that are too close to existing
+training points, preventing redundant selection.
 
-- `frac`: Fraction of samples to use for training (0 < frac < 1)
-- `max_subsample_size`: Size of candidate pool at each step (default: 0, i.e., use all)
-- `distance_cutoff`: Threshold for similarity filtering (default: 0.35)
-- `metric`: Distance metric (default: Euclidean)
+## The dissimilarity family
+
+ | Strategy | Effectively | When to use |
+ | ---------- | ------------- | ------------- |
+ | [`MinimumDissimilaritySplit`](@ref) | `max_subsample_size = 1` | Fastest greedy option |
+ | [`OptiSimSplit`](@ref) | `max_subsample_size` tunable | Balance speed vs. quality |
+ | [`MaximumDissimilaritySplit`](@ref) | `max_subsample_size = N` | Maximum spread (slower) |
+
+All three follow the same interface. The lazy variants compute distances on-the-fly
+(O(N) memory) instead of precomputing the full matrix.
 
 ## Usage
 
 ```julia
 using DataSplits
-splitter = OptiSimSplit(0.8; max_subsample_size=50)
-result = split(X, splitter)
-X_train, X_test = splitdata(result, X)
+
+# Greedy minimum dissimilarity (fastest).
+res = partition(X, MinimumDissimilaritySplit(); train = 0.8, test = 0.2)
+X_train, X_test = splitdata(res, X)
+
+# OptiSim with a custom subsample size.
+res = partition(X, OptiSimSplit(; max_subsample_size = 20); train = 0.8, test = 0.2)
+
+# Maximum dissimilarity (best spread, slowest).
+res = partition(X, MaximumDissimilaritySplit(); train = 0.8, test = 0.2)
+
+# Large datasets — lazy variants.
+res = partition(X, LazyOptiSimSplit(; max_subsample_size = 10); train = 0.8, test = 0.2)
+res = partition(X, LazyMinimumDissimilaritySplit(); train = 0.8, test = 0.2)
+res = partition(X, LazyMaximumDissimilaritySplit(); train = 0.8, test = 0.2)
+
+# Custom metric.
+using Distances
+res = partition(X, OptiSimSplit(; metric = Cityblock()); train = 0.8, test = 0.2)
 ```
 
-## Notes/Limitations
+## Tuning `distance_cutoff`
 
-- Depends on the first selection, which is random
-- **MinimumDissimilaritySplit** is an alias for `OptiSimSplit` with `max_subsample_size=1`. This provides a fast, greedy variant for large datasets where speed is more important than optimal diversity.
-- **MaximumDissimilaritySplit** is an alias for `OptiSimSplit` with `max_subsample_size=N`. This yields a greedy, diversity-maximizing split. Note: This implementation does **not** discard the first two samples as in the original Maximum Dissimilarity algorithm, but otherwise follows the same greedy logic. This algorithm is known to greedily include outliers.
+The `distance_cutoff` (default `0.35`) filters out candidates too close to existing
+training points. If it is too large relative to the data's spread, the candidate
+pool empties before `n_train` samples are selected; a `@warn` is emitted and the
+training set is returned smaller than requested.
 
-## API Reference
+To silence the warning for a large batch of splits:
 
-- [`OptiSimSplit`](@ref)
-- [`split`](@ref)
-- [`splitdata`](@ref)
+```julia
+using Logging, LoggingExtras
+
+silent = EarlyFilteredLogger(
+    log -> log.id !== :datasplits_optisim_undershoot,
+    current_logger()
+)
+with_logger(silent) do
+    results = [partition(X, OptiSimSplit(); train = 0.8, test = 0.2) for _ in 1:100]
+end
+```
+
+Reduce `distance_cutoff` if you are consistently getting smaller-than-requested
+training sets.
+
+## OptiSim vs. Kennard–Stone
+
+Kennard–Stone is deterministic and globally optimal under the maximin criterion —
+it always selects the best next point. OptiSim is stochastic (due to random
+subsampling) and greedy, but it is faster for large N and gives you a tunable knob
+between speed and quality.
+
+For small datasets where you can afford it, prefer Kennard–Stone. For large datasets
+or when you want multiple diverse splits, prefer OptiSim or its lazy variant.
+
+## Limitation: outliers
+
+`MaximumDissimilaritySplit` greedily selects the most extreme point at each step.
+This means outliers are almost always included in the training set. If your data
+contains measurement errors or genuine outliers, remove them before splitting.
+
+## API reference
+
+- [`OptiSimSplit`](@ref), [`LazyOptiSimSplit`](@ref)
+- [`MinimumDissimilaritySplit`](@ref), [`LazyMinimumDissimilaritySplit`](@ref)
+- [`MaximumDissimilaritySplit`](@ref), [`LazyMaximumDissimilaritySplit`](@ref)
 
 ## References
 
-Clark, R. D. OptiSim:  An Extended Dissimilarity Selection Method for Finding Diverse Representative Subsets. J. Chem. Inf. Comput. Sci. 1997, 37 (6), 1181–1188. <https://doi.org/10.1021/ci970282v>.
+Clark, R. D. OptiSim: An Extended Dissimilarity Selection Method for Finding Diverse
+Representative Subsets. *J. Chem. Inf. Comput. Sci.* 1997, 37(6), 1181–1188.
+<https://doi.org/10.1021/ci970282v>.

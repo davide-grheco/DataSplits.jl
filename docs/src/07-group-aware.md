@@ -104,9 +104,6 @@ res = partition(X, GroupStratifiedSplit(:neyman; n=10);
 
 - [`GroupShuffleSplit`](@ref)
 - [`GroupStratifiedSplit`](@ref)
-- [`partition`](@ref)
-- [`splitdata`](@ref)
-- [`splitview`](@ref)
 
 ## References
 
