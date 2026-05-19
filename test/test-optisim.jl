@@ -2,6 +2,7 @@ using Test
 using DataSplits
 using Random
 using Distances
+using Logging
 
 function sane_split_check(result, N; ntrain_expected = nothing)
   @test is_disjoint(result)
@@ -110,4 +111,39 @@ end
   result = make_split(X; frac = 0.8, distance_cutoff = 2000)
   sane_split_check(result, 50; ntrain_expected = 1)
 
+end
+
+@testset "OptiSim undershoot warning" begin
+  X = randn(5, 20)
+
+  function run_with_logs(strategy, rng)
+    logs, result = Test.collect_test_logs() do
+      DataSplits.partition(X, strategy; train = 15, test = 5, rng = rng)
+    end
+    return logs, result
+  end
+
+  has_undershoot(logs) = any(
+    r ->
+      r.level === Logging.Warn &&
+      r.id === :datasplits_optisim_undershoot &&
+      r.group === :datasplits &&
+      occursin("OptiSim: selected", r.message),
+    logs,
+  )
+
+  for strategy in (
+    OptiSimSplit(; distance_cutoff = 2000),
+    LazyOptiSimSplit(; distance_cutoff = 2000),
+    MinimumDissimilaritySplit(; distance_cutoff = 2000),
+    MaximumDissimilaritySplit(; distance_cutoff = 2000),
+  )
+    logs, result = run_with_logs(strategy, MersenneTwister(1))
+    @test has_undershoot(logs)
+    @test length(result.train) < 15
+  end
+
+  logs, result_ok = run_with_logs(OptiSimSplit(; distance_cutoff = 0), MersenneTwister(2))
+  @test !has_undershoot(logs)
+  @test length(result_ok.train) == 15
 end
