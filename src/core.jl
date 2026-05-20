@@ -255,6 +255,9 @@ trainview(r::CrossValidationSplit, data...) =
   [trainview(fold, data...) for fold in folds(r)]
 testview(r::CrossValidationSplit, data...) = [testview(fold, data...) for fold in folds(r)]
 
+@doc (@doc trainview) testview
+@doc (@doc trainview) valview
+
 """
     traindata(res, data...)
     testdata(res, data...)
@@ -273,6 +276,9 @@ testdata(r::TrainValTestSplit, data...) = _co_data(r.test, data...)
 traindata(r::CrossValidationSplit, data...) =
   [traindata(fold, data...) for fold in folds(r)]
 testdata(r::CrossValidationSplit, data...) = [testdata(fold, data...) for fold in folds(r)]
+
+@doc (@doc traindata) testdata
+@doc (@doc traindata) valdata
 
 
 # ---------------------------------------------------------------------------

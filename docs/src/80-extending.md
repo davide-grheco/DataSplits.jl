@@ -13,7 +13,7 @@ DataSplits is built around a small extension protocol: subtype an abstract strat
    - [`AbstractCVStrategy`](@ref) — cross-validation strategies whose fold sizes are fixed by the strategy itself (typically via `k`).
    - [`AbstractResamplingCVStrategy`](@ref) — CV strategies whose folds are independent random splits sized by the caller (`train`/`test` per fold).
 2. Declare the auxiliary slots your strategy reads with [`consumes`](@ref) and (optionally) [`fallback_from_data`](@ref).
-3. Implement [`_partition`](@ref) with the signature matching your supertype.
+3. Implement `_partition` with the signature matching your supertype.
 4. Add a test file under `test/test-<name>.jl` — `test/runtests.jl` discovers any `test-*.jl` automatically.
 5. Update `src/DataSplits.jl` to `include` the new file and export the strategy.
 
