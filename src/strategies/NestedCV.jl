@@ -120,17 +120,24 @@ cvs = partition(X, NestedCV(GroupKFold(5), GroupKFold(3)); groups = patient_ids)
 struct NestedCV{O<:AbstractCVStrategy,I<:AbstractCVStrategy} <: AbstractCVStrategy
   outer::O
   inner::I
+  function NestedCV{O,I}(
+    outer::O,
+    inner::I,
+  ) where {O<:AbstractCVStrategy,I<:AbstractCVStrategy}
+    inner isa AbstractResamplingCVStrategy && throw(
+      SplitParameterError(
+        "NestedCV: inner strategy must be a non-resampling AbstractCVStrategy (got $(typeof(inner))). " *
+        "Resampling strategies require caller-set cohort sizes which NestedCV does not propagate.",
+      ),
+    )
+    new{O,I}(outer, inner)
+  end
 end
 
-function NestedCV(outer::AbstractCVStrategy, inner::AbstractCVStrategy)
-  inner isa AbstractResamplingCVStrategy && throw(
-    SplitParameterError(
-      "NestedCV: inner strategy must be a non-resampling AbstractCVStrategy (got $(typeof(inner))). " *
-      "Resampling strategies require caller-set cohort sizes which NestedCV does not propagate.",
-    ),
-  )
-  NestedCV{typeof(outer),typeof(inner)}(outer, inner)
-end
+NestedCV(
+  outer::O,
+  inner::I,
+) where {O<:AbstractCVStrategy,I<:AbstractCVStrategy} = NestedCV{O,I}(outer, inner)
 
 function consumes(nc::NestedCV)
   seen = Symbol[]
