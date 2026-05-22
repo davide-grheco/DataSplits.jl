@@ -55,7 +55,7 @@ using Distances
 res = partition(X, SPXYSplit(; metric_X = Cityblock(), metric_y = Euclidean());
                 target = y, train = 80, test = 20)
 
-# Large dataset — on-the-fly distances.
+# Avoid storing two N×N matrices — but 32–57× slower.
 res = partition(X, LazySPXYSplit(); target = y, train = 0.8, test = 0.2)
 res = partition(X, LazyMDKSSplit(); target = y, train = 0.8, test = 0.2)
 ```
@@ -67,8 +67,8 @@ and `y` are separate inputs.
 
 | | [`SPXYSplit`](@ref) / [`MDKSSplit`](@ref) | [`LazySPXYSplit`](@ref) / [`LazyMDKSSplit`](@ref) |
 | --- | --- | --- |
-| Memory | O(N²) | O(N) |
-| Speed | Faster | Slightly slower |
+| Peak memory | O(N²) — two full N×N matrices | O(N) — no full matrix |
+| Speed (N=1000) | 14 ms / 12 ms | 445 ms / 708 ms (~32–57× slower) |
 
 ## When SPXY beats Kennard–Stone
 

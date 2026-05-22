@@ -30,8 +30,10 @@ training points, preventing redundant selection.
  | [`OptiSimSplit`](@ref) | `max_subsample_size` tunable | Balance speed vs. quality |
  | [`MaximumDissimilaritySplit`](@ref) | `max_subsample_size = N` | Maximum spread (slower) |
 
-All three follow the same interface. The lazy variants compute distances on-the-fly
-(O(N) memory) instead of precomputing the full matrix.
+All three follow the same interface. Lazy variants avoid storing the full N×N matrix
+(O(N) peak memory), but recompute distances on-the-fly — making them 3–11× slower
+at N=1000 (MinimumDissimilarity: ~3×, OptiSim: ~5×, MaximumDissimilarity: ~11×).
+Prefer lazy only when the full matrix does not fit in RAM.
 
 ## Usage
 
@@ -90,7 +92,8 @@ subsampling) and greedy, but it is faster for large N and gives you a tunable kn
 between speed and quality.
 
 For small datasets where you can afford it, prefer Kennard–Stone. For large datasets
-or when you want multiple diverse splits, prefer OptiSim or its lazy variant.
+or when you want multiple diverse splits, prefer OptiSim. The lazy variant is only
+needed when the N×N matrix does not fit in RAM — it is ~5× slower at N=1000.
 
 ## Limitation: outliers
 

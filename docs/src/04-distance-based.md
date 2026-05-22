@@ -16,19 +16,21 @@ points together and produce an overly optimistic error estimate.
 
 ## The family at a glance
 
-| Strategy | Covers | Memory | Speed |
+| Strategy | Covers | Peak memory | Speed (N=1000) |
 | --- | --- | --- | --- |
-| [`KennardStoneSplit`](@ref) | X only | O(N²) — full matrix | Deterministic, fast |
-| [`LazyKennardStoneSplit`](@ref) | X only | O(N) | Slightly slower |
-| [`SPXYSplit`](@ref) | X + y | O(N²) | Deterministic, fast |
-| [`LazySPXYSplit`](@ref) | X + y | O(N) | Slightly slower |
-| [`MDKSSplit`](@ref) | X (Mahalanobis) + y | O(N²) | Deterministic |
-| [`LazyMDKSSplit`](@ref) | X (Mahalanobis) + y | O(N) | Slightly slower |
-| [`OptiSimSplit`](@ref) | X | O(N²) | Tunable via `max_subsample_size` |
-| [`LazyOptiSimSplit`](@ref) | X | O(N) | Tunable |
-| [`MinimumDissimilaritySplit`](@ref) | X | O(N²) | Fast (greedy, one candidate) |
-| [`MaximumDissimilaritySplit`](@ref) | X | O(N²) | Slower (all candidates) |
-| [`MoraisLimaMartinSplit`](@ref) | X | O(N²) | Adds random swap on top of KS |
+| [`KennardStoneSplit`](@ref) | X only | O(N²) — full matrix | 7.3 ms — deterministic |
+| [`LazyKennardStoneSplit`](@ref) | X only | O(N) — no full matrix | 43 ms (~6× slower) |
+| [`SPXYSplit`](@ref) | X + y | O(N²) | 14 ms — deterministic |
+| [`LazySPXYSplit`](@ref) | X + y | O(N) | 445 ms (~32× slower) |
+| [`MDKSSplit`](@ref) | X (Mahalanobis) + y | O(N²) | 12 ms — deterministic |
+| [`LazyMDKSSplit`](@ref) | X (Mahalanobis) + y | O(N) | 708 ms (~57× slower) |
+| [`OptiSimSplit`](@ref) | X | O(N²) | 59 ms — tunable via `max_subsample_size` |
+| [`LazyOptiSimSplit`](@ref) | X | O(N) | 304 ms (~5× slower) |
+| [`MinimumDissimilaritySplit`](@ref) | X | O(N²) | 11 ms — fastest greedy |
+| [`LazyMinimumDissimilaritySplit`](@ref) | X | O(N) | 34 ms (~3× slower) |
+| [`MaximumDissimilaritySplit`](@ref) | X | O(N²) | 1.3 s — all candidates |
+| [`LazyMaximumDissimilaritySplit`](@ref) | X | O(N) | 14.8 s (~11× slower) |
+| [`MoraisLimaMartinSplit`](@ref) | X | O(N²) | 6.7 ms — KS + random swap |
 
 For deep dives see: [Kennard–Stone](08-kennard-stone.md), [SPXY](09-spxy.md),
 [OptiSim](10-optisim.md), [Morais–Lima–Martin](11-morais-lima-martin.md).
@@ -58,8 +60,12 @@ that is undesirable.
 **Use MoraisLimaMartinSplit** when you want the coverage of Kennard–Stone but with a
 random perturbation for ensemble diversity.
 
-**Use the Lazy variants** for large datasets (tens of thousands of samples) where
-storing the full N×N distance matrix consumes too much memory.
+**Use the Lazy variants** only when the full N×N distance matrix does not fit in RAM
+(roughly N > 5 000 on a 32 GiB machine). They never hold more than a constant number
+of distance values in memory at once (O(N) peak), but recompute distances on-the-fly,
+making them 3–57× slower. Note that profiling tools report higher *total allocated*
+bytes for lazy variants because each on-the-fly distance computation allocates a small
+transient object; this does not reflect peak resident memory.
 
 ## Minimal example
 
