@@ -47,7 +47,7 @@ X_train, X_test = splitdata(res, X)
 using Distances
 res = partition(X, KennardStoneSplit(Cityblock()); train = 70, test = 30)
 
-# Large dataset — on-the-fly distances, O(N) memory.
+# Large dataset — no full matrix in memory, but ~6× slower.
 res = partition(X, LazyKennardStoneSplit(); train = 0.8, test = 0.2)
 
 # Train / validation / test.
@@ -61,14 +61,15 @@ X_tr, X_val, X_te = splitdata(res, X)
 | | [`KennardStoneSplit`](@ref) | [`LazyKennardStoneSplit`](@ref) |
 | --- | --- | --- |
 | Distance matrix | Precomputed once | Computed on-the-fly each step |
-| Memory | O(N²) | O(N) |
-| Speed | Faster (matrix lookups) | Slightly slower (repeated distances) |
-| Use when | Dataset fits in memory | N is large or memory is scarce |
+| Peak memory | O(N²) — 8 MiB at N=1000 | O(N) — no full matrix |
+| Speed (N=1000) | 7.3 ms | 43 ms (~6× slower) |
+| Use when | Dataset fits in memory | N×N matrix does not fit in RAM |
 
 ## Limitations
 
-- **Quadratic memory and time** for the eager variant — impractical for N > ~5000
-  without the lazy variant.
+- **Quadratic memory** for the eager variant — the N×N distance matrix is ~8 MiB at
+  N=1000 and ~200 MiB at N=5000. Use `LazyKennardStoneSplit` when this does not fit
+  in RAM, accepting ~6× slower runtime.
 - **Deterministic** — there is no randomness, so you cannot average over multiple
   Kennard–Stone splits. Use [`MoraisLimaMartinSplit`](@ref) if you need stochastic
   variants.
