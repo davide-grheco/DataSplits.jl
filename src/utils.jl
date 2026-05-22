@@ -1,5 +1,8 @@
 using Distances
-using MLUtils: numobs, getobs
+using MLUtils: numobs, getobs, obsview
+
+_obs(data::AbstractMatrix, i) = obsview(data, i)
+_obs(data, i) = getobs(data, i)
 
 """
     find_maximin_element(distances::AbstractMatrix{T},
@@ -47,8 +50,8 @@ function find_maximin_element_lazy(X, metric, source_set, reference_set)
   best_index = first(source_set)
   best_score = -Inf
   for i in source_set
-    value = getobs(X, i)
-    min_dist = minimum(j -> Distances.evaluate(metric, value, getobs(X, j)), reference_set)
+    value = _obs(X, i)
+    min_dist = minimum(j -> Distances.evaluate(metric, value, _obs(X, j)), reference_set)
     if min_dist > best_score
       best_score = min_dist
       best_index = i

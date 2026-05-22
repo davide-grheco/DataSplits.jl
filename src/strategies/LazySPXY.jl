@@ -66,10 +66,10 @@ function _find_max_distance_XY(X, y, metric_X, metric_y)
   max_dx = 0.0
   max_dy = 0.0
   for i = 1:(N-1)
-    xi = getobs(X, i)
+    xi = _obs(X, i)
     yi = y[i]
     for j = (i+1):N
-      xj = getobs(X, j)
+      xj = _obs(X, j)
       yj = y[j]
       dx = evaluate(metric_X, xi, xj)
       dy = evaluate(metric_y, yi, yj)
@@ -86,6 +86,7 @@ struct XYObsTable
 end
 
 getobs(data::XYObsTable, i) = (getobs(data.X, i), getobs(data.y, i))
+_obs(data::XYObsTable, i) = (obsview(data.X, i), data.y[i])
 numobs(data::XYObsTable) = numobs(data.X)
 
 struct LazySPXYMetric <: Distances.SemiMetric
