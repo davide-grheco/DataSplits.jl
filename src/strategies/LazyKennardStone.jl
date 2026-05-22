@@ -48,9 +48,9 @@ function _partition(
   min_dists = fill(Inf, N)
   for i = 1:N
     if !selected[i]
-      x = getobs(data, i)
-      d1 = Distances.evaluate(s.metric, x, getobs(data, i₁))
-      d2 = Distances.evaluate(s.metric, x, getobs(data, i₂))
+      x = _obs(data, i)
+      d1 = Distances.evaluate(s.metric, x, _obs(data, i₁))
+      d2 = Distances.evaluate(s.metric, x, _obs(data, i₂))
       min_dists[i] = min(d1, d2)
     end
   end
@@ -60,10 +60,10 @@ function _partition(
     order[k] = next_i
     selected[next_i] = true
     min_dists[next_i] = -Inf
-    ref = getobs(data, next_i)
+    ref = _obs(data, next_i)
     @inbounds for i = 1:N
       if !selected[i]
-        d = Distances.evaluate(s.metric, ref, getobs(data, i))
+        d = Distances.evaluate(s.metric, ref, _obs(data, i))
         min_dists[i] = min(min_dists[i], d)
       end
     end
@@ -77,9 +77,9 @@ function find_most_distant_pair(data, metric::Distances.SemiMetric)
   max_d, best_i, best_j = -Inf, nothing, nothing
   n = numobs(data)
   for i = 1:(n-1)
-    x = getobs(data, i)
+    x = _obs(data, i)
     for j = (i+1):n
-      y = getobs(data, j)
+      y = _obs(data, j)
       d = Distances.evaluate(metric, x, y)
       if d > max_d
         max_d, best_i, best_j = d, i, j

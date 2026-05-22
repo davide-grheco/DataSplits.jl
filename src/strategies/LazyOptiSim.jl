@@ -72,9 +72,9 @@ function _partition(
     while length(subsample) < s.max_subsample_size && !isempty(remaining_candidates)
       candidate = rand(rng, remaining_candidates)
       delete!(remaining_candidates, candidate)
-      value = getobs(X, candidate)
+      value = _obs(X, candidate)
       is_dissimilar = all(
-        sel -> Distances.evaluate(s.metric, value, getobs(X, sel)) >= s.distance_cutoff,
+        sel -> Distances.evaluate(s.metric, value, _obs(X, sel)) >= s.distance_cutoff,
         selected,
       )
       if is_dissimilar
