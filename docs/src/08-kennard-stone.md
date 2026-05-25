@@ -20,8 +20,8 @@ data.
 
 The test set is whatever was not selected.
 
-The result is a training set that spans the convex hull of the data — training points
-are spread throughout the feature space rather than clustered in any region.
+The result is a training set spread throughout the feature space — training points
+cover the full extent of the data distribution rather than clustering in any region.
 
 ## When to use it
 

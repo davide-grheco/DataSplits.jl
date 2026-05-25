@@ -61,7 +61,7 @@ that is undesirable.
 random perturbation for ensemble diversity.
 
 **Use the Lazy variants** only when the full N×N distance matrix does not fit in RAM
-(roughly N > 5 000 on a 32 GiB machine). They never hold more than a constant number
+(roughly N > 60 000 on a 32 GiB machine, N > 30 000 on 8 GiB). They never hold more than a constant number
 of distance values in memory at once (O(N) peak), but recompute distances on-the-fly,
 making them 3–57× slower. Note that profiling tools report higher *total allocated*
 bytes for lazy variants because each on-the-fly distance computation allocates a small

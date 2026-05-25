@@ -27,7 +27,7 @@ cvs = partition(data, cv_alg; kwargs...)
 
 ```julia
 partition(X, RandomSplit(); train = 80, test = 20)        # percentages
-partition(X, RandomSplit(); train = 150, test = 40)       # absolute
+partition(X, RandomSplit(); train = 150, test = 40)       # absolute (requires numobs(X) == 190)
 partition(X, RandomSplit(); train = 0.8, test = 0.2)      # fractions
 ```
 

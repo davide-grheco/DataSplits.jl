@@ -16,7 +16,7 @@ strategy.
 ## How it works
 
 1. Normalise the pairwise distance matrix to [0, 1].
-2. Take the first unassigned sample as a new cluster centre.
+2. Pick an unassigned sample (in arbitrary order) as a new cluster centre.
 3. Assign to that cluster every unassigned sample within `radius` of the centre.
 4. Repeat until all samples are assigned.
 

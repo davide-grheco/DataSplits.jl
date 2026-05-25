@@ -205,6 +205,13 @@ for outerfold in folds(cvs)
 end
 ```
 
+!!! note "Inner strategy restriction"
+    The inner strategy must be a non-resampling `AbstractCVStrategy`. Passing a
+    resampling strategy (`ShuffleSplit`, `StratifiedShuffleSplit`,
+    `GroupShuffleSplitCV`) as the inner argument raises a `SplitParameterError`
+    at construction time, because those strategies require caller-specified cohort
+    sizes that `NestedCV` does not propagate.
+
 Stratified and group-aware strategies work as both outer and inner:
 
 ```julia

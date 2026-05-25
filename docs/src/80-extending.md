@@ -27,6 +27,11 @@ fallback_from_data(alg) -> NTuple{N,Symbol}    # subset of consumes(alg)
 `consumes` lists every slot the strategy reads — `partition` uses this to validate keyword arguments and length-check the slot vectors. `fallback_from_data` is the subset of consumed slots for which `data` itself may stand in when the caller omits the keyword (e.g. `partition(timestamps, TimeSplit(); …)` works because `TimeSplit` declares `fallback_from_data = (:time,)`).
 
 The default is `()` for both — your strategy reads no auxiliary slots and accepts no fallbacks.
+The special `:data` slot does not add a keyword argument. Declaring it in `consumes`
+instructs `partition` to convert `data` to a features×samples matrix
+(`_to_feature_matrix`) before forwarding it to `_partition`. Use it when your
+strategy operates directly on the feature matrix (as all distance-based strategies
+do). Omit it if your strategy only needs indices or auxiliary vectors.
 
 ## `_partition` contract
 

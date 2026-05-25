@@ -125,7 +125,7 @@ cvs = partition(X, PurgedKFold(5); time = timestamps)
 | --- | --- |
 | Simple cutoff, one split | [`TimeSplit`](@ref) |
 | Walk-forward CV, stationary data | [`TimeSeriesSplit`](@ref) |
-| CV with future training data allowed | [`BlockedCV`](@ref) |
+| Stationary data; train includes blocks before and after test | [`BlockedCV`](@ref) |
 | Label overlap leakage (financial returns) | [`PurgedKFold`](@ref) |
 
 ## References

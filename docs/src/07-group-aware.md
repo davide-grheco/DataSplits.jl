@@ -71,7 +71,7 @@ are eligible for the split:
 | Allocation       | Behaviour                                                                                  | Requires `n` |
 |------------------|--------------------------------------------------------------------------------------------|--------------|
 | `:proportional`  | All samples from each group are used.                                                      | no           |
-| `:equal`         | Pick `n` samples from each group; the rest are discarded.                                  | yes          |
+| `:equal`         | Pick `n` samples from each group; the rest are excluded from both cohorts.                 | yes          |
 | `:neyman`        | Pick a quota per group proportional to group size × within-group standard deviation.       | yes          |
 
 ```julia
