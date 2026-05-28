@@ -6,6 +6,7 @@
 [![Coverage](https://codecov.io/gh/davide-grheco/DataSplits.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/davide-grheco/DataSplits.jl)
 [![Docs workflow Status](https://github.com/davide-grheco/DataSplits.jl/actions/workflows/Docs.yml/badge.svg?branch=main)](https://github.com/davide-grheco/DataSplits.jl/actions/workflows/Docs.yml?query=branch%3Amain)
 [![BestieTemplate](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/JuliaBesties/BestieTemplate.jl/main/docs/src/assets/badge.json)](https://github.com/JuliaBesties/BestieTemplate.jl)
+[![DOI](https://zenodo.org/badge/1020676159.svg)](https://doi.org/10.5281/zenodo.20426864)
 
 A Julia library of train/test and cross-validation splitting strategies for cases
 where random splitting misleads — small datasets, regression over continuous targets,
