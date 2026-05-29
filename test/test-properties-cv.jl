@@ -397,3 +397,19 @@ end
     is_full_partition(cvs, N)
   end
 end
+
+# ------------------------------------------------------------------
+# VenetianBlindsCV
+# ------------------------------------------------------------------
+
+@testset "VenetianBlindsCV properties" begin
+  @check max_examples = 200 rng = Xoshiro(88) function venetian_blinds_valid_cv(
+    case = kfold_case_gen,
+  )
+    N, k = case
+    X = reshape(collect(1:N), 1, N)
+    target = collect(1.0:N)
+    cvs = partition(X, VenetianBlindsCV(k); target = target)
+    length(cvs) == k && is_full_partition(cvs, N) && every_observation_tests_once(cvs, N)
+  end
+end

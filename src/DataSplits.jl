@@ -36,6 +36,7 @@ include("strategies/NestedCV.jl")
 include("strategies/PurgedKFold.jl")
 include("strategies/CombinatorialPurgedKFold.jl")
 include("strategies/GroupShuffleSplitCV.jl")
+include("strategies/VenetianBlindsCV.jl")
 include("strategies/FieldStrengthSplit.jl")
 include("strategies/SpectralSplit.jl")
 
@@ -81,6 +82,7 @@ export BootstrapSplit
 export NestedCV, NestedFold, innerfolds
 export BlockedCV, PurgedKFold
 export CombinatorialPurgedKFold
+export VenetianBlindsCV
 export RepeatedKFold, RepeatedStratifiedKFold
 
 # Target / time property

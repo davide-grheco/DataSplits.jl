@@ -144,6 +144,8 @@ for N in [1000, 5000]
   )
   SUITE["crossval"]["PredefinedSplit"][tag] =
     @benchmarkable partition($X, PredefinedSplit($folds))
+  SUITE["crossval"]["VenetianBlindsCV"][tag] =
+    @benchmarkable partition($X, VenetianBlindsCV(5); target = $labels)
 end
 
 # ── Time-series cross-validation ──────────────────────────────────────────────
