@@ -159,6 +159,8 @@ for N in [1000, 5000]
     @benchmarkable partition($X, BlockedCV(5); time = $times)
   SUITE["time_cv"]["PurgedKFold"][tag] =
     @benchmarkable partition($X, PurgedKFold(5); time = $times)
+  SUITE["time_cv"]["CombinatorialPurgedKFold"][tag] =
+    @benchmarkable partition($X, CombinatorialPurgedKFold(6, 2); time = $times)
 end
 
 # ── Leave-p-out ───────────────────────────────────────────────────────────────

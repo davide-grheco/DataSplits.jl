@@ -382,3 +382,18 @@ end
       every_observation_tests_once(cvs, N)
   end
 end
+
+# ------------------------------------------------------------------
+# CombinatorialPurgedKFold
+# ------------------------------------------------------------------
+
+@testset "CombinatorialPurgedKFold properties" begin
+  @check max_examples = 100 rng = Xoshiro(91) function cpcv_valid_cv(case = kfold_case_gen)
+    N, k = case
+    k = min(k, 6)
+    times = collect(1:N)
+    X = reshape(times, 1, N)
+    cvs = partition(X, CombinatorialPurgedKFold(k, 1); time = times)
+    is_full_partition(cvs, N)
+  end
+end
