@@ -52,6 +52,8 @@ for N in [200, 500, 1000]
     @benchmarkable partition($X, MaximumDissimilaritySplit(); train = 0.8, test = 0.2)
   SUITE["distance"]["LazyMaximumDissimilaritySplit"][tag] =
     @benchmarkable partition($X, LazyMaximumDissimilaritySplit(); train = 0.8, test = 0.2)
+  SUITE["distance"]["FieldStrengthSplit"][tag] =
+    @benchmarkable partition($X, FieldStrengthSplit(); train = 0.8, test = 0.2)
 end
 
 # ── Simple train/test splits (O(N)) ──────────────────────────────────────────
