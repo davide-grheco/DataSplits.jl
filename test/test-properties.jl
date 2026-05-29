@@ -378,3 +378,20 @@ end
       !isempty(testindices(result))
   end
 end
+
+@testset "SpectralSplit partition invariants" begin
+  @check max_examples = 100 rng = Xoshiro(9) function spectral_valid_partition(
+    case = algo_sizes_gen,
+  )
+    N, n_train, n_test = case
+    X = reshape(collect(1.0:N), 1, N)
+    result = partition(
+      X,
+      SpectralSplit(min(5, N));
+      train = n_train,
+      test = n_test,
+      rng = Xoshiro(42),
+    )
+    is_full_partition(result, N) && cohorts_are_complements(result, N)
+  end
+end
