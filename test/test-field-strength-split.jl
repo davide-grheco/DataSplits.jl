@@ -1,8 +1,7 @@
-using Test, Random, DataSplits, Distances
+using Test, Random, DataSplits, Distances, StableRNGs
 import DataSplits: field_strength_from_distance_matrix
 
-rng_data = MersenneTwister(42)
-X50 = randn(rng_data, 4, 50)
+X50 = randn(StableRNG(42), 4, 50)
 
 @testset "FieldStrengthSplit basic properties" begin
   res = partition(X50, FieldStrengthSplit(); train = 70, test = 30)
@@ -29,9 +28,8 @@ end
 end
 
 @testset "FieldStrengthSplit deterministic (no rng dependency)" begin
-  r1 = partition(X50, FieldStrengthSplit(); train = 70, test = 30, rng = MersenneTwister(1))
-  r2 =
-    partition(X50, FieldStrengthSplit(); train = 70, test = 30, rng = MersenneTwister(99))
+  r1 = partition(X50, FieldStrengthSplit(); train = 70, test = 30, rng = StableRNG(1))
+  r2 = partition(X50, FieldStrengthSplit(); train = 70, test = 30, rng = StableRNG(99))
   @test Set(r1.train) == Set(r2.train)
 end
 
@@ -67,8 +65,8 @@ end
   @test sort(res.train) == [1, 2, 4, 6, 8, 10, 12, 15]
   @test sort(res.test) == [3, 5, 7, 9, 11, 13, 14]
 
-  X4d = randn(MersenneTwister(123), 4, 20)
+  X4d = randn(StableRNG(123), 4, 20)
   res = partition(X4d, FieldStrengthSplit(); train = 12, test = 8)
-  @test sort(res.train) == [2, 3, 4, 5, 6, 8, 10, 13, 15, 16, 17, 19]
-  @test sort(res.test) == [1, 7, 9, 11, 12, 14, 18, 20]
+  @test sort(res.train) == [2, 3, 4, 6, 8, 9, 10, 11, 13, 15, 18, 20]
+  @test sort(res.test) == [1, 5, 7, 12, 14, 16, 17, 19]
 end
