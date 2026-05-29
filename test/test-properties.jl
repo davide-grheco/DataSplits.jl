@@ -59,6 +59,10 @@ const XONLY_SPLITS = [
       partition(X, MoraisLimaMartinSplit(); train = tr, test = te, rng = Xoshiro(42)),
   ),
   (
+    "FieldStrengthSplit",
+    (X, tr, te) -> partition(X, FieldStrengthSplit(); train = tr, test = te),
+  ),
+  (
     "OptiSimSplit",
     (X, tr, te) -> partition(
       X,
