@@ -37,6 +37,7 @@ include("strategies/PurgedKFold.jl")
 include("strategies/CombinatorialPurgedKFold.jl")
 include("strategies/GroupShuffleSplitCV.jl")
 include("strategies/FieldStrengthSplit.jl")
+include("strategies/SpectralSplit.jl")
 
 
 # Core API
@@ -62,6 +63,7 @@ export LazyOptiSimSplit
 export MinimumDissimilaritySplit, LazyMinimumDissimilaritySplit
 export MaximumDissimilaritySplit, LazyMaximumDissimilaritySplit
 export FieldStrengthSplit
+export SpectralSplit
 
 # Random
 export RandomSplit

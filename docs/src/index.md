@@ -48,6 +48,8 @@ end
 | --- | --- |
 | Cover feature space (maximin) | [`KennardStoneSplit`](@ref) / [`LazyKennardStoneSplit`](@ref) |
 | Cover features + target jointly | [`SPXYSplit`](@ref), [`MDKSSplit`](@ref) |
+| Field-strength split | [`FieldStrengthSplit`](@ref) |
+| Spectral cluster split | [`SpectralSplit`](@ref) |
 | Diversity selection (subsample) | [`OptiSimSplit`](@ref), [`MinimumDissimilaritySplit`](@ref), [`MaximumDissimilaritySplit`](@ref) |
 | Kennard–Stone + random swap | [`MoraisLimaMartinSplit`](@ref) |
 | Group-aware train/test | [`GroupShuffleSplit`](@ref), [`GroupStratifiedSplit`](@ref) |
