@@ -20,8 +20,8 @@ end
   cpcv = partition(X, CombinatorialPurgedKFold(5, 1); time = ts)
   pkf = partition(X, PurgedKFold(5); time = ts)
 
-  cpcv_folds = sort.([(sort(f.train), sort(f.test)) for f in folds(cpcv)])
-  pkf_folds = sort.([(sort(f.train), sort(f.test)) for f in folds(pkf)])
+  cpcv_folds = sort([(sort(f.train), sort(f.test)) for f in folds(cpcv)])
+  pkf_folds = sort([(sort(f.train), sort(f.test)) for f in folds(pkf)])
   @test cpcv_folds == pkf_folds
 end
 
@@ -33,8 +33,8 @@ end
   cpcv = partition(X, CombinatorialPurgedKFold(5, 1; purge = 2, embargo = 1); time = ts)
   pkf = partition(X, PurgedKFold(5; purge = 2, embargo = 1); time = ts)
 
-  cpcv_folds = sort.([(sort(f.train), sort(f.test)) for f in folds(cpcv)])
-  pkf_folds = sort.([(sort(f.train), sort(f.test)) for f in folds(pkf)])
+  cpcv_folds = sort([(sort(f.train), sort(f.test)) for f in folds(cpcv)])
+  pkf_folds = sort([(sort(f.train), sort(f.test)) for f in folds(pkf)])
   @test cpcv_folds == pkf_folds
 end
 
