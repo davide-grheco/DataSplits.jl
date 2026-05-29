@@ -34,6 +34,7 @@ include("strategies/TimeSeriesSplit.jl")
 include("strategies/StratifiedGroupKFold.jl")
 include("strategies/NestedCV.jl")
 include("strategies/PurgedKFold.jl")
+include("strategies/CombinatorialPurgedKFold.jl")
 include("strategies/GroupShuffleSplitCV.jl")
 include("strategies/FieldStrengthSplit.jl")
 
@@ -77,6 +78,7 @@ export PredefinedSplit
 export BootstrapSplit
 export NestedCV, NestedFold, innerfolds
 export BlockedCV, PurgedKFold
+export CombinatorialPurgedKFold
 export RepeatedKFold, RepeatedStratifiedKFold
 
 # Target / time property

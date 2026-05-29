@@ -58,7 +58,7 @@ end
 | Stratified k-fold | [`StratifiedKFold`](@ref) |
 | Group k-fold | [`GroupKFold`](@ref), [`StratifiedGroupKFold`](@ref) |
 | Leave-group-out | [`LeaveOneGroupOut`](@ref), [`LeavePGroupsOut`](@ref) |
-| Time-series CV | [`TimeSeriesSplit`](@ref), [`BlockedCV`](@ref), [`PurgedKFold`](@ref) |
+| Time-series CV | [`TimeSeriesSplit`](@ref), [`BlockedCV`](@ref), [`PurgedKFold`](@ref), [`CombinatorialPurgedKFold`](@ref) |
 | Resampling CV | [`ShuffleSplit`](@ref), [`StratifiedShuffleSplit`](@ref), [`GroupShuffleSplitCV`](@ref), [`BootstrapSplit`](@ref) |
 | Repeated CV | [`RepeatedKFold`](@ref), [`RepeatedStratifiedKFold`](@ref) |
 | Nested CV | [`NestedCV`](@ref) |
