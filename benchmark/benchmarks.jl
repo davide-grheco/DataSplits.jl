@@ -56,6 +56,10 @@ for N in [200, 500, 1000]
     @benchmarkable partition($X, FieldStrengthSplit(); train = 0.8, test = 0.2)
   SUITE["distance"]["SpectralSplit"][tag] =
     @benchmarkable partition($X, SpectralSplit(); train = 0.8, test = 0.2)
+  SUITE["distance"]["DuplexSplit"][tag] =
+    @benchmarkable partition($X, DuplexSplit(); train = 0.8, test = 0.2)
+  SUITE["distance"]["LazyDuplexSplit"][tag] =
+    @benchmarkable partition($X, LazyDuplexSplit(); train = 0.8, test = 0.2)
 end
 
 # ── Simple train/test splits (O(N)) ──────────────────────────────────────────

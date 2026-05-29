@@ -62,6 +62,11 @@ const XONLY_SPLITS = [
     "FieldStrengthSplit",
     (X, tr, te) -> partition(X, FieldStrengthSplit(); train = tr, test = te),
   ),
+  ("DuplexSplit", (X, tr, te) -> partition(X, DuplexSplit(); train = tr, test = te)),
+  (
+    "LazyDuplexSplit",
+    (X, tr, te) -> partition(X, LazyDuplexSplit(); train = tr, test = te),
+  ),
   (
     "OptiSimSplit",
     (X, tr, te) -> partition(
@@ -191,6 +196,11 @@ const LAZY_EAGER_PAIRS = [
       test = te,
       rng = Xoshiro(42),
     ),
+  ),
+  (
+    "Duplex",
+    (X, tr, te) -> partition(X, DuplexSplit(); train = tr, test = te),
+    (X, tr, te) -> partition(X, LazyDuplexSplit(); train = tr, test = te),
   ),
 ]
 

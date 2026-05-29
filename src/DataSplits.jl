@@ -5,6 +5,7 @@ include("validation.jl")
 include("core.jl")
 include("strategies/random.jl")
 include("strategies/LazyKennardStone.jl")
+include("strategies/Duplex.jl")
 include("strategies/KennardStone.jl")
 include("strategies/SPXY.jl")
 include("strategies/LazySPXY.jl")
@@ -55,6 +56,7 @@ export consumes, fallback_from_data
 # Distance-based strategies
 export KennardStoneSplit, CADEXSplit
 export LazyKennardStoneSplit, LazyCADEXSplit
+export DuplexSplit, LazyDuplexSplit
 export MoraisLimaMartinSplit
 export SPXYSplit, MDKSSplit
 export LazySPXYSplit, LazyMDKSSplit
