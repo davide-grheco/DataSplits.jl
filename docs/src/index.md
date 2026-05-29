@@ -48,6 +48,7 @@ end
 | --- | --- |
 | Cover feature space (maximin) | [`KennardStoneSplit`](@ref) / [`LazyKennardStoneSplit`](@ref) |
 | Simultaneous train+test coverage (Duplex) | [`DuplexSplit`](@ref), [`LazyDuplexSplit`](@ref) |
+| Onion split | [`XYOnionSplit`](@ref), [`OnionSplit`](@ref) |
 | Cover features + target jointly | [`SPXYSplit`](@ref), [`MDKSSplit`](@ref) |
 | Field-strength split | [`FieldStrengthSplit`](@ref) |
 | Spectral cluster split | [`SpectralSplit`](@ref) |

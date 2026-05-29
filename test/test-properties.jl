@@ -259,6 +259,33 @@ for (label, runner) in TARGET_SPLITS
 end
 
 # ------------------------------------------------------------------
+# OnionSplit — approximate sizes (rounding per layer), only check coverage
+# ------------------------------------------------------------------
+
+@testset "OnionSplit partition invariants" begin
+  @check max_examples = 200 rng = Xoshiro(7) function onion_valid_partition(
+    case = algo_sizes_gen,
+  )
+    N, n_train, n_test = case
+    X = reshape(collect(1.0:N), 1, N)
+    result = partition(X, OnionSplit(); train = n_train, test = n_test)
+    is_full_partition(result, N) && cohorts_are_complements(result, N)
+  end
+end
+
+@testset "XYOnionSplit partition invariants" begin
+  @check max_examples = 200 rng = Xoshiro(8) function xyonion_valid_partition(
+    case = algo_sizes_gen,
+  )
+    N, n_train, n_test = case
+    X = reshape(collect(1.0:N), 1, N)
+    y = collect(1.0:N)
+    result = partition(X, XYOnionSplit(); target = y, train = n_train, test = n_test)
+    is_full_partition(result, N) && cohorts_are_complements(result, N)
+  end
+end
+
+# ------------------------------------------------------------------
 # TargetProperty — unique direction property (ordering of train vs test)
 # ------------------------------------------------------------------
 

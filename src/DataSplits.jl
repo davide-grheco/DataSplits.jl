@@ -7,6 +7,8 @@ include("strategies/random.jl")
 include("strategies/LazyKennardStone.jl")
 include("strategies/Duplex.jl")
 include("strategies/KennardStone.jl")
+include("strategies/XYOnion.jl")
+include("strategies/Onion.jl")
 include("strategies/SPXY.jl")
 include("strategies/LazySPXY.jl")
 include("strategies/MoraisLimaMartinSplit.jl")
@@ -61,6 +63,8 @@ export DuplexSplit, LazyDuplexSplit
 export MoraisLimaMartinSplit
 export SPXYSplit, MDKSSplit
 export LazySPXYSplit, LazyMDKSSplit
+export XYOnionSplit
+export OnionSplit
 export OptiSimSplit
 export LazyOptiSimSplit
 export MinimumDissimilaritySplit, LazyMinimumDissimilaritySplit
