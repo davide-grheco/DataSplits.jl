@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.20.25
+# v0.20.27
 
 using Markdown
 using InteractiveUtils
@@ -8,7 +8,14 @@ using InteractiveUtils
 begin
   import Pkg
   Pkg.develop(path = joinpath(@__DIR__, ".."))
-  Pkg.add(["MLJ", "MLJDecisionTreeInterface", "Flux", "DataFrames", "CategoricalArrays"])
+  Pkg.add([
+    "MLJ",
+    "MLJDecisionTreeInterface",
+    "Flux",
+    "DataFrames",
+    "CategoricalArrays",
+    "CairoMakie",
+  ])
 
   using DataSplits
   import DataSplits: partition     # MLJ also exports partition; pin to DataSplits
@@ -16,6 +23,7 @@ begin
   import MLJDecisionTreeInterface   # registers DecisionTreeClassifier with MLJ
   using Flux
   using DataFrames, CategoricalArrays
+  using CairoMakie
   using Random, Statistics
 end
 
@@ -32,6 +40,8 @@ index vectors, composable with any Julia ML framework.
 | 2 — Train / test split | `RandomSplit` | Regression with Flux |
 | 3 — Feature-space coverage | `KennardStoneSplit` vs `RandomSplit` | Why random splits mislead |
 | 4 — Joint coverage | `SPXYSplit` | Covering features and target together |
+| 5 — Group-aware splitting | `GroupShuffleSplit` vs `RandomSplit` | Avoiding group leakage |
+| 6 — Paper figure | `KennardStoneSplit` vs `RandomSplit` | Generates `paper/figures/ks_vs_random.png` |
 
 > **Run this notebook** by opening it with [Pluto.jl](https://plutojl.org/).
 > Pluto will install all required packages automatically.
@@ -175,11 +185,12 @@ looks artificially low.
 
 `KennardStoneSplit` uses the **maximin criterion**: each new training point is the one
 furthest from all already-selected training points. The result is a training set that
-spans the convex hull of the data, pushing test points into genuine gaps.
+spans the data domain; the remaining test observations fall in the gaps between training
+points, further from any single training neighbour than they would be under a random split.
 
 **Key metric:** average minimum distance from each test point to its nearest training
-neighbour. Larger → test points are further from training → the error estimate reflects
-extrapolation, not interpolation.
+neighbour. A larger value means test points are harder to interpolate from training —
+the error estimate better reflects how the model generalises to unseen parts of the space.
 """
 
 # ╔═╡ 2b3c4d5e-6f70-4812-9345-bbccddeeff00
@@ -226,8 +237,8 @@ md"""
 | `RandomSplit` | $(round(d_rand; digits = 3)) |
 | `KennardStoneSplit` | $(round(d_ks; digits = 3)) |
 
-Kennard–Stone test points are **$(round(d_ks / d_rand; digits = 1))× further** from
-their nearest training neighbour. A model evaluated on this split must genuinely
+Kennard–Stone test points are **$(round(d_ks / d_rand; digits = 1))× further** from their
+nearest training neighbour on average. A model evaluated on this split must genuinely
 generalise — it cannot rely on nearby training examples for easy interpolation.
 
 Use `LazyKennardStoneSplit` for datasets with tens of thousands of samples to avoid
@@ -238,6 +249,9 @@ the O(N²) memory cost of precomputing the full distance matrix.
 md"""
 ---
 ## 4 — SPXY: covering features and target jointly
+
+> This section reuses the dataset from section 3 (`X_ks`, `y_ks`) and the splits already
+> computed there (`split_rand_ks`, `split_ks`), adding `SPXYSplit` as a third comparator.
 
 `KennardStoneSplit` maximises diversity in feature space only. When the target variable
 has a wide range or skewed distribution, feature-space coverage alone may leave part of
@@ -289,6 +303,213 @@ narrow training y-range would produce a poorly calibrated model.
 inter-feature correlations) while keeping Euclidean distance for the target.
 """
 
+# ╔═╡ 8192a3b4-c5d6-4e7f-8901-aabbccddeeff
+md"""
+---
+## 5 — Group-aware splitting: avoiding leakage
+
+Many scientific datasets have natural **group structure**: repeated measurements from
+the same patient, spectra from the same batch, molecules from the same chemical scaffold,
+or observations from the same experimental site. When a random split assigns some
+observations from the same group to training and others to test, the model can memorise
+group-specific patterns rather than learning to generalise. The resulting performance
+estimate is optimistic.
+
+`GroupShuffleSplit` keeps whole groups together — every observation in a group goes
+entirely to training or entirely to test. The **leakage rate** (fraction of groups
+that appear in both cohorts) drops to zero by construction.
+"""
+
+# ╔═╡ 9203b4c5-d6e7-4f80-9012-bbccddeeff00
+begin
+  rng_grp = Xoshiro(99)
+  n_groups, n_per_group = 10, 20
+  n_grp = n_groups * n_per_group
+
+  # Each group has its own cluster centre; observations are tight clouds around it.
+  centers = randn(rng_grp, 2, n_groups) .* 2.5
+  X_grp = Float32.(
+    hcat([centers[:, g] .+ 0.35 .* randn(rng_grp, 2, n_per_group) for g = 1:n_groups]...),
+  )
+  groups_grp = repeat(1:n_groups, inner = n_per_group)
+
+  "$(n_grp) samples  |  $(n_groups) groups  |  $(n_per_group) obs/group"
+end
+
+# ╔═╡ a314c5d6-e7f8-4091-a123-ccddeeff0011
+begin
+  split_rand_grp = partition(X_grp, RandomSplit(); train = 80, test = 20, rng = rng_grp)
+  split_grp = partition(
+    X_grp,
+    GroupShuffleSplit();
+    groups = groups_grp,
+    train = 80,
+    test = 20,
+    rng = rng_grp,
+  )
+
+  function group_leakage(groups, tr_idx, te_idx)
+    shared = intersect(Set(groups[tr_idx]), Set(groups[te_idx]))
+    round(length(shared) / length(unique(groups)) * 100; digits = 1)
+  end
+
+  function groups_leaked(groups, tr_idx, te_idx)
+    shared = intersect(Set(groups[tr_idx]), Set(groups[te_idx]))
+    length(shared), length(unique(groups))
+  end
+
+  leaked_rand, n_total_groups =
+    groups_leaked(groups_grp, trainindices(split_rand_grp), testindices(split_rand_grp))
+  leaked_grp, _ = groups_leaked(groups_grp, trainindices(split_grp), testindices(split_grp))
+
+  (;
+    random_groups_leaked = "$leaked_rand / $n_total_groups",
+    group_aware_groups_leaked = "$leaked_grp / $n_total_groups",
+  )
+end
+
+# ╔═╡ b425d6e7-f809-4102-b234-ddeeff001122
+md"""
+| Split | Groups with members in both cohorts |
+|-------|--------------------------------------|
+| `RandomSplit` | $(leaked_rand) of $(n_total_groups) groups |
+| `GroupShuffleSplit` | $(leaked_grp) of $(n_total_groups) groups |
+
+With a random split, most groups have members on both sides of the partition.
+A model evaluated this way sees familiar group-specific signals in the test set —
+the error estimate is optimistic. `GroupShuffleSplit` eliminates this leakage entirely:
+every group lands wholly in training or wholly in test.
+
+Use `GroupKFold` for cross-validation with the same guarantee across all folds, or
+`StratifiedGroupKFold` when you also need class-balance control.
+"""
+
+# ╔═╡ e758f091-2b34-4c56-a789-00112233aabb
+md"""
+---
+## Summary
+
+| Section | Strategy | What it shows |
+|---------|----------|---------------|
+| 1 | `StratifiedKFold` | Class ratios preserved across all folds |
+| 2 | `RandomSplit` + Flux | `trainview` plugs directly into `DataLoader` |
+| 3 | `KennardStoneSplit` | Training covers the domain; test points are harder to interpolate |
+| 4 | `SPXYSplit` | Joint X–y coverage improves target-range representation |
+| 5 | `GroupShuffleSplit` | Whole groups kept together; leakage drops to zero |
+
+All strategies share one entry point — `partition(data, strategy; kwargs...)` — and
+return the same index-based accessors (`trainindices`, `testindices`, `folds`).
+See the [documentation](https://davide-grheco.github.io/DataSplits.jl/stable) for the
+full strategy catalogue and API reference.
+"""
+
+# ╔═╡ c536e7f8-0912-4213-c345-eeff00112233
+md"""
+---
+## 6 — Paper figure (maintainers)
+
+Generates `paper/figures/ks_vs_random.png`: a side-by-side scatter plot comparing
+a random split and a Kennard–Stone split on a dataset with a dense center and a
+sparse outer boundary (N=120, 35 training samples). All observations are shown as
+gray background points; selected training samples are highlighted in blue.
+
+This mirrors the standard chemometrics illustration: random sampling follows the
+empirical density and under-samples the sparse boundary, while Kennard–Stone selects
+a space-filling calibration set that covers the full experimental domain.
+"""
+
+# ╔═╡ d647f809-1023-4324-d456-ff0011223344
+begin
+  rng_fig = Xoshiro(42)
+
+  # Dense center (80 pts, std=1.0) + sparse outer ring (40 pts, radius≈3.5).
+  # This mimics a realistic experimental space: many observations cluster near
+  # typical conditions, while a few span the outer boundary of the domain.
+  #
+  # With only 35 training samples (~29 %), random selection follows the density
+  # and concentrates the calibration set in the center, leaving the boundary
+  # under-represented. Kennard–Stone picks boundary samples first and distributes
+  # the remaining selections inward, producing a space-filling calibration set.
+  n_dense = 80
+  n_ring = 40
+  n_train = 35
+
+  X_dense = randn(rng_fig, 2, n_dense) .* 1.0
+
+  angles_fig = rand(rng_fig, n_ring) .* 2π
+  radii_fig = 3.5 .+ randn(rng_fig, n_ring) .* 0.22
+  X_ring = vcat(radii_fig' .* cos.(angles_fig)', radii_fig' .* sin.(angles_fig)')
+
+  X_fig = hcat(X_dense, X_ring)  # 2 × 120
+
+  n_test = size(X_fig, 2) - n_train   # 85 — everything not in training
+
+  split_rand_fig =
+    partition(X_fig, RandomSplit(); train = n_train, test = n_test, rng = Xoshiro(3))
+  split_ks_fig = partition(X_fig, KennardStoneSplit(); train = n_train, test = n_test)
+
+  bg_col = RGBAf(0.72, 0.72, 0.72, 0.38)   # subtle gray — all observations
+  train_col = RGBAf(0.20, 0.44, 0.69, 0.98)   # steel blue — selected training
+  lims = (-4.5, 4.5)
+
+  fig_paper = Figure(size = (860, 460); backgroundcolor = :white)
+  for (i, (sp, title)) in enumerate([
+    (split_rand_fig, "Random training selection"),
+    (split_ks_fig, "Kennard–Stone training selection"),
+  ])
+    ax = Axis(
+      fig_paper[1, i];
+      title = title,
+      titlesize = 13,
+      xlabel = "Feature 1",
+      ylabel = "Feature 2",
+      xgridvisible = false,
+      ygridvisible = false,
+      aspect = DataAspect(),
+    )
+    xlims!(ax, lims...)
+    ylims!(ax, lims...)
+    # All observations as subtle gray background
+    scatter!(ax, X_fig[1, :], X_fig[2, :]; color = bg_col, markersize = 5, strokewidth = 0)
+    # Selected training set on top — white stroke aids visibility on print
+    scatter!(
+      ax,
+      X_fig[1, trainindices(sp)],
+      X_fig[2, trainindices(sp)];
+      color = train_col,
+      markersize = 9,
+      strokecolor = :white,
+      strokewidth = 0.6,
+    )
+  end
+
+  # Single shared legend below both panels
+  elem_bg = MarkerElement(; color = bg_col, marker = :circle, markersize = 8)
+  elem_train = MarkerElement(;
+    color = train_col,
+    marker = :circle,
+    markersize = 11,
+    strokecolor = :white,
+    strokewidth = 0.6,
+  )
+  Legend(
+    fig_paper[2, 1:2],
+    [elem_bg, elem_train],
+    ["All samples (N=120)", "Training set (n=35)"];
+    orientation = :horizontal,
+    framevisible = false,
+    labelsize = 11,
+    tellwidth = false,
+  )
+
+  save(
+    joinpath(@__DIR__, "..", "paper", "figures", "ks_vs_random.png"),
+    fig_paper;
+    px_per_unit = 2,
+  )
+  fig_paper
+end
+
 # ╔═╡ Cell order:
 # ╟─f1e2d3c4-b5a6-4890-1234-abcdef012345
 # ╠═a2b3c4d5-e6f7-4901-2345-bcdef0123456
@@ -308,3 +529,10 @@ inter-feature correlations) while keeping Euclidean distance for the target.
 # ╟─5e6f7081-9203-4145-c678-eeff00112233
 # ╠═6f708192-0314-4256-d789-ff0011223344
 # ╟─7081920a-1425-4367-e890-001122334455
+# ╟─8192a3b4-c5d6-4e7f-8901-aabbccddeeff
+# ╠═9203b4c5-d6e7-4f80-9012-bbccddeeff00
+# ╠═a314c5d6-e7f8-4091-a123-ccddeeff0011
+# ╠═b425d6e7-f809-4102-b234-ddeeff001122
+# ╠═e758f091-2b34-4c56-a789-00112233aabb
+# ╠═c536e7f8-0912-4213-c345-eeff00112233
+# ╠═d647f809-1023-4324-d456-ff0011223344
