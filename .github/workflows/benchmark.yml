@@ -1,0 +1,16 @@
+name: Benchmark PR
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: MilesCranmer/AirspeedVelocity.jl@action-v1
+        with:
+          julia-version: '1'
+          script: benchmark/benchmarks.jl
+          job-summary: 'true'
