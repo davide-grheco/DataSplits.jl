@@ -61,7 +61,7 @@ for N in [200, 500, 1000]
   SUITE["distance"]["LazyDuplexSplit"][tag] =
     @benchmarkable partition($X, LazyDuplexSplit(); train = 0.8, test = 0.2)
   SUITE["distance"]["XYOnionSplit"][tag] =
-    @benchmarkable partition($X, XYOnionSplit(); train = 0.8, test = 0.2)
+    @benchmarkable partition($X, XYOnionSplit(); target = $y, train = 0.8, test = 0.2)
   SUITE["distance"]["OnionSplit"][tag] =
     @benchmarkable partition($X, OnionSplit(); train = 0.8, test = 0.2)
 end
