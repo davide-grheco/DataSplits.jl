@@ -198,6 +198,22 @@ function _warn_undershoot(
   @warn msg _id = id _group = :datasplits
 end
 
+_optisim_metric(::Euclidean, cutoff) = (SqEuclidean(), cutoff * cutoff)
+_optisim_metric(m::Mahalanobis, cutoff) = (SqMahalanobis(m.qmat), cutoff * cutoff)
+_optisim_metric(metric, cutoff) = (metric, cutoff)
+
+function _prune_similar!(candidates, min_dist, cutoff)
+  i = 1
+  @inbounds while i <= length(candidates)
+    if min_dist[candidates[i]] < cutoff
+      candidates[i] = candidates[end]
+      pop!(candidates)
+    else
+      i += 1
+    end
+  end
+end
+
 """
     _blocked_cv_partition(data, k, pre_gap, post_gap; time, name) -> CrossValidationSplit
 

@@ -72,9 +72,9 @@ function _partition(
   kwargs...,
 )
   N = numobs(X)
-  D = distance_matrix(X, s.metric)
-  selected_positions =
-    optisim(D, n_train, s.max_subsample_size, s.distance_cutoff; rng = rng)
+  eff_metric, eff_cutoff = _optisim_metric(s.metric, s.distance_cutoff)
+  D = distance_matrix(X, eff_metric)
+  selected_positions = optisim(D, n_train, s.max_subsample_size, eff_cutoff; rng = rng)
   train_pos = collect(selected_positions)
   test_pos = setdiff(1:N, train_pos)
   _warn_undershoot(
@@ -101,43 +101,70 @@ function optisim(
   N = size(D, 1)
   M = min(selected_samples, N)
   K = max_subsample_size
-  candidates = Set(1:N)
-  selected = Set{Int}()
-  first_selected = rand(rng, candidates)
-  push!(selected, first_selected)
-  delete!(candidates, first_selected)
-  while length(selected) < M
-    subsamples = _build_optisim_subsample!(D, selected, candidates, K, distance_cutoff, rng)
-    if !isempty(subsamples)
-      best = find_maximin_element(D, subsamples, selected)
-      push!(selected, best)
-      delete!(candidates, best)
-    else
-      break
-    end
-  end
-  return selected
-end
 
-function _build_optisim_subsample!(
-  D::AbstractMatrix,
-  selected::Set{Int},
-  candidates::Set{Int},
-  subset_size::Int,
-  min_dissimilarity::Real,
-  rng::AbstractRNG,
-)
-  subsample = Set{Int}()
-  remaining_candidates = copy(candidates)
-  while length(subsample) < subset_size && !isempty(remaining_candidates)
-    candidate = rand(rng, remaining_candidates)
-    delete!(remaining_candidates, candidate)
-    is_dissimilar = all(D[candidate, s] >= min_dissimilarity for s in selected)
-    if is_dissimilar
-      push!(subsample, candidate)
-    else
-      delete!(candidates, candidate)
-    end
+  candidates = collect(1:N)
+  # min_dist[i] = minimum distance from i to any selected point.
+  # Maintained incrementally; all candidates are pruned to min_dist >= cutoff
+  # after each selection, so subsample building never needs to filter.
+  min_dist = fill(Inf, N)
+
+  idx = rand(rng, 1:N)
+  first_sel = candidates[idx]
+  candidates[idx] = candidates[end]
+  pop!(candidates)
+  selected = [first_sel]
+  sizehint!(selected, M)
+
+  col_first = @view D[:, first_sel]
+  @inbounds @simd for i = 1:N
+    min_dist[i] = col_first[i]
   end
-  return subsample
+  _prune_similar!(candidates, min_dist, distance_cutoff)
+
+  while length(selected) < M && !isempty(candidates)
+    nc = length(candidates)
+    use_all = K == 0 || K >= nc
+    k = use_all ? nc : K
+
+    # Find the maximin candidate: either scan all (use_all) or a random k-subset
+    # via partial Fisher-Yates in-place on candidates. All candidates are
+    # dissimilar by invariant, so no filtering is needed during the scan.
+    best_idx = 1
+    if use_all
+      best_score = min_dist[candidates[1]]
+      @inbounds for j = 2:nc
+        sc = min_dist[candidates[j]]
+        if sc > best_score
+          best_score = sc
+          best_idx = j
+        end
+      end
+    else
+      @inbounds for j = 1:k
+        ri = rand(rng, j:nc)
+        candidates[j], candidates[ri] = candidates[ri], candidates[j]
+      end
+      best_score = min_dist[candidates[1]]
+      @inbounds for j = 2:k
+        sc = min_dist[candidates[j]]
+        if sc > best_score
+          best_score = sc
+          best_idx = j
+        end
+      end
+    end
+
+    best = candidates[best_idx]
+    candidates[best_idx] = candidates[end]
+    pop!(candidates)
+    push!(selected, best)
+
+    col_best = @view D[:, best]
+    @inbounds @simd for i = 1:N
+      min_dist[i] = min(min_dist[i], col_best[i])
+    end
+    _prune_similar!(candidates, min_dist, distance_cutoff)
+  end
+
+  return Set(selected)
 end
