@@ -97,7 +97,10 @@ function duplex_from_distance_matrix(D::AbstractMatrix, n_train::Integer, n_test
       k = argmax(min_dist_train)
       n_tr += 1
       train[n_tr] = k
-      min_dist_train .= min.(min_dist_train, view(D, :, k))
+      col_k = @view D[:, k]
+      @inbounds @simd for m = 1:N
+        min_dist_train[m] = min(min_dist_train[m], col_k[m])
+      end
       min_dist_train[k] = -Inf
       min_dist_test[k] = -Inf  # cross-invalidate
     end
@@ -105,7 +108,10 @@ function duplex_from_distance_matrix(D::AbstractMatrix, n_train::Integer, n_test
       l = argmax(min_dist_test)
       n_te += 1
       test[n_te] = l
-      min_dist_test .= min.(min_dist_test, view(D, :, l))
+      col_l = @view D[:, l]
+      @inbounds @simd for m = 1:N
+        min_dist_test[m] = min(min_dist_test[m], col_l[m])
+      end
       min_dist_test[l] = -Inf
       min_dist_train[l] = -Inf  # cross-invalidate
     end
@@ -126,7 +132,7 @@ function _partition(
   rng = Random.default_rng(),
   kwargs...,
 )
-  D = distance_matrix(X, s.metric)
+  D = distance_matrix(X, _squared_metric(s.metric))
   train, test = duplex_from_distance_matrix(D, n_train, n_test)
   return TrainTestSplit(train, test)
 end
@@ -151,7 +157,8 @@ function _partition(
   kwargs...,
 )
   N = numobs(data)
-  i, j = find_most_distant_pair(data, s.metric)
+  metric = _squared_metric(s.metric)
+  i, j = find_most_distant_pair(data, metric)
 
   train = Vector{Int}(undef, n_train)
   test = Vector{Int}(undef, n_test)
@@ -170,8 +177,8 @@ function _partition(
   @inbounds for k = 1:N
     if !selected[k]
       xk = _obs(data, k)
-      min_dist_train[k] = Distances.evaluate(s.metric, xk, xi)
-      min_dist_test[k] = Distances.evaluate(s.metric, xk, xj)
+      min_dist_train[k] = Distances.evaluate(metric, xk, xi)
+      min_dist_test[k] = Distances.evaluate(metric, xk, xj)
     end
   end
 
@@ -189,7 +196,7 @@ function _partition(
       xk = _obs(data, k)
       @inbounds for m = 1:N
         if !selected[m]
-          d = Distances.evaluate(s.metric, _obs(data, m), xk)
+          d = Distances.evaluate(metric, _obs(data, m), xk)
           if d < min_dist_train[m]
             min_dist_train[m] = d
           end
@@ -206,7 +213,7 @@ function _partition(
       xl = _obs(data, l)
       @inbounds for m = 1:N
         if !selected[m]
-          d = Distances.evaluate(s.metric, _obs(data, m), xl)
+          d = Distances.evaluate(metric, _obs(data, m), xl)
           if d < min_dist_test[m]
             min_dist_test[m] = d
           end
