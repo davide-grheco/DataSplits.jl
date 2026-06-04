@@ -198,6 +198,10 @@ function _warn_undershoot(
   @warn msg _id = id _group = :datasplits
 end
 
+_squared_metric(::Euclidean) = SqEuclidean()
+_squared_metric(m::Mahalanobis) = SqMahalanobis(m.qmat)
+_squared_metric(m) = m
+
 _optisim_metric(::Euclidean, cutoff) = (SqEuclidean(), cutoff * cutoff)
 _optisim_metric(m::Mahalanobis, cutoff) = (SqMahalanobis(m.qmat), cutoff * cutoff)
 _optisim_metric(metric, cutoff) = (metric, cutoff)
