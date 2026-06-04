@@ -15,8 +15,8 @@ res = partition(X, LazyKennardStoneSplit(); train = 80, test = 20)
 X_train, X_test = splitdata(res, X)
 ```
 """
-struct LazyKennardStoneSplit <: AbstractSplitStrategy
-  metric::Distances.SemiMetric
+struct LazyKennardStoneSplit{M<:Distances.SemiMetric} <: AbstractSplitStrategy
+  metric::M
 end
 
 LazyKennardStoneSplit() = LazyKennardStoneSplit(Euclidean())

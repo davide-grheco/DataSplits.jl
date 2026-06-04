@@ -65,9 +65,9 @@ res = partition(X, LazyMinimumDissimilaritySplit(); train=70, test=30)
 X_train, X_test = splitdata(res, X)
 ```
 """
-struct LazyMinimumDissimilaritySplit <: AbstractSplitStrategy
+struct LazyMinimumDissimilaritySplit{M<:Distances.SemiMetric} <: AbstractSplitStrategy
   distance_cutoff::Float64
-  metric::Distances.SemiMetric
+  metric::M
 end
 
 function LazyMinimumDissimilaritySplit(; distance_cutoff = 0.35, metric = Euclidean())
