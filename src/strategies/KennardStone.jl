@@ -43,7 +43,7 @@ function _partition(
   rng = Random.default_rng(),
   kwargs...,
 )
-  D = distance_matrix(data, s.metric)
+  D = distance_matrix(data, _squared_metric(s.metric))
   train_pos, test_pos = kennard_stone_from_distance_matrix(D, n_train)
   return TrainTestSplit(train_pos, test_pos)
 end
@@ -68,12 +68,12 @@ function find_most_distant_pair(D::AbstractMatrix)
   n = size(D, 1)
   max_d = -Inf
   i₁, i₂ = 1, 2
-  @inbounds for i = 1:(n-1)
-    for j = (i+1):n
-      if D[i, j] > max_d
-        max_d = D[i, j]
-        i₁, i₂ = i, j
-      end
+  @inbounds for j = 1:(n-1)
+    col = @view D[(j+1):n, j]
+    local_max, pos = findmax(col)
+    if local_max > max_d
+      max_d = local_max
+      i₁, i₂ = j, j + pos
     end
   end
   return i₁, i₂
@@ -94,7 +94,10 @@ function kennard_stone_from_distance_matrix(D::AbstractMatrix, n_train::Integer)
     selected_count += 1
     selected[k_idx] = true
     selected_order[selected_count] = k_idx
-    min_dists .= min.(min_dists, view(D, :, k_idx))
+    col = @view D[:, k_idx]
+    @inbounds @simd for i = 1:N
+      min_dists[i] = min(min_dists[i], col[i])
+    end
     min_dists[k_idx] = -Inf
   end
   train_idx = selected_order[1:n_train]

@@ -40,18 +40,19 @@ function _partition(
   kwargs...,
 )
   N = numobs(data)
-  i₁, i₂ = find_most_distant_pair(data, s.metric)
+  metric = _squared_metric(s.metric)
+  i₁, i₂ = find_most_distant_pair(data, metric)
   selected = falses(N)
   selected[i₁] = selected[i₂] = true
   order = Vector{Int}(undef, N)
   order[1:2] = [i₁, i₂]
   min_dists = fill(Inf, N)
+  obs_i₁, obs_i₂ = _obs(data, i₁), _obs(data, i₂)
   for i = 1:N
     if !selected[i]
       x = _obs(data, i)
-      d1 = Distances.evaluate(s.metric, x, _obs(data, i₁))
-      d2 = Distances.evaluate(s.metric, x, _obs(data, i₂))
-      min_dists[i] = min(d1, d2)
+      min_dists[i] =
+        min(Distances.evaluate(metric, x, obs_i₁), Distances.evaluate(metric, x, obs_i₂))
     end
   end
   min_dists[i₁] = min_dists[i₂] = -Inf
@@ -63,8 +64,10 @@ function _partition(
     ref = _obs(data, next_i)
     @inbounds for i = 1:N
       if !selected[i]
-        d = Distances.evaluate(s.metric, ref, _obs(data, i))
-        min_dists[i] = min(min_dists[i], d)
+        d = Distances.evaluate(metric, ref, _obs(data, i))
+        if d < min_dists[i]
+          min_dists[i] = d
+        end
       end
     end
   end
