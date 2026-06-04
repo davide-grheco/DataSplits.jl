@@ -62,20 +62,32 @@ function field_strength_from_distance_matrix(D::AbstractMatrix, n_train::Integer
   # Isolation score for each sample: sum of 1/d² to all others.
   # Low isolation = most isolated from the full dataset → best first sample.
   iso = zeros(N)
-  @inbounds for j = 1:N, i = 1:N
-    i != j && (iso[i] += 1 / max(D[i, j], _FS_EPS)^2)
+  @inbounds for j = 1:(N-1)
+    col = @view D[(j+1):N, j]
+    for i = 1:(N-j)
+      c = 1 / max(col[i], _FS_EPS)^2
+      iso[j+i] += c
+      iso[j] += c
+    end
   end
 
   selected = Vector{Int}(undef, n_train)
   selected[1] = argmin(iso)
 
-  field = 1 ./ max.(D[:, selected[1]], _FS_EPS) .^ 2
+  col1 = @view D[:, selected[1]]
+  field = Vector{Float64}(undef, N)
+  @inbounds @simd for m = 1:N
+    field[m] = 1 / max(col1[m], _FS_EPS)^2
+  end
   field[selected[1]] = Inf
 
   for t = 2:n_train
     k = argmin(field)
     selected[t] = k
-    field .+= 1 ./ max.(D[:, k], _FS_EPS) .^ 2
+    col_k = @view D[:, k]
+    @inbounds @simd for m = 1:N
+      field[m] += 1 / max(col_k[m], _FS_EPS)^2
+    end
     field[k] = Inf
   end
 
