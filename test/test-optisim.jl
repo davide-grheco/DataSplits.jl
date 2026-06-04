@@ -3,6 +3,7 @@ using DataSplits
 using Random
 using Distances
 using Logging
+using StableRNGs
 
 function sane_split_check(result, N; ntrain_expected = nothing)
   @test is_disjoint(result)
@@ -55,12 +56,12 @@ end
     OptiSimSplit(; max_subsample_size = 3, distance_cutoff = 0.35, metric = Euclidean());
     train = 80,
     test = 20,
-    rng = Random.seed!(42),
+    rng = StableRNG(42),
   )
   train_idx, test_idx = result.train, result.test
 
-  @test Set(train_idx) == Set([5, 4, 2, 3])
-  @test Set(test_idx) == Set([1])
+  @test Set(train_idx) == Set([5, 2, 3, 1])
+  @test Set(test_idx) == Set([4])
 
   @test is_disjoint(result)
   @test length(train_idx) + length(test_idx) == 5
