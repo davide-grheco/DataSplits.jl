@@ -2,6 +2,7 @@ using Test
 using DataSplits
 using Random
 using Distances
+using StableRNGs
 
 function _pct(frac)
   train = round(Int, frac * 100)
@@ -40,7 +41,6 @@ end
     1 1 1 0 0
     1 1 1 1 0
   ]'
-  y = [1, 2, 3, 4, 5]
 
   result = DataSplits.partition(
     X,
@@ -51,18 +51,18 @@ end
     );
     train = 80,
     test = 20,
-    rng = Random.seed!(42),
+    rng = StableRNG(42),
   )
   train_idx, test_idx = result.train, result.test
 
-  @test Set(train_idx) == Set([5, 4, 2, 3])
-  @test Set(test_idx) == Set([1])
+  @test Set(train_idx) == Set([2, 5, 1, 3])
+  @test Set(test_idx) == Set([4])
 
   @test is_disjoint(result)
   @test length(train_idx) + length(test_idx) == 5
 
-  X = randn(10, 50)
-  rng1 = MersenneTwister(123)
+  X = randn(StableRNG(99), 10, 50)
+  rng1 = StableRNG(123)
   result = DataSplits.partition(
     X,
     LazyOptiSimSplit(;
@@ -76,7 +76,7 @@ end
   )
   t1a, te1a = result.train, result.test
 
-  rng2 = MersenneTwister(123)
+  rng2 = StableRNG(123)
   result = DataSplits.partition(
     X,
     OptiSimSplit(; max_subsample_size = 3, distance_cutoff = 0.35, metric = Euclidean());
@@ -84,15 +84,15 @@ end
     test = 40,
     rng = rng2,
   )
-  @test t1a == result.train
-  @test te1a == result.test
+  @test Set(t1a) == Set(result.train)
+  @test Set(te1a) == Set(result.test)
 
-  rng2 = MersenneTwister(123)
+  rng2 = StableRNG(123)
   result1b = make_split(X; frac = 0.6, distance_cutoff = 0.35, rng = rng2)
   t1b, te1b = result1b.train, result1b.test
   @test t1a == t1b && te1a == te1b
 
-  rng3 = MersenneTwister(124)
+  rng3 = StableRNG(124)
   result2 = make_split(X; frac = 0.6, rng = rng3)
   t2, te2 = result2.train, result2.test
   @test t2 != t1a || te2 != te1a
