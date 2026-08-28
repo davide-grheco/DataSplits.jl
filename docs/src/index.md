@@ -4,11 +4,10 @@ CurrentModule = DataSplits
 
 # DataSplits.jl
 
-DataSplits is a Julia library of train/test and cross-validation splitting strategies
-for cases where random selection misleads — small datasets, regression over continuous
-targets, grouped observations, time series, molecular or geospatial data.
+DataSplits.jl provides a common interface for splitting data for model training, selection, and performance evaluation.
 
-One entry point covers everything: [`partition`](@ref).
+It includes random and resampling methods, cross-validation, group-aware and time-aware strategies, distance-based
+sample selection, and extrapolative splits.
 
 ## Installation
 
@@ -42,40 +41,6 @@ for (X_tr, X_te) in splitview(cvs, X)
 end
 ```
 
-## Strategy catalogue
+If you are new to data splitting, start with [Why Splitting Matters](01-introduction.md).
 
-| Task | Strategy |
-| --- | --- |
-| Cover feature space (maximin) | [`KennardStoneSplit`](@ref) / [`LazyKennardStoneSplit`](@ref) |
-| Simultaneous train+test coverage (Duplex) | [`DuplexSplit`](@ref), [`LazyDuplexSplit`](@ref) |
-| Onion split | [`XYOnionSplit`](@ref), [`OnionSplit`](@ref) |
-| Cover features + target jointly | [`SPXYSplit`](@ref), [`MDKSSplit`](@ref) |
-| Field-strength split | [`FieldStrengthSplit`](@ref) |
-| Spectral cluster split | [`SpectralSplit`](@ref) |
-| Diversity selection (subsample) | [`OptiSimSplit`](@ref), [`MinimumDissimilaritySplit`](@ref), [`MaximumDissimilaritySplit`](@ref) |
-| Kennard–Stone + random swap | [`MoraisLimaMartinSplit`](@ref) |
-| Group-aware train/test | [`GroupShuffleSplit`](@ref), [`GroupStratifiedSplit`](@ref) |
-| Time-ordered train/test | [`TimeSplit`](@ref) (`TimeSplitOldest`, `TimeSplitNewest`) |
-| Train on extreme target values | [`TargetPropertySplit`](@ref) (`TargetPropertyHigh`, `TargetPropertyLow`) |
-| Random baseline | [`RandomSplit`](@ref) |
-| Plain k-fold | [`KFold`](@ref) |
-| Stratified k-fold | [`StratifiedKFold`](@ref) |
-| Group k-fold | [`GroupKFold`](@ref), [`StratifiedGroupKFold`](@ref) |
-| Leave-group-out | [`LeaveOneGroupOut`](@ref), [`LeavePGroupsOut`](@ref) |
-| Time-series CV | [`TimeSeriesSplit`](@ref), [`BlockedCV`](@ref), [`PurgedKFold`](@ref), [`CombinatorialPurgedKFold`](@ref) |
-| Venetian blinds CV | [`VenetianBlindsCV`](@ref) |
-| Resampling CV | [`ShuffleSplit`](@ref), [`StratifiedShuffleSplit`](@ref), [`GroupShuffleSplitCV`](@ref), [`BootstrapSplit`](@ref) |
-| Repeated CV | [`RepeatedKFold`](@ref), [`RepeatedStratifiedKFold`](@ref) |
-| Nested CV | [`NestedCV`](@ref) |
-| Predefined fold assignments | [`PredefinedSplit`](@ref) |
-| Leave-p-out | [`LeavePOut`](@ref), [`LeaveOneOut`](@ref) |
-| Cluster assignment | [`sphere_exclusion`](@ref) |
-
-## Conventions
-
-- Matrices follow the Julia ML convention: **columns are samples, rows are features**.
-  Tables.jl inputs (e.g. `DataFrame`) use rows as samples and are converted internally.
-- Custom containers must implement `MLUtils.numobs` and `MLUtils.getobs`.
-- Cohort sizes (`train`, `validation`, `test`) are set on `partition`, not on the strategy.
-  They accept integer counts, integer percentages summing to 100, or `(0,1)` fractions
-  summing to 1.
+For a hands-on introduction to the API, continue to [Getting Started](02-getting-started.md).
