@@ -4,14 +4,12 @@ CurrentModule = DataSplits
 
 # Sphere Exclusion
 
-`sphere_exclusion` clusters samples by picking a centre point and assigning to it
-all samples within a specified radius. The radius is applied to the
-**normalised** distance matrix (scaled to [0, 1]), so it is unitless and portable
-across datasets with different absolute scales.
+`sphere_exclusion` clusters samples by picking a centre point and assigning to it all samples within a specified radius.
+The radius is applied to the **normalised** distance matrix (scaled to [0, 1]), so it is unitless and portable across
+datasets with different absolute scales.
 
-This is a clustering utility, not a split strategy itself. Use the resulting
-cluster assignments as the `groups=` argument to any group-aware split or CV
-strategy.
+This is a clustering utility, not a split strategy itself. Use the resulting cluster assignments as the `groups=`
+argument to any group-aware split or CV strategy.
 
 ## How it works
 
@@ -20,8 +18,8 @@ strategy.
 3. Assign to that cluster every unassigned sample within `radius` of the centre.
 4. Repeat until all samples are assigned.
 
-The number of clusters is determined automatically by `radius` — smaller radii
-produce more, smaller clusters; larger radii produce fewer, larger ones.
+The number of clusters is determined automatically by `radius` — smaller radii produce more, smaller clusters; larger
+radii produce fewer, larger ones.
 
 ## Usage
 
@@ -47,15 +45,14 @@ result = sphere_exclusion(X; radius = 0.2, metric = Cityblock())
 
 The `radius` parameter (in [0, 1] after normalisation) controls cluster granularity:
 
-| Radius | Effect |
-| --- | --- |
-| Small (0.05–0.15) | Many small, tight clusters |
-| Medium (0.2–0.4) | Moderate cluster sizes — good default |
-| Large (0.5+) | Few large clusters; may produce very uneven groups |
+| Radius            | Effect                                             |
+| ----------------- | -------------------------------------------------- |
+| Small (0.05–0.15) | Many small, tight clusters                         |
+| Medium (0.2–0.4)  | Moderate cluster sizes — good default              |
+| Large (0.5+)      | Few large clusters; may produce very uneven groups |
 
-There is no single best radius — it depends on the density of your data. A useful
-heuristic: choose a radius such that the number of clusters is roughly equal to your
-intended number of folds or groups.
+There is no single best radius — it depends on the density of your data. A useful heuristic: choose a radius such that
+the number of clusters is roughly equal to your intended number of folds or groups.
 
 ## Return value
 
@@ -65,8 +62,8 @@ intended number of folds or groups.
 - `radius::Float64` — the radius that was used.
 - `metric::Distances.SemiMetric` — the metric that was used.
 
-The result implements the `Clustering.ClusteringResult` interface, so standard
-accessor functions (`assignments`, `nclusters`, `counts`) work.
+The result implements the `Clustering.ClusteringResult` interface, so standard accessor functions (`assignments`,
+`nclusters`, `counts`) work.
 
 ## API reference
 
