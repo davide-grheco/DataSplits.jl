@@ -10,6 +10,10 @@ on:
       - "*.toml"
     types: [opened, synchronize, reopened]
 
+permissions:
+  actions: write
+  contents: read
+
 concurrency:
   # Skip intermediate builds: always.
   # Cancel intermediate builds: only if it is a pull request build.

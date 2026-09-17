@@ -27,6 +27,10 @@ on:
       codecov_token:
         required: true
 
+permissions:
+  actions: write
+  contents: read
+
 jobs:
   test:
     name: Julia ${{ inputs.version }} - ${{ inputs.os }} - ${{ inputs.arch }} - ${{ github.event_name }}
