@@ -47,9 +47,12 @@ abstract type AbstractCVStrategy <: AbstractSplitStrategy end
 """
     AbstractResamplingCVStrategy <: AbstractCVStrategy
 
-Abstract supertype for *resampling* cross-validation strategies —
-strategies whose folds are independent random train/test splits sized
-by the caller, rather than fixed slices of a deterministic partition.
+Abstract supertype for *resampling* cross-validation strategies: strategies
+whose folds are independent random train/test splits sized by the caller.
+
+Where a deterministic partition cuts the data into fixed, complementary slices,
+each resample is drawn independently, so an observation may be evaluated in
+several folds or in none.
 
 Subtyping this routes calls to the `partition(data, alg; train, test, …)`
 method, which forwards the resolved `n_train` / `n_test` to `_partition`.
