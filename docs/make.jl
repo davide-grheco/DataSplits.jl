@@ -16,7 +16,7 @@ bib = CitationBibliography("src/refs.bib"; style = :numeric)
 makedocs(;
   modules = [DataSplits],
   authors = "Davide Crucitti <davide.crucitti@grheco.com>",
-  repo = "https://github.com/davide-grheco/DataSplits.jl/blob/{commit}{path}#{line}",
+  repo = Remotes.GitHub("davide-grheco", "DataSplits.jl"),
   sitename = "DataSplits.jl",
   format = Documenter.HTML(; canonical = "https://davide-grheco.github.io/DataSplits.jl"),
   pages = ["index.md"; numbered_pages],
