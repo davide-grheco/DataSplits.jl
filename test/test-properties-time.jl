@@ -51,8 +51,7 @@ end
     # Test cohorts are pairwise disjoint (first chunk is only ever in training).
     test_idx_sets = [Set(testindices(f)) for f in cvs]
     pairwise_disjoint = all(
-      isempty(intersect(test_idx_sets[i], test_idx_sets[j])) for
-      i in 1:k, j in 1:k if i < j
+      isempty(intersect(test_idx_sets[i], test_idx_sets[j])) for i = 1:k, j = 1:k if i < j
     )
     length(cvs) == k &&
       pairwise_disjoint &&

@@ -134,10 +134,8 @@ struct NestedCV{O<:AbstractCVStrategy,I<:AbstractCVStrategy} <: AbstractCVStrate
   end
 end
 
-NestedCV(
-  outer::O,
-  inner::I,
-) where {O<:AbstractCVStrategy,I<:AbstractCVStrategy} = NestedCV{O,I}(outer, inner)
+NestedCV(outer::O, inner::I) where {O<:AbstractCVStrategy,I<:AbstractCVStrategy} =
+  NestedCV{O,I}(outer, inner)
 
 function consumes(nc::NestedCV)
   seen = Symbol[]
