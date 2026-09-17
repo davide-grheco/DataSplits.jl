@@ -137,8 +137,8 @@ In chemometric calibration, Kennard–Stone-style selection constructs a trainin
 # Research impact statement
 
 DataSplits.jl has been developed to support benchmarking and validation workflows in scientific machine learning
-where split construction directly affects reported performance estimates. The package underpins a companion study
-currently under review [@crucitti2025splits], which demonstrates empirically that split strategy choice can
+where split construction directly affects reported performance estimates. The package underpins a published companion study
+[@crucitti2025splits], which demonstrates empirically that split strategy choice can
 dominate differences between modelling algorithms in structured chemical datasets, with random splits
 systematically producing more optimistic performance estimates than distance-based and group-aware alternatives.
 A reproducible tutorial (`notebooks/tutorial.jl`) included in the repository provides side-by-side comparisons
