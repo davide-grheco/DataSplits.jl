@@ -41,7 +41,7 @@ index vectors, composable with any Julia ML framework.
 | 3 — Feature-space coverage | `KennardStoneSplit` vs `RandomSplit` | Why random splits mislead |
 | 4 — Joint coverage | `SPXYSplit` | Covering features and target together |
 | 5 — Group-aware splitting | `GroupShuffleSplit` vs `RandomSplit` | Avoiding group leakage |
-| 6 — Paper figure | `KennardStoneSplit` vs `RandomSplit` | Generates `paper/figures/ks_vs_random.png` |
+| 6 — Space-filling coverage | `KennardStoneSplit` vs `RandomSplit` | Why random sampling misses the boundary |
 
 > **Run this notebook** by opening it with [Pluto.jl](https://plutojl.org/).
 > Pluto will install all required packages automatically.
@@ -406,12 +406,12 @@ full strategy catalogue and API reference.
 # ╔═╡ c536e7f8-0912-4213-c345-eeff00112233
 md"""
 ---
-## 6 — Paper figure (maintainers)
+## 6 — Space-filling coverage
 
-Generates `paper/figures/ks_vs_random.png`: a side-by-side scatter plot comparing
-a random split and a Kennard–Stone split on a dataset with a dense center and a
-sparse outer boundary (N=120, 35 training samples). All observations are shown as
-gray background points; selected training samples are highlighted in blue.
+A side-by-side scatter plot comparing a random split and a Kennard–Stone split on
+a dataset with a dense center and a sparse outer boundary (N=120, 35 training
+samples). All observations are shown as gray background points; selected training
+samples are highlighted in blue.
 
 This mirrors the standard chemometrics illustration: random sampling follows the
 empirical density and under-samples the sparse boundary, while Kennard–Stone selects
@@ -500,12 +500,6 @@ begin
     framevisible = false,
     labelsize = 11,
     tellwidth = false,
-  )
-
-  save(
-    joinpath(@__DIR__, "..", "paper", "figures", "ks_vs_random.png"),
-    fig_paper;
-    px_per_unit = 2,
   )
   fig_paper
 end
