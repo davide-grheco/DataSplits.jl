@@ -73,13 +73,14 @@ construct calibration and validation sets with broad coverage of the experimenta
 Duplex algorithm [@sneeValidation77a], which selects both training and test sets simultaneously using the maximin
 criterion; OptiSim and dissimilarity-based selection methods [@Clark1997OptiSim]; the Onion method
 [@gallagherSelection20] and its joint X--y extension, XY-Onion [@ezenarro2025xy]; electrostatic field-strength selection
-[@heField26]; spectral clustering-based splits; and classification-oriented adaptations such as the Morais--Lima--Martin
-algorithm [@Lelis2019Improving]. Time-series and financial machine learning workflows call for chronological splitting
-strategies such as purged k-fold cross-validation and combinatorial purged cross-validation [@lopezdepradoAdvances18],
-and blocked cross-validation [@bergmeirUse12; @Roberts2017Cross]. Target-aware cross-validation strategies such as
-Venetian blinds [@naes2002multivariate] assign samples sorted by response value across folds in round-robin order,
-guaranteeing uniform target coverage without binning. These methods are useful in scientific modelling but, to our
-knowledge, are not currently available together in any general-purpose Julia splitting library.
+[@heField26]; spectral clustering-based splits [@ngSpectral01]; and classification-oriented adaptations such as the
+Morais--Lima--Martin algorithm [@Lelis2019Improving]. Time-series and financial machine learning workflows call for
+chronological splitting strategies such as purged k-fold cross-validation and combinatorial purged cross-validation
+[@lopezdepradoAdvances18], and blocked cross-validation [@bergmeirUse12; @Roberts2017Cross]. Target-aware
+cross-validation strategies such as Venetian blinds [@naes2002multivariate] assign samples sorted by response value
+across folds in round-robin order, guaranteeing uniform target coverage without binning. These methods are useful in
+scientific modelling but, to our knowledge, are not currently available together in any general-purpose Julia splitting
+library.
 
 DataSplits.jl addresses this gap by collecting these splitting strategies in a single Julia package with a consistent
 interface. It is intended for researchers who need reproducible, inspectable, and domain-appropriate partitions while
