@@ -159,7 +159,10 @@ materialised data extraction.
 A representative train/test split can be constructed using the Kennard--Stone strategy:
 
 ```julia
-using DataSplits
+using DataSplits, Random
+
+X = randn(Xoshiro(42), 8, 200)
+y = vec(sum(X; dims = 1)) .+ randn(Xoshiro(7), 200)
 
 res = partition(X, KennardStoneSplit(); train = 0.8, test = 0.2)
 
@@ -168,23 +171,29 @@ train_idx = trainindices(res)
 test_idx  = testindices(res)
 ```
 
-For stratified cross-validation with MLJ, the result can be converted to row pairs directly:
+For stratified cross-validation with MLJ, the result can be converted to row pairs directly. MLJ tables place
+observations in rows, so the feature matrix is transposed first:
 
 ```julia
-using DataSplits, MLJ, Random
+using MLJ, DataFrames
 
-cvs  = partition(X, StratifiedKFold(5); target = y, rng = Xoshiro(42))
-mach = machine(model, X, y)
+Xt     = DataFrame(permutedims(X), :auto)          # 200 rows x 8 features
+labels = coerce(ifelse.(y .> 0, "high", "low"), Multiclass)
+
+cvs   = partition(Xt, StratifiedKFold(5); target = labels, rng = Xoshiro(42))
+model = ConstantClassifier()                       # any MLJ model
+mach  = machine(model, Xt, labels)
+
 evaluate!(mach; resampling = rowpairs(cvs), measure = accuracy)
 ```
 
 The same split indices can also be applied to multiple aligned data sources, enabling integration with Flux data
-loaders:
+loaders, which take observations along the last dimension as DataSplits does:
 
 ```julia
-using DataSplits, Flux
+using Flux
 
-res    = partition(X, KennardStoneSplit(); train = 0.8, test = 0.2)
+model  = Flux.Dense(8 => 1)
 loader = Flux.DataLoader(trainview(res, X, y); batchsize = 64, shuffle = true)
 ```
 
