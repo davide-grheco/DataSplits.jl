@@ -4,8 +4,13 @@ on:
   pull_request:
     branches: [main]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
+  pull-requests: write
 
 jobs:
   benchmark:
@@ -14,6 +19,7 @@ jobs:
     steps:
       - uses: MilesCranmer/AirspeedVelocity.jl@action-v1
         with:
-          julia-version: '1'
+          julia-version: "1"
           script: benchmark/benchmarks.jl
-          job-summary: 'true'
+          job-summary: "false"
+          enable-plots: "true"
