@@ -1,3 +1,4 @@
+using ArnoldiMethod: partialschur, partialeigen
 using Clustering: kmeans, assignments
 using Distances
 using LinearAlgebra
@@ -58,6 +59,24 @@ SpectralSplit(n_clusters::Integer = 10; metric = Euclidean()) =
 consumes(::SpectralSplit) = (:data,)
 fallback_from_data(::SpectralSplit) = ()
 
+"""
+    _leading_eigenvectors(M::Symmetric, k::Integer) -> Matrix
+
+The `k` eigenvectors of `M` with the largest eigenvalues. These span the same
+subspace as the `k` smallest eigenvectors of the Laplacian `L = I - M`.
+"""
+function _leading_eigenvectors(M::Symmetric, k::Integer)
+  N = size(M, 1)
+  dense() = eigen(M).vectors[:, N:-1:(N-k+1)]
+
+  (N <= 64 || k >= N - 1) && return dense()
+
+  decomposition, history = partialschur(M; nev = k, which = :LR, tol = 1e-9)
+  history.converged || return dense()
+
+  return partialeigen(decomposition)[2][:, 1:k]
+end
+
 function _spectral_embed(D::AbstractMatrix, n_clusters::Integer)
   N = size(D, 1)
 
@@ -67,18 +86,16 @@ function _spectral_embed(D::AbstractMatrix, n_clusters::Integer)
   W = exp.(-(D ./ σ) .^ 2 ./ 2)
   W[diagind(W)] .= 0  # no self-loops
 
-  # Normalised graph Laplacian: L = I − D^{-1/2} W D^{-1/2}
+  # Normalised affinity M = D^{-1/2} W D^{-1/2}; the graph Laplacian is L = I − M.
   deg = vec(sum(W; dims = 2))
   deg_inv_sqrt = 1 ./ sqrt.(max.(deg, 1e-10))
-  L = I - Diagonal(deg_inv_sqrt) * W * Diagonal(deg_inv_sqrt)
+  M = Symmetric(Diagonal(deg_inv_sqrt) * W * Diagonal(deg_inv_sqrt))
 
-  # Smallest n_clusters eigenvectors (Symmetric → sorted ascending)
-  vals, vecs = eigen(Symmetric(L))
-  embedding = vecs[:, 1:n_clusters]  # N × n_clusters
+  embedding = _leading_eigenvectors(M, n_clusters)  # N × n_clusters
 
   # Row-normalise (standard spectral clustering step)
   row_norms = sqrt.(sum(embedding .^ 2; dims = 2))
-  embedding ./= max.(row_norms, 1e-10)
+  embedding = embedding ./ max.(row_norms, 1e-10)
 
   return embedding
 end
