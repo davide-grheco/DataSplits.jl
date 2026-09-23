@@ -72,7 +72,7 @@ function field_strength_from_distance_matrix(D::AbstractMatrix, n_train::Integer
   end
 
   selected = Vector{Int}(undef, n_train)
-  selected[1] = argmin(iso)
+  selected[1] = argmin_nonan(iso)
 
   col1 = @view D[:, selected[1]]
   field = Vector{Float64}(undef, N)
@@ -82,7 +82,7 @@ function field_strength_from_distance_matrix(D::AbstractMatrix, n_train::Integer
   field[selected[1]] = Inf
 
   for t = 2:n_train
-    k = argmin(field)
+    k = argmin_nonan(field)
     selected[t] = k
     col_k = @view D[:, k]
     @inbounds @simd for m = 1:N

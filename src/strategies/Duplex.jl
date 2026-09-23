@@ -94,7 +94,7 @@ function duplex_from_distance_matrix(D::AbstractMatrix, n_train::Integer, n_test
 
   while n_tr < n_train || n_te < n_test
     if n_tr < n_train
-      k = argmax(min_dist_train)
+      k = argmax_nonan(min_dist_train)
       n_tr += 1
       train[n_tr] = k
       col_k = @view D[:, k]
@@ -105,7 +105,7 @@ function duplex_from_distance_matrix(D::AbstractMatrix, n_train::Integer, n_test
       min_dist_test[k] = -Inf  # cross-invalidate
     end
     if n_te < n_test
-      l = argmax(min_dist_test)
+      l = argmax_nonan(min_dist_test)
       n_te += 1
       test[n_te] = l
       col_l = @view D[:, l]
@@ -187,7 +187,7 @@ function _partition(
 
   while n_tr < n_train || n_te < n_test
     if n_tr < n_train
-      k = argmax(min_dist_train)
+      k = argmax_nonan(min_dist_train)
       n_tr += 1
       train[n_tr] = k
       selected[k] = true
@@ -204,7 +204,7 @@ function _partition(
       end
     end
     if n_te < n_test
-      l = argmax(min_dist_test)
+      l = argmax_nonan(min_dist_test)
       n_te += 1
       test[n_te] = l
       selected[l] = true

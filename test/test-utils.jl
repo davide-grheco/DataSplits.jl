@@ -390,3 +390,29 @@ import DataSplits: complement
   # The two methods agree where position and value coincide, as in 1:n.
   @test complement(collect(1:10), 3:5) == complement(10, 3:5)
 end
+
+import DataSplits: argmax_nonan, argmin_nonan
+
+@testset "argmax_nonan" begin
+  @test argmax_nonan([1.0, 3.0, 2.0]) == 2
+  @test argmax_nonan([-Inf, -Inf, 0.5]) == 3
+  @test argmax_nonan([2.0]) == 1
+  # Ties resolve to the first maximum, as Base does.
+  @test argmax_nonan([1.0, 5.0, 5.0]) == 2
+
+  # Base throws on empty; so must this, rather than reading out of bounds.
+  @test_throws ArgumentError argmax_nonan(Float64[])
+
+  rng = MersenneTwister(9)
+  for n in (1, 2, 33, 512)
+    v = randn(rng, n)
+    v[randperm(rng, n)[1:(n÷4)]] .= -Inf     # the selected-sample sentinel
+    @test argmax_nonan(v) == argmax(v)
+    @test argmin_nonan(-v) == argmin(-v)
+  end
+
+  # Non-float types fall through to Base, which is already optimal for them.
+  ints = rand(rng, 1:100, 64)
+  @test argmax_nonan(ints) == argmax(ints)
+  @test argmin_nonan(ints) == argmin(ints)
+end
