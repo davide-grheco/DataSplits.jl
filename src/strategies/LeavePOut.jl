@@ -42,7 +42,7 @@ function _partition(data, alg::LeavePOut; kwargs...)
   )
 
   result = map(combinations(1:N, alg.p)) do test_idx
-    TrainTestSplit(setdiff(1:N, test_idx), test_idx)
+    TrainTestSplit(complement(N, test_idx), test_idx)
   end
 
   return CrossValidationSplit(result)

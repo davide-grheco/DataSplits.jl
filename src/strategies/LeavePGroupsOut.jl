@@ -69,7 +69,7 @@ function _partition(data, alg::LeavePGroupsOut; groups, kwargs...)
 
   folds = map(combinations(block_order, alg.p)) do test_blocks
     test_idx = mapreduce(b -> perm[(off[b]+1):off[b+1]], vcat, test_blocks)
-    TrainTestSplit(setdiff(1:N, test_idx), test_idx)
+    TrainTestSplit(complement(N, test_idx), test_idx)
   end
   return CrossValidationSplit(folds)
 end

@@ -134,7 +134,7 @@ function _partition(
   end
 
   train_pos = selected
-  test_pos = setdiff(1:N, train_pos)
+  test_pos = complement(N, train_pos)
   _warn_undershoot(
     length(train_pos),
     n_train,

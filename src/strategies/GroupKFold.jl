@@ -86,7 +86,7 @@ function _partition(data, alg::GroupKFold; groups, rng = Random.default_rng(), k
 
   folds = Vector{TrainTestSplit{Vector{Int}}}(undef, alg.k)
   for f = 1:alg.k
-    folds[f] = TrainTestSplit(setdiff(1:N, fold_test[f]), fold_test[f])
+    folds[f] = TrainTestSplit(complement(N, fold_test[f]), fold_test[f])
   end
   return CrossValidationSplit(folds)
 end
