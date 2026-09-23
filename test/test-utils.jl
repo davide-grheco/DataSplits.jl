@@ -1,4 +1,5 @@
 using Test
+using Random
 using DataSplits: SplitParameterError
 import DataSplits: ValidFraction
 
@@ -355,4 +356,37 @@ end
     sizes = diff([0; ends])
     sum(sizes) == B
   end
+end
+
+import DataSplits: complement
+
+@testset "complement" begin
+  # Must agree with the setdiff it replaces, including order.
+  @test complement(10, [3, 7]) == setdiff(1:10, [3, 7])
+  @test complement(10, Int[]) == collect(1:10)
+  @test complement(5, 1:5) == Int[]
+  @test complement(1, [1]) == Int[]
+
+  # Duplicates are tolerated: BootstrapSplit samples with replacement and
+  # passes an index vector that repeats.
+  @test complement(10, [3, 3, 7, 7, 7]) == setdiff(1:10, [3, 7])
+
+  # Randomised agreement with setdiff over a range of exclusion densities.
+  rng = MersenneTwister(4)
+  for n in (1, 2, 17, 64, 257), frac in (0.0, 0.1, 0.5, 0.9, 1.0)
+    k = round(Int, frac * n)
+    excluded = randperm(rng, n)[1:k]
+    @test complement(n, excluded) == setdiff(1:n, excluded)
+  end
+
+  # Contiguous-run method: drops positions, not values, so it works on a
+  # permuted index vector where the two differ.
+  perm = randperm(MersenneTwister(5), 40)
+  for lo = 1:40, len in (1, 3, 11)
+    hi = min(lo + len - 1, 40)
+    @test complement(perm, lo:hi) == vcat(perm[1:(lo-1)], perm[(hi+1):end])
+  end
+
+  # The two methods agree where position and value coincide, as in 1:n.
+  @test complement(collect(1:10), 3:5) == complement(10, 3:5)
 end

@@ -76,7 +76,7 @@ function _partition(
   D = distance_matrix(X, eff_metric)
   selected_positions = optisim(D, n_train, s.max_subsample_size, eff_cutoff; rng = rng)
   train_pos = collect(selected_positions)
-  test_pos = setdiff(1:N, train_pos)
+  test_pos = complement(N, train_pos)
   _warn_undershoot(
     length(train_pos),
     n_train,

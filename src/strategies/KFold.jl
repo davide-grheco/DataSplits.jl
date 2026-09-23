@@ -52,17 +52,13 @@ function _partition(data, alg::KFold; rng = Random.default_rng(), kwargs...)
 
   fold_size, remainder = divrem(N, alg.k)
 
-  fold_test = Vector{Vector{Int}}(undef, alg.k)
+  result = Vector{TrainTestSplit{Vector{Int}}}(undef, alg.k)
   offset = 0
   for f = 1:alg.k
     len = fold_size + (f <= remainder ? 1 : 0)
-    fold_test[f] = indices[(offset+1):(offset+len)]
+    lo, hi = offset + 1, offset + len
+    result[f] = TrainTestSplit(complement(indices, lo:hi), indices[lo:hi])
     offset += len
-  end
-
-  result = Vector{TrainTestSplit{Vector{Int}}}(undef, alg.k)
-  for f = 1:alg.k
-    result[f] = TrainTestSplit(setdiff(indices, fold_test[f]), fold_test[f])
   end
   return CrossValidationSplit(result)
 end

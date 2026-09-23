@@ -273,3 +273,21 @@ function _blocked_cv_partition(
   end
   return CrossValidationSplit(result)
 end
+
+"""
+    complement(n::Integer, excluded) -> Vector{Int}
+    complement(indices::AbstractVector{<:Integer}, run::AbstractUnitRange) -> Vector{Int}
+
+`1:n`, or `indices`, without the elements at the given positions. Repeated
+positions are tolerated; `BootstrapSplit` produces them.
+"""
+function complement(n::Integer, excluded)
+  keep = trues(n)
+  keep[excluded] .= false
+  return findall(keep)
+end
+
+function complement(indices::AbstractVector{<:Integer}, run::AbstractUnitRange)
+  lo, hi = first(run), last(run)
+  return vcat(@view(indices[begin:(lo-1)]), @view(indices[(hi+1):end]))
+end

@@ -162,7 +162,7 @@ function _partition(
 
   folds_out = Vector{TrainTestSplit{Vector{Int}}}(undef, alg.k)
   for f = 1:alg.k
-    folds_out[f] = TrainTestSplit(setdiff(1:N, fold_test[f]), fold_test[f])
+    folds_out[f] = TrainTestSplit(complement(N, fold_test[f]), fold_test[f])
   end
   return CrossValidationSplit(folds_out)
 end

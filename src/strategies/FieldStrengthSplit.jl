@@ -91,7 +91,7 @@ function field_strength_from_distance_matrix(D::AbstractMatrix, n_train::Integer
     field[k] = Inf
   end
 
-  return selected, setdiff(1:N, selected)
+  return selected, complement(N, selected)
 end
 
 function _partition(
