@@ -1,4 +1,5 @@
 using Test
+using Random
 using Distances
 using Statistics
 using MLUtils
@@ -98,4 +99,27 @@ end
 
   @test Set(train_idx) == expected_train
   @test Set(test_idx) == expected_test
+end
+
+@testset "LazySPXYSplit stays allocation-free in its inner loop" begin
+  X = randn(Xoshiro(1), 8, 200)
+  y = randn(Xoshiro(2), 200)
+
+  @test all(isconcretetype, fieldtypes(typeof(DataSplits.XYObsTable(X, y))))
+  @test all(
+    isconcretetype,
+    fieldtypes(typeof(DataSplits.LazySPXYMetric(Euclidean(), Euclidean(), 1.0, 1.0))),
+  )
+
+  split(Xm, ym) = partition(Xm, LazySPXYSplit(); target = ym, train = 0.8, test = 0.2)
+  split(X, y)                                     # compile before measuring
+  lazy_bytes = @allocated split(X, y)
+
+  eager(Xm, ym) = partition(Xm, SPXYSplit(); target = ym, train = 0.8, test = 0.2)
+  eager(X, y)
+  eager_bytes = @allocated eager(X, y)
+
+  @test lazy_bytes < eager_bytes
+
+  @test trainindices(split(X, y)) == trainindices(eager(X, y))
 end
