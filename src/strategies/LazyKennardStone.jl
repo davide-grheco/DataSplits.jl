@@ -57,7 +57,7 @@ function _partition(
   end
   min_dists[i₁] = min_dists[i₂] = -Inf
   for k = 3:N
-    next_i = argmax(min_dists)
+    next_i = argmax_nonan(min_dists)
     order[k] = next_i
     selected[next_i] = true
     min_dists[next_i] = -Inf

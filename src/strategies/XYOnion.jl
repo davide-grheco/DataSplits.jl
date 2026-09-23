@@ -251,7 +251,7 @@ function _onion_dist_argmax(dX::AbstractVector, dY::AbstractVector)
   return k
 end
 
-_onion_dist_argmax(dX::AbstractVector, ::Nothing) = argmax(dX)
+_onion_dist_argmax(dX::AbstractVector, ::Nothing) = argmax_nonan(dX)
 
 """
     _onion_distslct(X, y, nosamps) -> Vector{Int}
