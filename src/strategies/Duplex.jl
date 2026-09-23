@@ -51,8 +51,8 @@ rather than precomputing the full N×N matrix.
 
 See [`DuplexSplit`](@ref) for the algorithm description and usage examples.
 """
-struct LazyDuplexSplit <: AbstractSplitStrategy
-  metric::Distances.SemiMetric
+struct LazyDuplexSplit{M<:Distances.SemiMetric} <: AbstractSplitStrategy
+  metric::M
 end
 
 LazyDuplexSplit() = LazyDuplexSplit(Euclidean())

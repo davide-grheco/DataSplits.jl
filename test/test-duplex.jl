@@ -87,3 +87,17 @@ end
   @test length(res.test) == 10
   @test Set(vcat(res.train, res.test)) == Set(1:50)
 end
+
+@testset "LazyDuplexSplit avoids the eager path's allocation" begin
+  @test all(isconcretetype, fieldtypes(typeof(LazyDuplexSplit())))
+
+  X = randn(Xoshiro(3), 8, 200)
+  lazy(Xm) = partition(Xm, LazyDuplexSplit(); train = 0.8, test = 0.2)
+  eager(Xm) = partition(Xm, DuplexSplit(); train = 0.8, test = 0.2)
+
+  lazy(X)
+  eager(X)
+  @test (@allocated lazy(X)) < (@allocated eager(X))
+
+  @test trainindices(lazy(X)) == trainindices(eager(X))
+end
