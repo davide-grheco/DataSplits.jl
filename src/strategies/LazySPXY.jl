@@ -80,18 +80,19 @@ function _find_max_distance_XY(X, y, metric_X, metric_y)
   return max_dx, max_dy
 end
 
-struct XYObsTable
-  X::Any
-  y::Any
+struct XYObsTable{TX,TY}
+  X::TX
+  y::TY
 end
 
 getobs(data::XYObsTable, i) = (getobs(data.X, i), getobs(data.y, i))
 _obs(data::XYObsTable, i) = (obsview(data.X, i), data.y[i])
 numobs(data::XYObsTable) = numobs(data.X)
 
-struct LazySPXYMetric <: Distances.SemiMetric
-  metric_X::Distances.SemiMetric
-  metric_y::Distances.SemiMetric
+struct LazySPXYMetric{MX<:Distances.SemiMetric,MY<:Distances.SemiMetric} <:
+       Distances.SemiMetric
+  metric_X::MX
+  metric_y::MY
   max_X::Float64
   max_y::Float64
 end
