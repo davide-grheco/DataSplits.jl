@@ -1,5 +1,7 @@
 using Distances
+using LinearAlgebra: Diagonal, Symmetric, eigen
 using MLUtils: numobs, getobs, obsview
+using Statistics: cov
 
 _obs(data::AbstractMatrix, i) = obsview(data, i)
 _obs(data, i) = getobs(data, i)
@@ -333,4 +335,20 @@ function argmin_nonan(v::AbstractVector{<:AbstractFloat})
     end
   end
   return idx
+end
+
+"""
+    mahalanobis_transform(X) -> Matrix
+
+`X` rescaled so that Euclidean distance on the result equals Mahalanobis
+distance on `X`, by applying `S^(-1/2)` for the covariance `S`.
+
+Doing this once makes every later pairwise distance a plain O(D) Euclidean one.
+Eigenvalues are floored at `eps()` so a singular covariance still transforms.
+"""
+function mahalanobis_transform(X::AbstractMatrix)
+  C = cov(X; dims = 2)
+  F = eigen(Symmetric(C))
+  W = F.vectors * Diagonal(1 ./ sqrt.(max.(F.values, eps()))) * F.vectors'
+  return W * X
 end

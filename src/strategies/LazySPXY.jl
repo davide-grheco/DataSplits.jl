@@ -141,12 +141,14 @@ function _partition(
   rng = Random.default_rng(),
   kwargs...,
 )
-  metric_X = s.metric_X === nothing ? Mahalanobis(cov(X; dims = 2)) : s.metric_X
-  max_X, max_y = _find_max_distance_XY(X, target, metric_X, s.metric_y)
+  Xm, metric_X =
+    s.metric_X === nothing ? (mahalanobis_transform(X), Euclidean()) : (X, s.metric_X)
+
+  max_X, max_y = _find_max_distance_XY(Xm, target, metric_X, s.metric_y)
   max_X = max_X == 0.0 ? 1.0 : max_X
   max_y = max_y == 0.0 ? 1.0 : max_y
   metric = LazySPXYMetric(metric_X, s.metric_y, max_X, max_y)
-  data = XYObsTable(X, target)
+  data = XYObsTable(Xm, target)
   return _partition(
     data,
     LazyKennardStoneSplit(metric);
