@@ -16,7 +16,8 @@ sum of the (normalised) pairwise distance matrices of `X` and `y`.
 # Examples
 ```julia
 res = partition(X, SPXYSplit(); target=y, train=70, test=30)
-res = partition(X, SPXYSplit(; metric_X=Mahalanobis(cov(X; dims=2)));
+
+res = partition(X, SPXYSplit(; metric_X=Mahalanobis(inv(cov(X; dims=2))));
                 target=y, train=70, test=30)
 X_train, X_test = splitdata(res, X)
 ```
@@ -47,7 +48,8 @@ and Euclidean distance for `y`.
 # Examples
 ```julia
 res = partition(X, MDKSSplit(); target=y, train=70, test=30)
-res = partition(X, MDKSSplit(; metric=Mahalanobis(cov(X; dims=2)));
+
+res = partition(X, MDKSSplit(; metric=Mahalanobis(inv(cov(X; dims=2))));
                 target=y, train=70, test=30)
 X_train, X_test = splitdata(res, X)
 ```
@@ -94,9 +96,11 @@ function _partition(
   rng = Random.default_rng(),
   kwargs...,
 )
-  metric_X = s.metric === nothing ? Mahalanobis(cov(X; dims = 2)) : s.metric
+  data, metric_X =
+    s.metric === nothing ? (mahalanobis_transform(X), Euclidean()) : (X, s.metric)
+
   _partition(
-    X,
+    data,
     SPXYSplit(metric_X, Euclidean());
     target = target,
     n_train = n_train,

@@ -27,7 +27,7 @@ distance to that cohort's existing members.
 res = partition(X, DuplexSplit(); train = 70, test = 30)
 X_train, X_test = splitdata(res, X)
 
-res = partition(X, DuplexSplit(Mahalanobis(cov(X; dims=2))); train = 0.8, test = 0.2)
+res = partition(X, DuplexSplit(Mahalanobis(inv(cov(X; dims=2)))); train = 0.8, test = 0.2)
 ```
 
 # See also

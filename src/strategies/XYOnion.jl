@@ -49,14 +49,6 @@ fallback_from_data(::XYOnionSplit) = ()
 # Shared infrastructure used by both OnionSplit and XYOnionSplit
 # ---------------------------------------------------------------------------
 
-# Whiten X (F×N) so Euclidean distances equal Mahalanobis distances in the original space.
-function _xyonion_whiten(X::AbstractMatrix)
-  C = cov(X; dims = 2)
-  F = eigen(Symmetric(C))
-  W = F.vectors * Diagonal(1 ./ sqrt.(max.(F.values, eps()))) * F.vectors'
-  return W * X
-end
-
 # Allocation-free argmax of ‖X[:,j]‖²  (j ∈ 1:last).
 function _onion_stds_argmax(X::AbstractMatrix, last::Int)
   F = size(X, 1)
@@ -376,7 +368,7 @@ function _partition(
   kwargs...,
 )
   Xf = float.(X)
-  Xw = s.metric_X === nothing ? _xyonion_whiten(Xf) : Xf
+  Xw = s.metric_X === nothing ? mahalanobis_transform(Xf) : Xf
   yf = float.(target)
   train_idx, test_idx = _onion_partition!(Xw, yf, n_train, n_test, s.n_layers, rng)
   return TrainTestSplit(train_idx, test_idx)

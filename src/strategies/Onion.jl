@@ -54,7 +54,7 @@ function _partition(
   kwargs...,
 )
   Xf = float.(X)
-  Xw = s.metric_X === nothing ? _xyonion_whiten(Xf) : Xf
+  Xw = s.metric_X === nothing ? mahalanobis_transform(Xf) : Xf
   train_idx, test_idx = _onion_partition!(Xw, nothing, n_train, n_test, s.n_layers, rng)
   return TrainTestSplit(train_idx, test_idx)
 end
