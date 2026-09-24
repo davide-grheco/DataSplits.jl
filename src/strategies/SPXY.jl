@@ -67,8 +67,8 @@ consumes(::MDKSSplit) = (:data, :target)
 fallback_from_data(::MDKSSplit) = ()
 
 @inline function _norm_pairwise(X, metric)
-  D = distance_matrix(X, metric)
-  return D ./ maximum(D)
+  D = _to_float(distance_matrix(X, metric))
+  return D ./= maximum(D)
 end
 
 function _partition(

@@ -98,6 +98,14 @@ function distance_matrix(X::AbstractMatrix, metric::Distances.SemiMetric)
 end
 
 """
+    _to_float(D) -> AbstractMatrix
+
+`D` converted to a float matrix, returned as-is when it already is one.
+"""
+_to_float(D::AbstractMatrix{<:AbstractFloat}) = D
+_to_float(D::AbstractMatrix) = float.(D)
+
+"""
     SplitInputError(msg)
 
 Error thrown when input data to a split is invalid (e.g., empty, wrong shape, mismatched X/y).
