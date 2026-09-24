@@ -60,16 +60,21 @@ function sphere_exclusion(data; radius::Real, metric::Distances.SemiMetric = Euc
   else
     fill!(D, zero(eltype(D)))
   end
-  un = Set(1:N)
+
+  unassigned = trues(N)
   assign = zeros(Int, N)
   cid = 1
   rad = float(radius)
-  while !isempty(un)
-    i = first(un)
-    members = [j for j in un if D[i, j] <= rad]
-    for j in members
-      assign[j] = cid
-      delete!(un, j)
+
+  @inbounds for i = 1:N
+    unassigned[i] || continue
+
+    col = @view D[:, i]
+    for j = 1:N
+      if unassigned[j] && col[j] <= rad
+        assign[j] = cid
+        unassigned[j] = false
+      end
     end
     cid += 1
   end

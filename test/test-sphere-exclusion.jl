@@ -1,4 +1,4 @@
-using Test, DataSplits, Distances, Clustering
+using Test, DataSplits, Distances, Clustering, StableRNGs
 
 @testset "SphereExclusion edge cases" begin
   # Empty data
@@ -49,4 +49,22 @@ end
     res = sphere_exclusion(X; radius = Float64(N))
     nclusters(res) == 1
   end
+end
+
+@testset "SphereExclusion is deterministic and seeds in index order" begin
+  X = randn(StableRNG(11), 4, 300)
+
+  a = sphere_exclusion(X; radius = 0.25).assignments
+  b = sphere_exclusion(X; radius = 0.25).assignments
+  @test a == b
+
+  # Every sample lands in exactly one cluster.
+  @test all(>(0), a)
+  @test sort(unique(a)) == 1:maximum(a)
+
+  # Sample 1 can never be anything but the first center
+  @test a[1] == 1
+
+  firsts = [findfirst(==(c), a) for c = 1:maximum(a)]
+  @test issorted(firsts)
 end
