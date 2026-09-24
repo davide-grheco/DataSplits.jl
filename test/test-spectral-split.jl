@@ -67,7 +67,7 @@ end
 
     dense = eigen(L).vectors[:, 1:k]
     dense = dense ./ max.(sqrt.(sum(dense .^ 2; dims = 2)), 1e-10)
-    actual = DataSplits._spectral_embed(D, k)
+    actual = DataSplits._spectral_embed!(D, k)
 
     # Distance between subspace projectors: invariant to sign and rotation.
     @test opnorm(dense * dense' - actual * actual') < 1e-6
