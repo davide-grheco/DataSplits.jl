@@ -2,7 +2,7 @@ using ArnoldiMethod: partialschur, partialeigen
 using Clustering: kmeans, assignments
 using Distances
 using LinearAlgebra
-using Statistics: median
+using Statistics: median!
 
 """
     SpectralSplit <: AbstractSplitStrategy
@@ -77,19 +77,18 @@ function _leading_eigenvectors(M::Symmetric, k::Integer)
   return partialeigen(decomposition)[2][:, 1:k]
 end
 
-function _spectral_embed(D::AbstractMatrix, n_clusters::Integer)
-  N = size(D, 1)
-
-  # RBF affinity matrix using median-heuristic bandwidth
-  σ = median(D[i, j] for i = 1:N for j = (i+1):N)
-  σ = max(σ, 1e-10)
-  W = exp.(-(D ./ σ) .^ 2 ./ 2)
+function _spectral_embed!(D::AbstractMatrix, n_clusters::Integer)
+  σ = max(median!(D[triu(trues(size(D)), 1)]), 1e-10)
+  inv_2σ² = 1 / (2 * σ^2)
+  W = _to_float(D)
+  W .= exp.(.-W .^ 2 .* inv_2σ²)
   W[diagind(W)] .= 0  # no self-loops
 
   # Normalised affinity M = D^{-1/2} W D^{-1/2}; the graph Laplacian is L = I − M.
   deg = vec(sum(W; dims = 2))
   deg_inv_sqrt = 1 ./ sqrt.(max.(deg, 1e-10))
-  M = Symmetric(Diagonal(deg_inv_sqrt) * W * Diagonal(deg_inv_sqrt))
+  W .*= deg_inv_sqrt .* deg_inv_sqrt'
+  M = Symmetric(W)
 
   embedding = _leading_eigenvectors(M, n_clusters)  # N × n_clusters
 
@@ -112,7 +111,7 @@ function _partition(
   n_clusters = min(s.n_clusters, N)
 
   D = distance_matrix(X, s.metric)
-  embedding = _spectral_embed(D, n_clusters)
+  embedding = _spectral_embed!(D, n_clusters)
 
   # k-means on the spectral embedding (Clustering.jl: columns = observations)
   km = kmeans(Matrix(embedding'), n_clusters; maxiter = 300, rng = rng)
