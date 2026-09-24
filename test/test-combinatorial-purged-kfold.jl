@@ -1,4 +1,4 @@
-using Test, Random, DataSplits, Dates, Combinatorics
+using Test, Random, DataSplits, Dates, Combinatorics, StableRNGs
 import DataSplits: SplitParameterError
 
 @testset "CombinatorialPurgedKFold fold count" begin
@@ -87,4 +87,35 @@ end
   ts = collect(1:N)
   X = randn(2, N)
   @test_throws SplitParameterError partition(X, CombinatorialPurgedKFold(11, 1); time = ts)
+end
+
+@testset "CombinatorialPurgedKFold drops nothing beyond purge and embargo" begin
+  N = 60
+  ts = collect(1:N)
+  X = randn(StableRNG(3), 2, N)
+
+  # With no purge and no embargo, every observation is used in every fold.
+  cvs = partition(X, CombinatorialPurgedKFold(6, 2); time = ts)
+  for f in folds(cvs)
+    @test sort(vcat(trainindices(f), testindices(f))) == collect(1:N)
+  end
+
+  # With them, at most purge + embargo observations may be dropped per test
+  # block, and the dropped ones must sit inside one of those windows.
+  purge, embargo = 2, 1
+  cvs = partition(
+    X,
+    CombinatorialPurgedKFold(6, 2; purge = purge, embargo = embargo);
+    time = ts,
+  )
+  for f in folds(cvs)
+    used = vcat(trainindices(f), testindices(f))
+    omitted = setdiff(1:N, used)
+    te = testindices(f)
+
+    @test length(omitted) <= 2 * (purge + embargo)
+    @test all(omitted) do i
+      any(t -> (0 < t - i <= purge) || (0 < i - t <= embargo), te)
+    end
+  end
 end
