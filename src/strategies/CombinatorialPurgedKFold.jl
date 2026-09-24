@@ -113,9 +113,7 @@ function _partition(data, alg::CombinatorialPurgedKFold; time, kwargs...)
     end
     test_idx = order[test_positions]
 
-    # Exclusion set: test + purge windows before each test block
-    #                          + embargo windows after each test block
-    excluded = Set{Int}(test_idx)
+    excluded = copy(test_idx)
     for b in test_blocks
       for pos = max(1, block_lo[b]-alg.purge):(block_lo[b]-1)
         push!(excluded, order[pos])
@@ -125,7 +123,7 @@ function _partition(data, alg::CombinatorialPurgedKFold; time, kwargs...)
       end
     end
 
-    train_idx = [i for i = 1:N if i ∉ excluded]
+    train_idx = complement(N, excluded)
     isempty(train_idx) && throw(
       SplitParameterError(
         "CombinatorialPurgedKFold: a fold has an empty train cohort " *
