@@ -93,7 +93,11 @@ provides group-aware and time-series CV strategies (`GroupKFold`, `TimeSeriesSpl
 not implement distance-based selection methods such as Kennard--Stone, SPXY, or OptiSim. Astartes fills that gap for
 molecular and materials data, offering Kennard--Stone and several dissimilarity-based splitters, but does not cover
 group-aware CV, time-series CV, or nested cross-validation. DataSplits.jl covers both families — distance-based
-selection and a broad catalogue of standard CV strategies — in a consistent interface.
+selection and a broad catalogue of standard CV strategies — in a consistent interface. For the eight samplers both
+packages implement, DataSplits.jl is up to roughly 30x faster on identical inputs while using less peak memory
+(0.75 GiB against 1.59 GiB for Kennard--Stone at N = 10,000); both reach the same capacity limit, which the lazy
+variants remove. Where the sampler is deterministic, the two implementations were verified to produce identical splits
+before any timing was compared.
 
 Within Julia, MLUtils.jl provides an observation interface based on `numobs`, `getobs`, and lazy observation views,
 together with data loaders and basic splitting utilities [@mlutils]. Flux.jl re-exports MLUtils data-loading
@@ -135,6 +139,9 @@ All distance-based strategies have a lazy counterpart (e.g. `LazyKennardStoneSpl
 distances on-the-fly in O(N) peak memory instead of precomputing the full O(N²) distance matrix. This makes the
 strategies applicable to datasets where the full matrix would not fit in RAM, at the cost of increased runtime — a
 trade-off that is important for the high-dimensional descriptor matrices common in chemometrics and molecular modelling.
+On 20-dimensional Gaussian features at N = 10,000, the lazy variants allocate roughly 0.03% of what their eager
+counterparts do (236 KiB against 763 MiB for Kennard--Stone) for a 1.4-2.4x increase in runtime. Under a 4 GiB budget
+this raises the largest feasible sample count from 10,000 to at least 100,000, the largest size measured.
 
 The package is designed to be extensible. Adding a custom strategy requires subtyping `AbstractSplitStrategy`, declaring
 which auxiliary slots (`:data`, `:target`, `:time`, `:groups`) the strategy reads via the `consumes` trait, and
@@ -223,7 +230,9 @@ performance estimates than distance-based and group-aware alternatives. A reprod
 and group-aware splits on controlled datasets, illustrating how coverage of feature and response spaces differs across
 strategies and quantifying group leakage under random versus group-aware partitioning. The tutorial also generates
 \autoref{fig:ks}. A benchmark suite (`benchmark/benchmarks.jl`) tracks runtime scaling of all strategies, including lazy
-variants, to support informed strategy selection on datasets of varying size. DataSplits.jl will be maintained by the
+variants, to support informed strategy selection on datasets of varying size. A separate reproducible experiment
+(`benchmark/experiment/`) measures runtime and peak memory against astartes on identical inputs; it runs on Linux in
+about twelve minutes and writes the results reported above. DataSplits.jl will be maintained by the
 GrHeCo-Xen group through the public GitHub repository, where users can report issues, request features, and contribute
 new splitting strategies.
 
