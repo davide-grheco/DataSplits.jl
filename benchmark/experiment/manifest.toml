@@ -1,0 +1,26 @@
+# Factors, seeds and budgets. Edit here rather than in the scripts.
+
+[seeds]
+data = 20260922
+strategy = 11
+
+[data]
+features = 20
+sizes = [100, 300, 1000, 3000, 10_000, 30_000, 100_000]
+
+# Timing is a head-to-head at one size per family, not a sweep. The full ladder
+# above is still generated, because the capacity measurement needs it to locate
+# the memory wall.
+timing_n = {distance_eager = 10_000, distance_lazy = 10_000, clustering = 10_000, simple = 100_000}
+
+[budget]
+seconds_per_cell = 5.0
+memory_cap_gib = 4           # per cell, for the capacity measurement
+
+# Whole-stage cap. Generous enough for the largest legitimate working set,
+# tight enough that a runaway stage is killed instead of taking the machine
+# down: an unceilinged audit once reached 19.3 GiB and exhausted swap.
+experiment_cap_gib = 16
+
+[analysis]
+comparable_band = 1.15       # ratios within this are comparable, not a win
