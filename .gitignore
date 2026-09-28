@@ -1,0 +1,17 @@
+Manifest.toml
+!test/Manifest.toml
+statprof
+
+results_DataSplits@*.json
+bench/Manifest.toml
+.worktrees/
+paper/paper.pdf
+test/Manifest.toml
+docs/build
+
+benchmark/experiment/data/
+benchmark/experiment/results/*
+!benchmark/experiment/results/comparison.csv
+!benchmark/experiment/results/capacity.csv
+benchmark/experiment/__pycache__/
+.venv/
