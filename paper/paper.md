@@ -92,11 +92,26 @@ The closest Python equivalents are scikit-learn [@pedregosaScikitlearn18] and as
 provides group-aware and time-series CV strategies (`GroupKFold`, `TimeSeriesSplit`, `StratifiedGroupKFold`) but does
 not implement distance-based selection methods such as Kennard--Stone, SPXY, or OptiSim. Astartes fills that gap for
 molecular and materials data, offering Kennard--Stone and several dissimilarity-based splitters, but does not cover
-group-aware CV, time-series CV, or nested cross-validation. DataSplits.jl covers both families — distance-based
-selection and a broad catalogue of standard CV strategies — in a consistent interface. For the eight samplers both
-packages implement, DataSplits.jl is 1.2 to 27 times faster on identical inputs and uses less peak memory (0.75 GiB
-against 1.58 GiB for Kennard--Stone at N = 10,000). For the deterministic samplers the two implementations were checked
-to produce identical splits before timing.
+group-aware CV, time-series CV, or nested cross-validation. DataSplits.jl covers both families: distance-based selection
+and a broad catalogue of standard CV strategies. On the samplers the two packages share, DataSplits.jl is 1.2 to 27
+times faster than astartes and uses less peak memory (\autoref{tab:astartes}). Both packages precompute the full
+distance matrix for distance-based samplers, which limits the dataset size that fits in memory; DataSplits.jl also
+provides lazy variants that allow working with data of any size.
+
+<!-- prettier-ignore -->
+| Sampler                |       N | DataSplits.jl (ms) | astartes (ms) | Speed-up | DataSplits.jl (GiB) | astartes (GiB) |
+| :--------------------------- | ------: | -----------: | ---------: | --------: | -----------: | ---------: |
+| Kennard--Stone         |  10,000 |                389 |         1,126 |      2.9 |                0.75 |           1.58 |
+| SPXY                   |  10,000 |                987 |         1,555 |      1.6 |                1.48 |           2.33 |
+| OptiSim                |  10,000 |                329 |         1,098 |      3.3 |                0.75 |           1.12 |
+| Sphere exclusion       |  10,000 |                545 |           676 |      1.2 |                0.75 |           1.49 |
+| Random                 | 100,000 |               0.45 |          12.1 |       27 |                0.02 |           0.04 |
+| Target property (high) | 100,000 |                2.9 |          56.2 |       19 |                0.02 |           0.05 |
+| Target property (low)  | 100,000 |                3.0 |          51.1 |       17 |                0.02 |           0.05 |
+| Time-based             | 100,000 |                6.7 |          21.1 |      3.2 |                0.02 |           0.04 |
+
+Table: Median runtime and peak memory of DataSplits.jl and astartes on identical synthetic inputs with 20 features.
+Scripts and results are in `benchmark/experiment/`. \label{tab:astartes}
 
 Within Julia, MLUtils.jl provides an observation interface based on `numobs`, `getobs`, and lazy observation views,
 together with data loaders and basic splitting utilities [@mlutils]. Flux.jl re-exports MLUtils data-loading
@@ -209,8 +224,9 @@ cannot guard against by design. The practical difference is illustrated in \auto
 
 ![Comparison of random and Kennard–Stone training-set selection on a synthetic dataset with a dense central region and a sparse outer boundary. Gray points denote all samples (N=120) and blue points the selected training set (n=35). Random selection follows the empirical density and concentrates training samples in the center, whereas Kennard–Stone produces a more space-filling selection that better covers the boundary of the experimental domain.\label{fig:ks}](figures/ks_vs_random.png)
 
+<!-- prettier-ignore -->
 | Strategy family | Examples                                                                                               | Typical use                                                   |
-| --------------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------- |
+| :----------------------------- | :--------------------------------------------------------------------------------------- | :----------------------------------------------------------- |
 | Distance-based  | KennardStoneSplit, SPXYSplit, OptiSimSplit, DuplexSplit, OnionSplit, FieldStrengthSplit, SpectralSplit | Calibration/test design in chemometrics and descriptor spaces |
 | Target-aware    | TargetPropertySplit, StratifiedKFold, StratifiedShuffleSplit, XYOnionSplit, VenetianBlindsCV           | Class-balanced or response-aware validation                   |
 | Group-aware     | GroupShuffleSplit, GroupKFold, StratifiedGroupKFold                                                    | Avoiding leakage across related observations                  |
@@ -228,9 +244,7 @@ performance estimates than distance-based and group-aware alternatives. A reprod
 and group-aware splits on controlled datasets, illustrating how coverage of feature and response spaces differs across
 strategies and quantifying group leakage under random versus group-aware partitioning. The tutorial also generates
 \autoref{fig:ks}. A benchmark suite (`benchmark/benchmarks.jl`) tracks runtime scaling of all strategies, including lazy
-variants, to support informed strategy selection on datasets of varying size. A reproducible experiment
-(`benchmark/experiment/`) measures runtime and peak memory against astartes and produces the figures quoted above.
-DataSplits.jl will be maintained by the
+variants, to support informed strategy selection on datasets of varying size. DataSplits.jl will be maintained by the
 GrHeCo-Xen group through the public GitHub repository, where users can report issues, request features, and contribute
 new splitting strategies.
 
