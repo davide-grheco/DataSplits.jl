@@ -1,10 +1,31 @@
-# Go to https://citation-file-format.github.io/cff-initializer-javascript/#/ to finish this
 cff-version: 1.2.0
-title: DataSplits.jl
+title: "DataSplits.jl: Data splitting strategies for machine learning in Julia"
 message: >-
   If you use this software, please cite it using the
   metadata from this file.
 type: software
 authors:
-  - given-names: Davide Crucitti
+  - given-names: Davide
+    family-names: Crucitti
     email: davide.crucitti@grheco.com
+    orcid: "https://orcid.org/0009-0006-9458-9793"
+    affiliation: >-
+      Group of Computational Genomics and Hematology (GrHeCoXen), Health Research Institute of Santiago de Compostela
+      (IDIS), Santiago de Compostela, Spain; Departamento de Farmacología, Farmacia y Tecnología Farmacéutica,
+      Universidade de Santiago de Compostela, Santiago de Compostela, Spain
+  - given-names: Carlos
+    family-names: Pérez Míguez
+    orcid: "https://orcid.org/0009-0004-7972-9431"
+    affiliation: >-
+      Group of Computational Genomics and Hematology (GrHeCoXen), Health Research Institute of Santiago de Compostela
+      (IDIS), Santiago de Compostela, Spain
+  - given-names: Adrián
+    family-names: Mosquera Orgueira
+    orcid: "https://orcid.org/0000-0003-4838-6750"
+    affiliation: >-
+      Group of Computational Genomics and Hematology (GrHeCoXen), Health Research Institute of Santiago de Compostela
+      (IDIS), Santiago de Compostela, Spain; Division of Hematology, Complexo Hospitalario Universitario de Santiago de
+      Compostela, SERGAS, Santiago de Compostela, Spain
+repository-code: "https://github.com/davide-grheco/DataSplits.jl"
+url: "https://davide-grheco.github.io/DataSplits.jl"
+license: MIT
