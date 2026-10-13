@@ -51,14 +51,10 @@ procedures. The package exposes a single entry point:
 res = partition(data, strategy; kwargs...)
 ```
 
-The returned split objects expose train, validation, and test indices, lazy observation views, materialised subsets, and
-row-pair representations suitable for external model-evaluation frameworks. Supported strategy families include
-representative sample selection for calibration modelling, distance-based selection in spectral or molecular descriptor
-spaces, group-aware validation to avoid leakage between related observations, and time-aware validation for temporally
-ordered data. The package is designed to be lightweight and interoperable with the Julia machine learning ecosystem,
-including MLUtils.jl, Flux.jl, and MLJ.jl. It can be installed from the Julia General Registry with `] add DataSplits`.
-Source code is available at <https://github.com/davide-grheco/DataSplits.jl> and documentation at
-<https://davide-grheco.github.io/DataSplits.jl>.
+Supported strategies include distance-based representative sample selection for calibration modelling, group-aware
+validation to avoid leakage between related observations, and time-aware validation for temporally ordered data. The
+package is lightweight and interoperable with MLUtils.jl, Flux.jl, and MLJ.jl. It can be installed from the Julia
+General Registry with `] add DataSplits`.
 
 # Statement of need
 
@@ -78,13 +74,14 @@ Morais--Lima--Martin algorithm [@Lelis2019Improving]. Time-series and financial 
 chronological splitting strategies such as purged k-fold cross-validation and combinatorial purged cross-validation
 [@lopezdepradoAdvances18], and blocked cross-validation [@bergmeirUse12; @Roberts2017Cross]. Target-aware
 cross-validation strategies such as Venetian blinds [@naes2002multivariate] assign samples sorted by response value
-across folds in round-robin order, guaranteeing uniform target coverage without binning. These methods are useful in
-scientific modelling but, to our knowledge, are not currently available together in any general-purpose Julia splitting
-library.
+across folds in round-robin order, guaranteeing uniform target coverage without binning. To our knowledge, these methods
+are not available together in any general-purpose Julia library.
 
-DataSplits.jl addresses this gap by collecting these splitting strategies in a single Julia package with a consistent
-interface. It is intended for researchers who need reproducible, inspectable, and domain-appropriate partitions while
-remaining compatible with existing Julia modelling tools.
+DataSplits.jl collects them in a single package with a consistent interface, for researchers who need reproducible,
+inspectable, and domain-appropriate partitions. For example, Kennard--Stone selection constructs a training set that
+spans the descriptor space, which random splits cannot guarantee (\autoref{fig:ks}).
+
+![Random and Kennard–Stone training-set selection on a synthetic dataset with a dense centre and a sparse boundary. Gray points denote all samples (N=120) and blue points the training set (n=35). Kennard–Stone covers the boundary of the experimental domain, whereas random selection concentrates in the centre.\label{fig:ks}](figures/ks_vs_random.png)
 
 # State of the field
 
@@ -115,114 +112,24 @@ Scripts and results are in `benchmark/experiment/`. \label{tab:astartes}
 
 Within Julia, MLUtils.jl provides an observation interface based on `numobs`, `getobs`, and lazy observation views,
 together with data loaders and basic splitting utilities [@mlutils]. Flux.jl re-exports MLUtils data-loading
-functionality for neural network training [@Innes2018Flux]. MLJ.jl provides a comprehensive model-evaluation framework
-with built-in holdout and cross-validation resampling strategies, and also accepts explicit train/test row-pair vectors
-for custom resampling workflows [@Blaom2020MLJ]. None of these three implement distance-based, group-stratified, or
-purged time-series splitting strategies. The closest Julia package in scope is ChemometricsTools.jl
-[@chemometricstools], a broad chemometrics toolkit offering Kennard--Stone selection, two-way `SplitByProportion` and
-`VenetianBlinds` splits, and `KFoldsValidation`/`LeaveOneOut` iterators, all returning materialised arrays. To our
-knowledge, no Julia package implements group-stratified or purged time-series splitting.
+functionality for neural network training [@Innes2018Flux]. MLJ.jl provides a model-evaluation framework with holdout
+and cross-validation resampling, and also accepts explicit train/test row pairs [@Blaom2020MLJ]. None of these three
+implement distance-based, group-stratified, or purged time-series splitting strategies. The closest Julia package in
+scope is ChemometricsTools.jl [@chemometricstools], a broad chemometrics toolkit offering Kennard--Stone selection,
+two-way `SplitByProportion` and `VenetianBlinds` splits, and `KFoldsValidation`/`LeaveOneOut` iterators, all returning
+materialised arrays, but no group-stratified or purged time-series splitting.
 
-DataSplits.jl is not intended to replace these packages. Instead, it complements them by focusing on splitting
-strategies that are especially useful in scientific datasets and calibration/validation design. The output of these
-strategies can be consumed by other packages: lazy views can be passed to Flux/MLUtils data loaders, while explicit row
-pairs can be supplied to MLJ evaluation routines without requiring DataSplits.jl to depend on MLJ.jl.
-
-DataSplits.jl was developed as a separate package rather than an extension to MLJ.jl or MLUtils.jl because its core
-contribution is split construction rather than model evaluation or data loading. Keeping the package lightweight allows
-the same split definitions to be reused across MLJ, Flux, MLUtils, and custom scientific workflows without imposing a
-dependency on any specific modelling framework.
+DataSplits.jl complements these packages, its core contribution is split construction rather than model evaluation or
+data loading; keeping it lightweight lets the same split definitions be reused across MLJ, Flux, MLUtils, and custom
+workflows.
 
 # Software design
 
 The central abstraction in DataSplits.jl is a splitting strategy. Each strategy is represented by a concrete subtype of
 `AbstractSplitStrategy`, while cross-validation strategies subtype `AbstractCVStrategy`. Users call
-`partition(data, strategy; kwargs...)` to produce an `AbstractSplitResult`. A single entry point is preferable to
-separate per-algorithm functions because it lets user code switch strategies without changing call sites. Result types
-include two-way train/test splits, three-way train/validation/test splits, and cross-validation splits containing one
-split per fold.
-
-The package exposes stable accessors such as `trainindices`, `testindices`, `valindices`, and `folds`, so downstream
-code does not need to depend on internal result fields. Exposing indices rather than only data subsets matters in
-practice: the same split can be applied to multiple aligned arrays (features, labels, metadata, auxiliary covariates)
-without re-running the selection algorithm. For data extraction, DataSplits.jl provides both lazy and materialised
-interfaces. Functions such as `trainview`, `testview`, `valview`, and `splitview` use MLUtils-compatible observation
-views, while `traindata`, `testdata`, `valdata`, and `splitdata` materialise subsets using `getobs`.
-
-All distance-based strategies have a lazy counterpart (e.g. `LazyKennardStoneSplit`, `LazyOptiSimSplit`) that computes
-distances on-the-fly in O(N) peak memory instead of precomputing the full O(N²) distance matrix. This makes the
-strategies applicable to datasets where the full matrix would not fit in RAM, at the cost of increased runtime — a
-trade-off that is important for the high-dimensional descriptor matrices common in chemometrics and molecular modelling.
-At N = 10,000 the lazy variants allocate 236 KiB where the eager ones allocate 763 MiB, for a 1.4 to 2.4 times increase
-in runtime. Under a 4 GiB budget this raises the largest feasible sample count from 10,000 to at least 100,000.
-
-The package is designed to be extensible. Adding a custom strategy requires subtyping `AbstractSplitStrategy`, declaring
-which auxiliary slots (`:data`, `:target`, `:time`, `:groups`) the strategy reads via the `consumes` trait, and
-implementing a single `_partition` method. The `partition` entry point handles cohort-size resolution, slot validation,
-and feature-matrix conversion automatically.
-
-The time-aware strategies include `BlockedCV`, which implements blocked cross-validation [@bergmeirUse12] by
-partitioning the time axis into contiguous blocks to avoid look-ahead bias, and `PurgedKFold`, which implements purged
-k-fold cross-validation [@lopezdepradoAdvances18] by additionally removing observations from the training fold whose
-labels overlap in time with the test fold.
-
-A key design choice is to keep ecosystem integration lightweight. DataSplits.jl provides `rowpairs`, which converts any
-split result into the vector of `(train_indices, test_indices)` pairs accepted by MLJ's `evaluate!` `resampling=`
-keyword, without requiring a dependency on MLJ.jl or MLJBase.jl. This avoids coupling split construction to any
-particular modelling framework.
-
-The test suite checks split-size resolution, non-overlap between cohorts, complete fold coverage where applicable,
-reproducibility under fixed random number generators, stratification and group constraints, and consistency of lazy and
-materialised data extraction.
-
-# Example usage
-
-A representative train/test split can be constructed using the Kennard--Stone strategy:
-
-```julia
-using DataSplits, Random
-
-X = randn(Xoshiro(42), 8, 200)
-y = vec(sum(X; dims = 1)) .+ randn(Xoshiro(7), 200)
-
-res = partition(X, KennardStoneSplit(); train = 0.8, test = 0.2)
-
-X_train, X_test = splitview(res, X)
-train_idx = trainindices(res)
-test_idx  = testindices(res)
-```
-
-For stratified cross-validation with MLJ, the result can be converted to row pairs directly. MLJ tables place
-observations in rows, so the feature matrix is transposed first:
-
-```julia
-using MLJ, DataFrames
-
-Xt     = DataFrame(permutedims(X), :auto)          # 200 rows x 8 features
-labels = coerce(ifelse.(y .> 0, "high", "low"), Multiclass)
-
-cvs   = partition(Xt, StratifiedKFold(5); target = labels, rng = Xoshiro(42))
-model = ConstantClassifier()                       # any MLJ model
-mach  = machine(model, Xt, labels)
-
-evaluate!(mach; resampling = rowpairs(cvs), measure = accuracy)
-```
-
-The same split indices can also be applied to multiple aligned data sources, enabling integration with Flux data
-loaders, which take observations along the last dimension as DataSplits does:
-
-```julia
-using Flux
-
-model  = Flux.Dense(8 => 1)
-loader = Flux.DataLoader(trainview(res, X, y); batchsize = 64, shuffle = true)
-```
-
-In chemometric calibration, Kennard–Stone-style selection constructs a training set that spans the observed descriptor
-space, reducing the risk that validation samples fall outside the calibration domain — a problem that random splits
-cannot guard against by design. The practical difference is illustrated in \autoref{fig:ks}.
-
-![Comparison of random and Kennard–Stone training-set selection on a synthetic dataset with a dense central region and a sparse outer boundary. Gray points denote all samples (N=120) and blue points the selected training set (n=35). Random selection follows the empirical density and concentrates training samples in the center, whereas Kennard–Stone produces a more space-filling selection that better covers the boundary of the experimental domain.\label{fig:ks}](figures/ks_vs_random.png)
+`partition(data, strategy; kwargs...)` to produce an `AbstractSplitResult` (a two-way, three-way, or per-fold
+cross-validation split). A single entry point lets user code switch strategies without changing call sites.
+\autoref{tab:families} lists the strategy families.
 
 <!-- prettier-ignore -->
 | Strategy family | Examples                                                                                               | Typical use                                                   |
@@ -233,6 +140,28 @@ cannot guard against by design. The practical difference is illustrated in \auto
 | Time-aware      | TimeSplit, BlockedCV, PurgedKFold, CombinatorialPurgedKFold                                            | Temporally ordered validation                                 |
 | Resampling      | BootstrapSplit, ShuffleSplit, RepeatedKFold, NestedCV                                                  | Repeated performance estimation and hyperparameter tuning     |
 
+Table: Splitting strategy families implemented in DataSplits.jl. \label{tab:families}
+
+The package exposes stable accessors (e.g. `trainindices`), so downstream code does not need to depend on internal
+result fields. Exposing indices rather than only data subsets lets the same split be applied to multiple aligned arrays
+(features, labels, metadata) without re-running the selection algorithm. Data can be extracted either as lazy
+MLUtils-compatible observation views or as materialised subsets.
+
+All distance-based strategies have a lazy counterpart that computes distances on-the-fly in O(N) peak memory instead of
+precomputing the full O(N²) distance matrix. This makes the strategies applicable to datasets where the full matrix
+would not fit in RAM, at the cost of increased runtime. At N = 10,000 the lazy variants allocate 236 KiB where the eager
+ones allocate 763 MiB, for a 1.4 to 2.4 times increase in runtime. Under a 4 GiB budget this raises the largest feasible
+sample count from 10,000 to at least 100,000.
+
+The package is designed to be extensible. Adding a custom strategy requires subtyping `AbstractSplitStrategy`, declaring
+which auxiliary slots (`:data`, `:target`, `:time`, `:groups`) the strategy reads via the `consumes` trait, and
+implementing a single `_partition` method. The `partition` entry point handles cohort-size resolution, slot validation,
+and feature-matrix conversion automatically.
+
+Ecosystem integration is kept lightweight: lazy views can be passed directly to Flux/MLUtils data loaders, and
+`rowpairs` converts any split result into the `(train_indices, test_indices)` pairs accepted by MLJ's `evaluate!`,
+without a dependency on MLJ.jl.
+
 # Research impact statement
 
 DataSplits.jl has been developed to support benchmarking and validation workflows in scientific machine learning where
@@ -240,13 +169,11 @@ split construction directly affects reported performance estimates. The package 
 [@crucitti2025splits], which demonstrates empirically that split strategy choice can dominate differences between
 modelling algorithms in structured chemical datasets, with random splits systematically producing more optimistic
 performance estimates than distance-based and group-aware alternatives. A reproducible tutorial
-(`notebooks/tutorial.jl`) included in the repository provides side-by-side comparisons of random, Kennard–Stone, SPXY,
-and group-aware splits on controlled datasets, illustrating how coverage of feature and response spaces differs across
-strategies and quantifying group leakage under random versus group-aware partitioning. The tutorial also generates
-\autoref{fig:ks}. A benchmark suite (`benchmark/benchmarks.jl`) tracks runtime scaling of all strategies, including lazy
-variants, to support informed strategy selection on datasets of varying size. DataSplits.jl will be maintained by the
-GrHeCo-Xen group through the public GitHub repository, where users can report issues, request features, and contribute
-new splitting strategies.
+(`notebooks/tutorial.jl`) compares random, Kennard–Stone, SPXY, and group-aware splits on controlled datasets,
+quantifying feature-space coverage and group leakage, and generates \autoref{fig:ks}. A benchmark suite
+(`benchmark/benchmarks.jl`) tracks runtime scaling of all strategies. DataSplits.jl will be maintained by the GrHeCo-Xen
+group through the public GitHub repository, where users can report issues, request features, and contribute new
+splitting strategies.
 
 # AI usage disclosure
 
