@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1] - 2026-10-13
+
+### Fixed
+
+- `MDKSSplit` and `LazyMDKSSplit` now build the default Mahalanobis metric from the inverse covariance matrix, as `Distances.Mahalanobis` expects.
+- Sphere exclusion seeds clusters in index order, so cluster assignment is reproducible across Julia versions for a fixed RNG.
+- Type instabilities in `LazyDuplexSplit` and `LazySPXYSplit`.
+
+### Changed
+
+- Faster Kennard–Stone, OptiSim, Duplex, FieldStrength, SPXY, Spectral and `CombinatorialPurgedKFold` implementations, with lower memory use. OptiSim keeps its selection order, so selected indices for a given seed can differ from 0.3.0.
+- Rewritten documentation: introduction, getting started walkthrough, and the distance-based, cross-validation, time-series and group-aware pages.
+- CI runs on Windows and macOS; pull requests report benchmark changes.
+- Added contributing guidelines and complete citation metadata (`CITATION.cff`).
+
 ## [0.3.0] - 2026-05-29
 
 ### Added
