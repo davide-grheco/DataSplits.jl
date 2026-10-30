@@ -68,7 +68,7 @@ and response spaces [@kohavi1995study]. Representative sample selection algorith
 construct calibration and validation sets with broad coverage of the experimental domain. Related approaches include the
 Duplex algorithm [@sneeValidation77a], which selects both training and test sets simultaneously using the maximin
 criterion; OptiSim and dissimilarity-based selection methods [@Clark1997OptiSim]; the Onion method
-[@gallagherSelection20] and its joint X--y extension, XY-Onion [@ezenarro2025xy]; electrostatic field-strength selection
+[@gallagherSelection20] and its joint X--y extension, XYOnion [@ezenarro2025xy]; electrostatic field-strength selection
 [@heField26]; spectral clustering-based splits [@ngSpectral01]; and classification-oriented adaptations such as the
 Morais--Lima--Martin algorithm [@Lelis2019Improving]. Time-series and financial machine learning workflows call for
 chronological splitting strategies such as purged k-fold cross-validation and combinatorial purged cross-validation
